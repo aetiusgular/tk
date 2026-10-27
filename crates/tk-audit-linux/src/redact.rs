@@ -72,9 +72,14 @@ pub fn argv(args: &[String]) -> Vec<String> {
 /// Redacts secrets inside one string.
 pub fn text(s: &str) -> String {
     // `key=value` or `key: value` with a secret-like key: the whole value.
-    if let Some((key, _)) = s.split_once('=') {
+    if let Some((key, value)) = s.split_once('=') {
         let bare = key.trim_start_matches('-');
         if !bare.is_empty() && !bare.contains(' ') && secret_like(bare) {
+            return format!("{key}={REDACTED}");
+        }
+        // `--model=sk-ant-...`: a token shape after any key (integration w1,
+        // security finding S13).
+        if !bare.is_empty() && !bare.contains(' ') && !value.contains(' ') && secret_word(value) {
             return format!("{key}={REDACTED}");
         }
     }

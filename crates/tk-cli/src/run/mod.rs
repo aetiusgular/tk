@@ -295,6 +295,9 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
     let pid = child.id();
     let mut full_argv = vec![p.program.clone()];
     full_argv.extend(p.args.iter().cloned());
+    // The record keeps the shape of the command, not a key passed on it
+    // (integration w1, security finding S13; the audit feed's own redactor).
+    let full_argv = tk_audit_linux::redact::argv(&full_argv);
     let dangerous: Vec<&String> = a
         .rest
         .iter()
@@ -539,6 +542,40 @@ mod end_to_end {
             .filter(|l| l["op"] == "event")
             .map(|l| l["event"].clone())
             .collect()
+    }
+
+    #[test]
+    fn run_records_never_hold_a_secret_from_the_harness_argv() {
+        // Integration w1, security finding S13: a key passed to the harness
+        // on its command line would sit in the activity log for 7 days.
+        // Its own fake folder: `setup` names the folder after this label and
+        // the process id, so two tests sharing a label race.
+        let st = setup("none-redact");
+        let cwd = st.work.to_string_lossy().into_owned();
+        let secret = format!("sk-ant-{}", "x".repeat(24));
+        run(
+            &s(&[
+                "pi",
+                "--boundary",
+                "none",
+                "--chat",
+                "chat-r",
+                "--cwd",
+                &cwd,
+                "--",
+                "--api-key",
+                &secret,
+                "--model=sk-ant-inline-secret-value-0001",
+            ]),
+            &st.env,
+        )
+        .unwrap();
+        let ev = events(&st);
+        assert_eq!(ev[0]["kind"], "run.start");
+        let all = serde_json::to_string(&ev).unwrap();
+        assert!(!all.contains(&secret), "{all}");
+        assert!(!all.contains("sk-ant-inline"), "{all}");
+        assert!(all.contains("--api-key"), "{all}");
     }
 
     #[test]
