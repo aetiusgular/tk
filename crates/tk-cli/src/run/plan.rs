@@ -16,6 +16,8 @@
 //!   harness's state and `/tmp`, and hide the user's secrets, the daemon's
 //!   folder and the other harnesses' credentials.
 
+use std::path::Path;
+
 use serde_json::json;
 
 use super::args::{Args, Boundary};
@@ -51,6 +53,10 @@ pub struct Inputs<'a> {
     /// beside srt's settings in the daemon's 0700 folder. Named to the child
     /// only under `--boundary none`.
     pub token_file: String,
+    /// The policy file the harness's gate reads (`TK_POLICY`, else
+    /// `~/.tk/policy.json`). Under srt it is re-opened read-only inside the
+    /// hidden `~/.tk` (box test w1, finding BX2).
+    pub policy: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -270,6 +276,28 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
             }
             deny_read.sort();
             deny_read.dedup();
+            // The gate's policy file, re-opened read-only inside the hidden
+            // `~/.tk` (box test w1, BX2; srt 0.0.81 README line 119: an
+            // `allowRead` beneath a broader `denyRead` wins, and line 584:
+            // a `literal` entry is a path, never a pattern). Only a `.json`
+            // directly in `~/.tk`: a `TK_POLICY` naming anything else could
+            // re-open a file srt hides on purpose.
+            let tk_dir = under_home(".tk");
+            let policy_ok = Path::new(&i.policy)
+                .parent()
+                .is_some_and(|d| d == Path::new(&tk_dir))
+                && i.policy.ends_with(".json")
+                && !i.policy.contains("/../")
+                && !i.policy.contains("/./");
+            let allow_read = if policy_ok {
+                vec![json!({"path": i.policy, "literal": true})]
+            } else {
+                notes.push(format!(
+                    "tk run: {} is not a .json file directly in {tk_dir}, so srt keeps it hidden and the gate inside finds no policy: every call will ask",
+                    i.policy
+                ));
+                vec![]
+            };
             let mut allow_write = vec![i.cwd.clone()];
             allow_write.extend(state_dirs.iter().cloned());
             allow_write.push("/tmp".into());
@@ -280,7 +308,7 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
                 },
                 "filesystem": {
                     "denyRead": deny_read,
-                    "allowRead": [],
+                    "allowRead": allow_read,
                     "allowWrite": allow_write,
                     // srt already refuses writes to .git/hooks, .git/config,
                     // shell rc files, .vscode and .claude/commands (README,
@@ -424,6 +452,7 @@ mod tests {
             daemon_dir: Some("/run/user/1000/tk".into()),
             settings_path: "/run/user/1000/tk/srt/chat-b.json".into(),
             token_file: "/run/user/1000/tk/chats/chat-b.token".into(),
+            policy: "/home/u/.tk/policy.json".into(),
         }
     }
 
@@ -596,6 +625,38 @@ mod tests {
             s["filesystem"]["allowWrite"],
             json!(["/home/u/proj dir", "/home/u/.pi/agent", "/tmp"])
         );
+    }
+
+    #[test]
+    fn srt_lets_the_gate_read_its_policy_and_nothing_else_in_tk_s_folder() {
+        // Box test w1, BX2: `denyRead` held `~/.tk` with `allowRead: []`, so
+        // the gate inside srt found no policy and asked every call. srt
+        // 0.0.81 README line 119: `allowRead` takes precedence over a broader
+        // `denyRead`. Writes stay denied (`~/.tk` is in no `allowWrite`).
+        let args = a(&["pi", "--boundary", "srt"]);
+        let p = build(&inputs(&args)).unwrap();
+        let s: serde_json::Value =
+            serde_json::from_str(p.srt_settings.as_deref().unwrap()).unwrap();
+        assert_eq!(
+            s["filesystem"]["allowRead"],
+            json!([{"path": "/home/u/.tk/policy.json", "literal": true}])
+        );
+        assert!(!s["filesystem"]["allowWrite"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|w| w.as_str().unwrap_or("").contains(".tk")));
+        // A TK_POLICY anywhere but tk's own folder is not re-opened: it could
+        // name a file srt hides on purpose.
+        for elsewhere in ["/home/u/.ssh/id_ed25519", "/home/u/.tk/../.ssh/x.json", "/home/u/.tk/backups/a.json", "/home/u/.tk/policy"] {
+            let mut i = inputs(&args);
+            i.policy = elsewhere.into();
+            let p = build(&i).unwrap();
+            let s: serde_json::Value =
+                serde_json::from_str(p.srt_settings.as_deref().unwrap()).unwrap();
+            assert_eq!(s["filesystem"]["allowRead"], json!([]), "{elsewhere}");
+            assert!(p.notes.iter().any(|n| n.contains("every call will ask")), "{:?}", p.notes);
+        }
     }
 
     #[test]

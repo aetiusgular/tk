@@ -23,6 +23,7 @@ mod exec;
 mod harness;
 mod plan;
 mod policy_log;
+mod preflight;
 
 use std::io::Write;
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
@@ -51,6 +52,13 @@ struct RunEnv {
     /// `TK_LOG_CONTENT=1`: run records keep the harness's own arguments
     /// (still through the secret redactor). Off by default (finding M8).
     log_content: bool,
+    /// `TK_POLICY`, the policy file the harness's gate will read.
+    policy: Option<String>,
+    /// `PATH`, searched for srt's own dependencies (BX4).
+    path: String,
+    /// `/proc/sys/kernel/apparmor_restrict_unprivileged_userns` (BX3), when
+    /// it exists.
+    userns: Option<String>,
 }
 
 impl RunEnv {
@@ -61,6 +69,12 @@ impl RunEnv {
             gateway: std::env::var("TK_GATEWAY_URL").ok(),
             programs: Vec::new(),
             log_content: std::env::var("TK_LOG_CONTENT").is_ok_and(|v| v == "1"),
+            policy: std::env::var("TK_POLICY").ok(),
+            path: std::env::var("PATH").unwrap_or_default(),
+            userns: std::fs::read_to_string(
+                "/proc/sys/kernel/apparmor_restrict_unprivileged_userns",
+            )
+            .ok(),
         }
     }
 
@@ -284,8 +298,22 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
         daemon_dir: dir.as_ref().and_then(|d| d.to_str()).map(str::to_string),
         settings_path: settings_path.to_string_lossy().into_owned(),
         token_file: token_path.to_string_lossy().into_owned(),
+        policy: env
+            .policy
+            .clone()
+            .filter(|p| p.starts_with('/'))
+            .unwrap_or_else(|| format!("{}/.tk/policy.json", home.trim_end_matches('/'))),
     };
     let p = plan::build(&inputs).map_err(|e| (2, e))?;
+    // srt's dependencies and the userns sysctl, before srt fails on them with
+    // its own errors (box test w1, BX3 and BX4).
+    if a.boundary == Boundary::Srt {
+        match preflight::srt(&env.path, cfg!(target_os = "linux"), env.userns.as_deref()) {
+            Ok(notes) => notes.iter().for_each(|n| eprintln!("{n}")),
+            Err(e) if a.dry_run => eprintln!("tk run: {e}"),
+            Err(e) => return Err((1, e)),
+        }
+    }
     if a.dry_run {
         print!("{}", plan::describe(&p));
         if !a.no_daemon {
@@ -556,12 +584,21 @@ mod end_to_end {
                 fake.dir.display()
             ),
         );
+        // srt's own dependencies, for the preflight (BX4).
+        let deps = fake.dir.join("deps");
+        std::fs::create_dir_all(&deps).unwrap();
+        for b in ["bwrap", "socat", "rg"] {
+            script(&deps, b, "exit 0");
+        }
         let env = RunEnv {
             socket: Some(fake.socket.clone()),
             home: Some(fake.dir.to_string_lossy().into_owned()),
             gateway: None,
             programs: vec![("pi".into(), pi), ("srt".into(), srt)],
             log_content: false,
+            policy: None,
+            path: deps.join("bin").to_string_lossy().into_owned(),
+            userns: None,
         };
         Setup { fake, work, env }
     }
@@ -779,6 +816,25 @@ mod end_to_end {
     }
 
     #[test]
+    fn srt_without_its_dependencies_starts_nothing() {
+        // Box test w1, BX4: srt's own "ripgrep (rg) not found" came after
+        // the token was minted; now tk refuses first and starts nothing.
+        let mut st = setup("srt-deps");
+        st.env.path = String::new();
+        let cwd = st.work.to_string_lossy().into_owned();
+        let err = run(
+            &s(&["pi", "--boundary", "srt", "--chat", "chat-d", "--cwd", &cwd]),
+            &st.env,
+        )
+        .unwrap_err();
+        assert_eq!(err.0, 1);
+        assert!(err.1.contains("bwrap (package bubblewrap)"), "{}", err.1);
+        assert!(seen(&st).is_empty(), "the harness never started");
+        assert!(!st.fake.dir.join("srt/chat-d.json").exists());
+        assert!(events(&st).is_empty(), "nothing recorded");
+    }
+
+    #[test]
     fn sbx_names_the_variables_and_posts_the_blocks_its_log_shows() {
         let st = setup("sbx");
         let n = st.fake.dir.join("polls");
@@ -807,6 +863,9 @@ mod end_to_end {
             gateway: None,
             programs: st.env.programs.clone(),
             log_content: false,
+            policy: None,
+            path: String::new(),
+            userns: None,
         };
         env.programs.push(("sbx".into(), sbx));
         let cwd = st.work.to_string_lossy().into_owned();
@@ -845,6 +904,9 @@ mod end_to_end {
             gateway: None,
             programs: st.env.programs.clone(),
             log_content: false,
+            policy: None,
+            path: String::new(),
+            userns: None,
         };
         let cwd = st.work.to_string_lossy().into_owned();
         let err = run(&s(&["pi", "--boundary", "none", "--cwd", &cwd]), &env).unwrap_err();
