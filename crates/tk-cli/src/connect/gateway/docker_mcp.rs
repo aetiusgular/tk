@@ -1,9 +1,16 @@
-//! `docker mcp` for the Connectors page: Docker's MCP catalog, MonoCode's own
-//! connector profiles, their secrets and their OAuth sign-ins.
+//! `docker mcp` for `tk connect --gateway docker`: Docker's MCP catalog,
+//! tk's own connector profiles, their secrets and their OAuth sign-ins.
+//!
+//! Copied from the fork (`src-tauri/src/docker_mcp.rs` at `159ef3e`, NOTICE).
+//! Lane C's changes, all mechanical: the `tk_` profile prefix became
+//! `tk_` and the user catalog `tk/extra` became `tk/extra`
+//! (`contracts/docker-args.md`, section 1); the Tauri command became a plain
+//! function; the fork's `dirs_home` and `harness` helpers come from
+//! `super::host`. The allowlist itself is unchanged.
 //!
 //! Only the argument shapes in `allowed_timeout` run. Every free value is
-//! checked against a tight pattern, profile changes are limited to MonoCode's
-//! own `monocode_` profiles, and a secret's value only ever arrives on stdin.
+//! checked against a tight pattern, profile changes are limited to tk's
+//! own `tk_` profiles, and a secret's value only ever arrives on stdin.
 //! Nothing here logs stdin.
 
 use std::path::{Component, Path, PathBuf};
@@ -11,16 +18,15 @@ use std::time::Duration;
 
 use serde::Serialize;
 
-use crate::dirs_home;
-use crate::harness::{exec_output_with_stdin, gui_search_path};
+use super::host::{dirs_home, exec_output_with_stdin, gui_search_path};
 
 const CATALOG: &str = "mcp/docker-mcp-catalog";
 const CATALOG_REF_PREFIX: &str = "catalog://mcp/docker-mcp-catalog/";
 /// The user's own catalog of servers Docker's catalog lacks, built with
-/// `docker mcp catalog create monocode/extra:latest --server file://...`.
-const EXTRA_CATALOG: &str = "monocode/extra";
-const EXTRA_CATALOG_REF_PREFIX: &str = "catalog://monocode/extra/";
-const OWN_PROFILE_PREFIX: &str = "monocode_";
+/// `docker mcp catalog create tk/extra:latest --server file://...`.
+const EXTRA_CATALOG: &str = "tk/extra";
+const EXTRA_CATALOG_REF_PREFIX: &str = "catalog://tk/extra/";
+const OWN_PROFILE_PREFIX: &str = "tk_";
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 const CATALOG_TIMEOUT: Duration = Duration::from_secs(120);
 const OAUTH_TIMEOUT: Duration = Duration::from_secs(300);
@@ -66,8 +72,7 @@ pub struct DockerMcpOutput {
 /// Run one allowlisted `docker mcp` command. Returns its output on success,
 /// and a bounded error carrying stderr otherwise. A gateway dry run returns
 /// its output either way: a failing run is a test result, not an error.
-#[tauri::command]
-pub async fn docker_mcp(
+pub fn docker_mcp(
     args: Vec<String>,
     stdin: Option<String>,
     timeout_ms: Option<u64>,
@@ -79,9 +84,7 @@ pub async fn docker_mcp(
     let timeout = timeout_ms
         .map(Duration::from_millis)
         .map_or(limit, |requested| requested.clamp(MIN_TIMEOUT, limit));
-    tauri::async_runtime::spawn_blocking(move || run(&args, stdin.as_deref(), timeout))
-        .await
-        .map_err(|e| e.to_string())?
+    run(&args, stdin.as_deref(), timeout)
 }
 
 fn run(args: &[String], stdin: Option<&str>, timeout: Duration) -> Result<DockerMcpOutput, String> {
@@ -246,14 +249,14 @@ fn allowed_timeout(args: &[String], home: Option<&Path>) -> Option<Duration> {
 }
 
 /// `^[a-z0-9_]{1,64}$`
-fn is_profile_id(value: &str) -> bool {
+pub fn is_profile_id(value: &str) -> bool {
     (1..=64).contains(&value.len())
         && value
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
-/// A profile MonoCode made. Only these can be created, changed or removed.
+/// A profile tk made. Only these can be created, changed or removed.
 fn is_own_profile_id(value: &str) -> bool {
     is_profile_id(value)
         && value.len() > OWN_PROFILE_PREFIX.len()
@@ -421,19 +424,19 @@ mod tests {
             "profile",
             "create",
             "--name",
-            "monocode-notion-remote",
+            "tk-notion-remote",
             "--id",
-            "monocode_notion_remote",
+            "tk_notion_remote",
             "--server",
             "catalog://mcp/docker-mcp-catalog/notion-remote",
         ]));
-        assert!(allowed(&["mcp", "profile", "remove", "monocode_github"]));
+        assert!(allowed(&["mcp", "profile", "remove", "tk_github"]));
         assert!(allowed(&[
             "mcp",
             "profile",
             "server",
             "add",
-            "monocode_github",
+            "tk_github",
             "--server",
             "file:///Users/me/.docker/mcp/catalogs/exa.yaml",
         ]));
@@ -442,7 +445,7 @@ mod tests {
             "profile",
             "server",
             "remove",
-            "monocode_github",
+            "tk_github",
             "github"
         ]));
         assert!(allowed(&["mcp", "secret", "ls", "--json"]));
@@ -471,7 +474,7 @@ mod tests {
             "mcp",
             "profile",
             "config",
-            "monocode_gmail_mcp",
+            "tk_gmail_mcp",
             "--set",
             "gmail-mcp.email_address=test@example.com",
             "--set",
@@ -481,7 +484,7 @@ mod tests {
             "mcp",
             "profile",
             "config",
-            "monocode_gmail_mcp",
+            "tk_gmail_mcp",
             "--get-all",
             "--format",
             "json",
@@ -490,7 +493,7 @@ mod tests {
             "mcp",
             "profile",
             "config",
-            "monocode_gmail_mcp",
+            "tk_gmail_mcp",
             "--del",
             "gmail-mcp.email_address",
         ]));
@@ -499,7 +502,7 @@ mod tests {
             "gateway",
             "run",
             "--profile",
-            "monocode_hugging_face",
+            "tk_hugging_face",
             "--dry-run",
             "--verbose",
         ]));
@@ -508,7 +511,7 @@ mod tests {
     #[test]
     fn refuses_bad_config_and_test_calls() {
         let config = |sets: &[&str]| {
-            let mut list = vec!["mcp", "profile", "config", "monocode_gmail_mcp"];
+            let mut list = vec!["mcp", "profile", "config", "tk_gmail_mcp"];
             list.extend_from_slice(sets);
             allowed(&list)
         };
@@ -550,7 +553,7 @@ mod tests {
             "gateway",
             "run",
             "--profile",
-            "monocode_x",
+            "tk_x",
             "--verbose",
         ]));
         assert!(!allowed(&[
@@ -558,7 +561,7 @@ mod tests {
             "gateway",
             "run",
             "--profile",
-            "monocode_x",
+            "tk_x",
             "--dry-run",
             "--verbose",
             "--port",
@@ -575,7 +578,7 @@ mod tests {
             "gateway",
             "run",
             "--profile",
-            "monocode_github"
+            "tk_github"
         ]));
         assert!(!allowed(&[
             "mcp",
@@ -586,23 +589,18 @@ mod tests {
             "json"
         ]));
         assert!(allowed(&[
-            "mcp",
-            "catalog",
-            "show",
-            "monocode/extra",
-            "--format",
-            "json"
+            "mcp", "catalog", "show", "tk/extra", "--format", "json"
         ]));
         assert!(allowed(&[
             "mcp",
             "profile",
             "create",
             "--name",
-            "monocode-vercel-remote",
+            "tk-vercel-remote",
             "--id",
-            "monocode_vercel_remote",
+            "tk_vercel_remote",
             "--server",
-            "catalog://monocode/extra/vercel-remote"
+            "catalog://tk/extra/vercel-remote"
         ]));
         assert!(!allowed(&[
             "mcp",
@@ -611,13 +609,13 @@ mod tests {
             "--name",
             "x",
             "--id",
-            "monocode_x",
+            "tk_x",
             "--server",
             "catalog://other/catalog/x"
         ]));
-        assert!(!allowed(&["mcp", "catalog", "pull", "monocode/extra"]));
+        assert!(!allowed(&["mcp", "catalog", "pull", "tk/extra"]));
         assert!(!allowed(&["mcp", "profile", "remove", "research"]));
-        assert!(!allowed(&["mcp", "profile", "remove", "monocode_"]));
+        assert!(!allowed(&["mcp", "profile", "remove", "tk_"]));
         assert!(!allowed(&[
             "mcp", "profile", "show", "Research", "--format", "json"
         ]));
@@ -631,13 +629,7 @@ mod tests {
             "--open-browser"
         ]));
         assert!(!allowed(&[
-            "mcp",
-            "profile",
-            "create",
-            "--name",
-            "x",
-            "--id",
-            "monocode_x",
+            "mcp", "profile", "create", "--name", "x", "--id", "tk_x",
         ]));
         assert!(!allowed(&[
             "mcp",
@@ -646,7 +638,7 @@ mod tests {
             "--name",
             "x",
             "--id",
-            "monocode_x",
+            "tk_x",
             "--server",
             "docker.io/mcp/github",
         ]));
@@ -655,7 +647,7 @@ mod tests {
             "profile",
             "server",
             "add",
-            "monocode_x",
+            "tk_x",
             "--server",
             "file:///Users/me/.docker/mcp/catalogs/../../.ssh/id_rsa",
         ]));
@@ -664,7 +656,7 @@ mod tests {
             "profile",
             "server",
             "add",
-            "monocode_x",
+            "tk_x",
             "--server",
             "file:///etc/passwd",
         ]));
@@ -696,7 +688,7 @@ mod tests {
             "gateway",
             "run",
             "--profile",
-            "monocode_x",
+            "tk_x",
             "--dry-run",
             "--verbose",
         ]);
@@ -733,7 +725,7 @@ mod tests {
                 "mcp",
                 "profile",
                 "tools",
-                "monocode_github",
+                "tk_github",
                 flag,
                 "github.create_issue"
             ]));
@@ -757,7 +749,7 @@ mod tests {
                 "Github.create_issue",
             ] {
                 assert!(
-                    !allowed(&["mcp", "profile", "tools", "monocode_github", flag, bad]),
+                    !allowed(&["mcp", "profile", "tools", "tk_github", flag, bad]),
                     "{bad}"
                 );
             }
@@ -766,7 +758,7 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--disable",
             "github.v2.list-repos_x"
         ]));
@@ -774,7 +766,7 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--disable",
             &format!("github.{}", "a".repeat(129))
         ]));
@@ -783,7 +775,7 @@ mod tests {
     #[test]
     fn allows_an_enable_list_for_one_server_only() {
         let list = |refs: &[&str]| {
-            let mut out = vec!["mcp", "profile", "tools", "monocode_notion_remote"];
+            let mut out = vec!["mcp", "profile", "tools", "tk_notion_remote"];
             for r in refs {
                 out.push("--enable");
                 out.push(r);
@@ -804,7 +796,7 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_notion_remote",
+            "tk_notion_remote",
             "--enable",
             "notion-remote.a",
             "--disable",
@@ -837,16 +829,13 @@ mod tests {
             "--format",
             "json",
             "--gateway-arg=--profile",
-            "--gateway-arg=monocode_notion_remote"
+            "--gateway-arg=tk_notion_remote"
         ]));
         for (flag, id) in [
             ("--gateway-arg=--profile", "--gateway-arg=research"),
-            ("--gateway-arg=--servers", "--gateway-arg=monocode_x"),
-            (
-                "--gateway-arg=--profile",
-                "--gateway-arg=monocode_x,--verbose",
-            ),
-            ("--gateway-arg=--profile", "monocode_x"),
+            ("--gateway-arg=--servers", "--gateway-arg=tk_x"),
+            ("--gateway-arg=--profile", "--gateway-arg=tk_x,--verbose"),
+            ("--gateway-arg=--profile", "tk_x"),
         ] {
             assert!(
                 !allowed(&["mcp", "tools", "ls", "--format", "json", flag, id]),
@@ -862,7 +851,7 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--enable-all",
             "github"
         ]));
@@ -870,7 +859,7 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--disable-all",
             "github"
         ]));
@@ -878,16 +867,16 @@ mod tests {
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--enable-all",
             "git.hub"
         ]));
-        assert!(!allowed(&["mcp", "profile", "tools", "monocode_github"]));
+        assert!(!allowed(&["mcp", "profile", "tools", "tk_github"]));
         assert!(!allowed(&[
             "mcp",
             "profile",
             "tools",
-            "monocode_github",
+            "tk_github",
             "--disable",
             "github.a",
             "--disable",

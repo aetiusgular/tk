@@ -1,0 +1,5 @@
+# my settings
+model = "o3" # inline
+
+[profiles.local]
+model = "qwen"

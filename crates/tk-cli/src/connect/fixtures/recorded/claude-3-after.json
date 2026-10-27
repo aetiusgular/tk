@@ -1,0 +1,41 @@
+{
+  "firstStartTime": "2026-10-27T15:06:59.752Z",
+  "firstStartVersion": "2.1.311",
+  "machineID": "0000000000000000000000000000000000000000000000000000000000000000",
+  "opusProMigrationComplete": true,
+  "sonnet1m45MigrationComplete": true,
+  "seenNotifications": {},
+  "hasResetAutoModeOptInForDefaultOffer": true,
+  "migrationVersion": 14,
+  "mcpServers": {
+    "exa": {
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp"
+    },
+    "fs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "env": {
+        "TOKEN": "${TOKEN}"
+      }
+    },
+    "plain": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time"
+      ]
+    },
+    "hdr": {
+      "type": "http",
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${EX_TOKEN}"
+      }
+    }
+  }
+}
