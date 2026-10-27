@@ -84,14 +84,30 @@ fn show(line: &str, shown: fn(&str) -> String) -> String {
 /// `diff -u` style output. Empty when the texts are equal.
 #[cfg(test)]
 pub fn unified(old: &str, new: &str, old_label: &str, new_label: &str) -> String {
-    unified_with(old, new, old_label, new_label, str::to_string)
+    unified_with(
+        old,
+        new,
+        old_label,
+        new_label,
+        str::to_string,
+        str::to_string,
+    )
 }
 
-/// As `unified`, with every printed line of either text (context, removed,
-/// added) passed through `redact::line` (Mac test w1, finding M3). This is
-/// the only form `tk connect` prints.
+/// As `unified`, with every printed line of either text passed through the
+/// redactor (Mac test w1, finding M3): the user's own lines (context,
+/// removed) through `redact::line`, tk's added lines through
+/// `redact::added_line` (review R2). This is the only form `tk connect`
+/// prints.
 pub fn unified_redacted(old: &str, new: &str, old_label: &str, new_label: &str) -> String {
-    unified_with(old, new, old_label, new_label, super::redact::line)
+    unified_with(
+        old,
+        new,
+        old_label,
+        new_label,
+        super::redact::line,
+        super::redact::added_line,
+    )
 }
 
 fn unified_with(
@@ -100,6 +116,7 @@ fn unified_with(
     old_label: &str,
     new_label: &str,
     shown: fn(&str) -> String,
+    shown_added: fn(&str) -> String,
 ) -> String {
     if old == new {
         return String::new();
@@ -135,7 +152,7 @@ fn unified_with(
             match op {
                 Op::Keep => out.push_str(&format!(" {}\n", show(a[*i], shown))),
                 Op::Del => out.push_str(&format!("-{}\n", show(a[*i], shown))),
-                Op::Add => out.push_str(&format!("+{}\n", show(b[*j], shown))),
+                Op::Add => out.push_str(&format!("+{}\n", show(b[*j], shown_added))),
             }
         }
     }
@@ -145,6 +162,29 @@ fn unified_with(
 #[cfg(test)]
 mod tests {
     use super::unified;
+
+    #[test]
+    fn tk_s_own_added_lines_are_shown_as_they_will_be_written() {
+        // Fix pass review R2: the shape rules rewrote an entry's URL, image
+        // digest and arguments, which the user must see to judge the entry.
+        // Added lines come from tk's rendering, which refuses literal
+        // credentials, so they take only the key, scheme and URL rules.
+        let hex = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f9";
+        let new = format!("url = \"https://mcp.context7.com.{hex}.io/mcp\"\nimage = \"img@sha256:{hex}\"\napi_key = \"x\"\n");
+        let d = super::unified_redacted("", &new, "a", "b");
+        assert!(
+            d.contains(&format!("+url = \"https://mcp.context7.com.{hex}.io/mcp\"")),
+            "{d}"
+        );
+        assert!(d.contains(&format!("+image = \"img@sha256:{hex}\"")), "{d}");
+        assert!(d.contains("+api_key = \"[redacted]\""), "{d}");
+        // The same text in the user's own lines is still redacted.
+        let d = super::unified_redacted(&new, &format!("{new}x = 1\n"), "a", "b");
+        assert!(
+            d.contains(" url = \"https://mcp.context7.com.[redacted].io/mcp\""),
+            "{d}"
+        );
+    }
 
     #[test]
     fn equal_texts_have_no_diff() {

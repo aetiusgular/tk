@@ -51,4 +51,24 @@ describe("opt-in checks in the validate path", () => {
       delete process.env["TK_LIBRARY_ONLINE"];
     }
   });
+
+  it("hands skills-ref an absolute folder, so the caller's working folder and a leading dash do not matter", async () => {
+    // Fix pass security review, R7.
+    const seen: string[][] = [];
+    const exec = (async (_f: string, args: string[]) => {
+      seen.push(args);
+      return { stdout: "", stderr: "" };
+    }) as never;
+    process.env["TK_LIBRARY_SKILLS_REF"] = "1";
+    try {
+      await optInChecks(loadCatalog(CATALOG_DIR), { exec });
+    } finally {
+      delete process.env["TK_LIBRARY_SKILLS_REF"];
+    }
+    expect(seen.length).toBeGreaterThan(0);
+    for (const a of seen) {
+      expect(a[0]).toBe("validate");
+      expect(a[1]?.startsWith("/")).toBe(true);
+    }
+  });
 });

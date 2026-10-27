@@ -183,7 +183,14 @@ mod tests {
         let sys = dir_with("sys", &["bwrap", "socat", "rg"]);
         let agent = dir_with("agentbin", &["rg"]);
         // The agent's folder first: refused, even though a system rg follows.
-        let e = srt(&format!("{agent}:{sys}"), true, None, &[agent.clone()], "/").unwrap_err();
+        let e = srt(
+            &format!("{agent}:{sys}"),
+            true,
+            None,
+            std::slice::from_ref(&agent),
+            "/",
+        )
+        .unwrap_err();
         assert!(e.contains("which the sandbox can write"), "{e}");
         // A folder inside a writable one counts too.
         let parent = Path::new(&agent)
@@ -198,7 +205,14 @@ mod tests {
         let e = srt(&format!(":{sys}"), true, None, &[], &agent).unwrap_err();
         assert!(e.contains("relative PATH entry"), "an empty entry: {e}");
         // The system copies, as absolute paths for srt's settings.
-        let (_, t) = srt(&format!("{sys}:{agent}"), true, None, &[agent.clone()], "/").unwrap();
+        let (_, t) = srt(
+            &format!("{sys}:{agent}"),
+            true,
+            None,
+            std::slice::from_ref(&agent),
+            "/",
+        )
+        .unwrap();
         let t = t.unwrap();
         let real = std::fs::canonicalize(&sys)
             .unwrap()
@@ -207,10 +221,7 @@ mod tests {
         assert_eq!(t.rg, format!("{real}/rg"));
         assert_eq!(t.bwrap, format!("{real}/bwrap"));
         assert!(
-            srt(&format!("{sys}"), false, None, &[], "/")
-                .unwrap()
-                .1
-                .is_none(),
+            srt(&sys, false, None, &[], "/").unwrap().1.is_none(),
             "macOS: no paths"
         );
     }

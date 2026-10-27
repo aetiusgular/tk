@@ -221,11 +221,29 @@ fn recorded_argv(program: &str, args: &[String], rest: &[String], content: bool)
             return w.clone();
         }
         let n = |v: &str| format!("[{} chars]", v.chars().count());
-        match w.strip_prefix('-') {
-            Some(_) if w.len() > 1 => match w.split_once('=') {
-                Some((flag, value)) => format!("{flag}={}", n(value)),
-                None => w.clone(),
-            },
+        // A flag is `-x` or `--name`, letters, digits and `-` after the first
+        // letter, at most 40 (review R6: `-pPROMPT`, or a prompt that starts
+        // with `-`, was kept whole).
+        let flag = |f: &str| {
+            let name = f
+                .strip_prefix("--")
+                .or_else(|| f.strip_prefix('-'))
+                .unwrap_or("");
+            let short = !f.starts_with("--");
+            name.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
+                && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+                && if short {
+                    name.len() == 1
+                } else {
+                    name.len() <= 41
+                }
+        };
+        if w == "--" {
+            return w.clone();
+        }
+        match w.split_once('=') {
+            Some((f, value)) if flag(f) => format!("{f}={}", n(value)),
+            None if flag(w) => w.clone(),
             _ => n(w),
         }
     };
@@ -740,6 +758,20 @@ mod end_to_end {
                 "pi",
                 "-p",
                 "hello there"
+            ])
+        );
+        // A run-together short flag or a word that only starts with `-` is
+        // not a flag (review R6).
+        let rest = s(&["-pSUMMARISE", "-- my plan", "--", "-v", "--model=x"]);
+        assert_eq!(
+            recorded_argv("pi", &rest, &rest, false),
+            s(&[
+                "pi",
+                "[11 chars]",
+                "[10 chars]",
+                "--",
+                "-v",
+                "--model=[1 chars]"
             ])
         );
         // With content on, a key is still redacted.

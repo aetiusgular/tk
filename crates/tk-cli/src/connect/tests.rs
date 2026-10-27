@@ -786,9 +786,10 @@ fn an_entry_that_expands_a_variable_into_its_url_is_refused() {
 // Mac test w1, finding M3: the dry run printed unchanged context lines of
 // `~/.codex/config.toml` verbatim, and two of them were API keys. Every
 // printed line (context, removed, added) goes through the redactor.
-const FAKE_OPENAI: &str = "sk-proj-Q9vT2mX8LkR4nW7pZ3aY6bC1dE5fG0hJ";
-const FAKE_ANTHROPIC: &str = "sk-ant-api03-Zk81mQ2xVb7Nc4LpRt9YwE3sDa6FgHj0";
-const FAKE_OPAQUE: &str = "Zq3vX9mK2pL8rT4wY7nB1cF6hJ0sD5gA";
+// Visibly fake, still in the shapes the redactor knows (review R8).
+const FAKE_OPENAI: &str = "sk-proj-FAKEFAKEFAKE0000000000000000000000";
+const FAKE_ANTHROPIC: &str = "sk-ant-api03-FAKEFAKEFAKE00000000000000000";
+const FAKE_OPAQUE: &str = "FAKE0FAKE1FAKE2FAKE3FAKE4FAKE5FAKE6";
 
 #[test]
 fn the_dry_run_prints_no_secret_from_the_lines_around_the_change() {
@@ -985,4 +986,26 @@ fn pi_leaves_out_an_optional_header_whose_variable_is_unset() {
     let r = go(&home, &no_env(), true, &["opencode", "--from", ef]);
     assert!(r.out.contains("CONTEXT7_API_KEY"), "{}", r.out);
     assert!(!r.out.contains("is optional"), "{}", r.out);
+}
+
+// Fix pass review R5: a TOML parse error quoted the broken line, key and
+// all. The error keeps the line and column only.
+#[test]
+fn a_toml_parse_error_does_not_quote_the_file() {
+    let home = scratch("r5");
+    fs::create_dir_all(home.join(".codex")).unwrap();
+    fs::write(
+        home.join(".codex/config.toml"),
+        "OPENAI_API_KEY = \"FAKE-not-a-key-0000000000000000\" oops\n",
+    )
+    .unwrap();
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &["codex", "--gateway", "docker", "--profile", "tk_exa"],
+    );
+    assert_eq!(r.code, 1);
+    assert!(!r.err.contains("FAKE-not-a-key"), "{}", r.err);
+    assert!(r.err.contains("line 1"), "{}", r.err);
 }

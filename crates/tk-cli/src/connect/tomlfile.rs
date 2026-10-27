@@ -90,7 +90,7 @@ pub fn set_entry(
 ) -> Result<String, TomlError> {
     let mut doc: DocumentMut = text
         .parse()
-        .map_err(|e: toml_edit::TomlError| TomlError::Parse(e.to_string()))?;
+        .map_err(|e: toml_edit::TomlError| TomlError::Parse(where_(text, &e)))?;
     let had_content = !text.trim().is_empty();
     if !doc.contains_key(container) {
         let mut parent = Table::new();
@@ -125,11 +125,26 @@ pub fn set_entry(
     Ok(doc.to_string())
 }
 
+/// Where a parse failed, as line and column only. toml_edit's own message
+/// quotes the offending line, which can hold a key (fix pass security
+/// review, R5).
+fn where_(text: &str, e: &toml_edit::TomlError) -> String {
+    match e.span() {
+        Some(span) => {
+            let before = &text[..span.start.min(text.len())];
+            let line = before.matches('\n').count() + 1;
+            let column = before.rsplit('\n').next().map_or(0, |l| l.chars().count()) + 1;
+            format!("at line {line}, column {column}")
+        }
+        None => "somewhere in the file".into(),
+    }
+}
+
 /// The new text without `[<container>.<name>]` and its sub-tables.
 pub fn remove_entry(text: &str, container: &str, name: &str) -> Result<String, TomlError> {
     let mut doc: DocumentMut = text
         .parse()
-        .map_err(|e: toml_edit::TomlError| TomlError::Parse(e.to_string()))?;
+        .map_err(|e: toml_edit::TomlError| TomlError::Parse(where_(text, &e)))?;
     let parent = doc
         .get_mut(container)
         .and_then(Item::as_table_mut)
@@ -142,7 +157,7 @@ pub fn remove_entry(text: &str, container: &str, name: &str) -> Result<String, T
 pub fn has_entry(text: &str, container: &str, name: &str) -> Result<bool, TomlError> {
     let doc: DocumentMut = text
         .parse()
-        .map_err(|e: toml_edit::TomlError| TomlError::Parse(e.to_string()))?;
+        .map_err(|e: toml_edit::TomlError| TomlError::Parse(where_(text, &e)))?;
     Ok(doc
         .get(container)
         .and_then(Item::as_table_like)

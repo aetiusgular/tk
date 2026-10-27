@@ -16,7 +16,7 @@ import type { Brand } from "./lookalikes.ts";
 import { lookalike } from "./lookalikes.ts";
 import { SERVER_ID, TOOL_NAME_CHARSET, mangle, policyKey } from "./names.ts";
 import { SECRET_LIKE, isEnvReference, scanRejects } from "./rejects.ts";
-import { checkTkSchema, checkUpstreamServerSchema } from "./schemas.ts";
+import { REPO_ROOT, checkTkSchema, checkUpstreamServerSchema } from "./schemas.ts";
 import { allowedToolsOf, parseSkillMd, validateSkillFrontmatter } from "./skill-md.ts";
 import type { Catalog, Finding, Kind, LoadedEntry, TkMeta } from "./types.ts";
 import { finding, getMeta, hasErrors, isRecord } from "./types.ts";
@@ -278,7 +278,7 @@ export function validateCatalog(catalog: Catalog, brands: Brand[]): { byEntry: M
  *  found it (BX1), nothing called them outside their unit tests. */
 export async function optInChecks(
   catalog: Catalog,
-  deps: { fetchImpl?: typeof fetch; exec?: Parameters<typeof checkSkillsRef>[1] } = {},
+  deps: { fetchImpl?: typeof fetch; exec?: Parameters<typeof checkSkillsRef>[1]; repoRoot?: string } = {},
 ): Promise<Map<string, Finding[]>> {
   const out = new Map<string, Finding[]>();
   const add = (id: string, f: Finding[]) => {
@@ -286,7 +286,10 @@ export async function optInChecks(
   };
   for (const e of catalog.entries) {
     if (e.kind === "server") add(e.id, await checkUpstreamOnline(e.data, deps.fetchImpl));
-    if (e.kind === "skill" && e.skillMd) add(e.id, await checkSkillsRef(dirname(e.skillMd.path), deps.exec));
+    // skillMd.path is relative to the repository (catalog.ts); resolved, so
+    // skills-ref never reads the caller's working folder and a name cannot
+    // start with `-` (fix pass security review, R7).
+    if (e.kind === "skill" && e.skillMd) add(e.id, await checkSkillsRef(resolve(deps.repoRoot ?? REPO_ROOT, dirname(e.skillMd.path)), deps.exec));
   }
   return out;
 }

@@ -25,13 +25,21 @@ use tk_audit_linux::redact::{secret_like, secret_word};
 
 pub const REDACTED: &str = "[redacted]";
 
-/// One printed line, redacted.
+/// One printed line from the user's own file (context or removed),
+/// redacted by every rule.
 pub fn line(s: &str) -> String {
+    runs(&added_line(s))
+}
+
+/// A line tk adds: rules 1 to 3 only. tk renders it from the entry and
+/// refuses a literal credential there (`spec.rs`), so the shape rules would
+/// only rewrite a URL, an image digest or an argument the user must see to
+/// judge the entry (fix pass security review, R2).
+pub fn added_line(s: &str) -> String {
     let s = pairs(s);
     let s = after_scheme(&s, "bearer ");
     let s = after_scheme(&s, "basic ");
-    let s = userinfo(&s);
-    runs(&s)
+    userinfo(&s)
 }
 
 fn key_char(c: char) -> bool {
@@ -66,10 +74,35 @@ fn pairs(s: &str) -> String {
             continue;
         };
         let mut j = key_end;
-        while j < c.len() && c[j] == ' ' {
+        while j < c.len() && (c[j] == ' ' || c[j] == '\t') {
             j += 1;
         }
         let is_pair = j < c.len() && (c[j] == ':' || c[j] == '=');
+        let quoted = c[i] == '"' || c[i] == '\'';
+        if !is_pair && quoted {
+            // A quoted string that is not a key: an argument, a URL. Hide
+            // the value of a secret-like `k=v` inside it, and the next
+            // quoted string after a secret-like flag (review R4).
+            out.push(c[i]);
+            out.push_str(&inner_pairs(&key));
+            out.push(c[key_end - 1]);
+            i = key_end;
+            if flag_takes_secret(&key) {
+                let mut k = i;
+                while k < c.len() && matches!(c[k], ' ' | '\t' | ',') {
+                    k += 1;
+                }
+                if k < c.len() && (c[k] == '"' || c[k] == '\'') {
+                    if let Some(e) = quoted_end(&c, k) {
+                        out.extend(&c[i..=k]);
+                        out.push_str(REDACTED);
+                        out.push(c[e]);
+                        i = e + 1;
+                    }
+                }
+            }
+            continue;
+        }
         if !is_pair || !secret_like(&key) || names_a_variable(&key) {
             out.extend(&c[i..key_end]);
             i = key_end;
@@ -82,7 +115,7 @@ fn pairs(s: &str) -> String {
             i = key_end;
             continue;
         }
-        while v < c.len() && c[v] == ' ' {
+        while v < c.len() && (c[v] == ' ' || c[v] == '\t') {
             v += 1;
         }
         out.extend(&c[i..v]);
@@ -155,6 +188,41 @@ fn is_reference(v: &str) -> bool {
     })
 }
 
+/// `--api-key=x`, `token=x`, `?api_key=x&b=1` inside one quoted string: the
+/// value after a secret-like key, to the next `&` or the end.
+fn inner_pairs(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for (n, part) in text.split('&').enumerate() {
+        if n > 0 {
+            out.push('&');
+        }
+        let key_at = part.rfind(['?', ' ']).map_or(0, |k| k + 1);
+        match part[key_at..].split_once('=') {
+            Some((k, v))
+                if !v.is_empty()
+                    && secret_like(k.trim_start_matches('-'))
+                    && !names_a_variable(k)
+                    && !is_reference(v) =>
+            {
+                out.push_str(&part[..key_at]);
+                out.push_str(k);
+                out.push('=');
+                out.push_str(REDACTED);
+            }
+            _ => out.push_str(part),
+        }
+    }
+    out
+}
+
+/// A quoted `--token` or `--api-key`, whose value is the next argument.
+fn flag_takes_secret(text: &str) -> bool {
+    text.starts_with('-')
+        && !text.contains('=')
+        && secret_like(text.trim_start_matches('-'))
+        && !names_a_variable(text)
+}
+
 /// The index of the quote that closes the one at `start`, backslash escapes
 /// skipped in double quotes (TOML literal strings have none).
 fn quoted_end(c: &[char], start: usize) -> Option<usize> {
@@ -180,7 +248,10 @@ fn after_scheme(s: &str, scheme: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut from = 0;
     while let Some(k) = lower[from..].find(scheme) {
-        let start = from + k + scheme.len();
+        let mut start = from + k + scheme.len();
+        while s[start..].starts_with([' ', '\t']) {
+            start += 1;
+        }
         out.push_str(&s[from..start]);
         let rest = &s[start..];
         let mut end = rest
@@ -309,6 +380,29 @@ mod tests {
     }
 
     #[test]
+    fn tabs_double_spaces_and_secrets_inside_quoted_arguments() {
+        // Fix pass security review, R4.
+        assert_eq!(line("api_key\t= \"abc\""), "api_key\t= \"[redacted]\"");
+        assert_eq!(line("x = \"Bearer  abc\""), "x = \"Bearer  [redacted]\"");
+        assert_eq!(
+            line("args = [\"--api-key\", \"abc\", \"--token=def\", \"run\"]"),
+            "args = [\"--api-key\", \"[redacted]\", \"--token=[redacted]\", \"run\"]"
+        );
+        assert_eq!(
+            line("\"url\": \"https://h.example/mcp?api_key=abc&mode=x\""),
+            "\"url\": \"https://h.example/mcp?api_key=[redacted]&mode=x\""
+        );
+        // Not secrets: a reference, a variable name, an ordinary flag pair.
+        for l in [
+            "args = [\"--token=${GH_TOKEN}\"]",
+            "args = [\"--profile\", \"tk_exa\"]",
+            "args = [\"--token-env-var\", \"GH_TOKEN\"]",
+        ] {
+            assert_eq!(line(l), l);
+        }
+    }
+
+    #[test]
     fn ordinary_lines_are_kept() {
         for l in [
             "[mcp_servers.exa]",
@@ -354,7 +448,7 @@ mod tests {
             "\"args\": [\"--x\", \"[redacted]\"]"
         );
         assert_eq!(
-            line("X_CUSTOM = \"Zq3vX9mK2pL8rT4wY7nB1cF6hJ0sD5gA\""),
+            line("X_CUSTOM = \"FAKE0FAKE1FAKE2FAKE3FAKE4FAKE5FAKE6\""),
             "X_CUSTOM = \"[redacted]\""
         );
         let words: String = "abcdefghij".repeat(4);
