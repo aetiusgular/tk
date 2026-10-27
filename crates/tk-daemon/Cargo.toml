@@ -11,11 +11,17 @@ description = "tk watch: the OTLP receiver, the activity log, the socket server"
 name = "tk-daemon"
 path = "src/main.rs"
 
+# Shared with lane K in wave 2 (scaffolded by integration w1): lane K edits
+# only the lines under its own `# [lane-K]` comment, in any table, and pins
+# every dependency to an exact version. scripts/lane-scope.mjs checks this.
+
 [features]
+# [lane-K]
 default = []
-# The fork's computer_use/ as copied. Lane K wires it in wave 2; it still
-# references `tauri::` in computer_use/mod.rs. activity/ and otel_receiver/
-# no longer sit behind a flag (lane B, wave 1).
+# The fork's computer_use/ as copied. Lane K wires it in wave 2 and may turn
+# it on by default here; it still references `tauri::` in
+# computer_use/mod.rs. activity/ and otel_receiver/ no longer sit behind a
+# flag (lane B, wave 1).
 computer-use = []
 
 [dependencies]
@@ -27,3 +33,7 @@ libc.workspace = true
 uuid.workspace = true
 toml.workspace = true
 base64.workspace = true
+# [lane-K]
+
+[dev-dependencies]
+# [lane-K]

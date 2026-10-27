@@ -1,0 +1,9 @@
+{
+  "name": "tk-kilo-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Kilo Code CLI plugin: lane F's OpenCode plugin with Kilo's paths, no runtime import of @opencode-ai/plugin (wave 2, lane I, T2.4)",
+  "engines": { "node": ">=22.19.0" }
+}

@@ -14,7 +14,8 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const source = path.join(here, "..", "src", "core");
-const targets = ["tk-codex-plugin", "tk-opencode-plugin"].map((p) => path.join(here, "..", "..", p, "src", "core"));
+// tk-gemini-extension and tk-kilo-plugin added by integration w1 for wave 2 lane I.
+const targets = ["tk-codex-plugin", "tk-opencode-plugin", "tk-gemini-extension", "tk-kilo-plugin"].map((p) => path.join(here, "..", "..", p, "src", "core"));
 const check = process.argv.includes("--check");
 
 // Tests stay with the canonical copy.

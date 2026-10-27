@@ -1,0 +1,9 @@
+{
+  "name": "tk-gemini-extension",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Gemini CLI extension: a BeforeTool hook on the shared gate core, with deny and allow rules in Gemini's policy TOML (wave 2, lane I, T2.4)",
+  "engines": { "node": ">=22.19.0" }
+}

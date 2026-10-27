@@ -13,6 +13,7 @@
 //! - `protocol`: the contract's Rust types.
 
 pub mod activity;
+pub mod collector;
 #[cfg(feature = "computer-use")]
 pub mod computer_use;
 pub mod otel_receiver;

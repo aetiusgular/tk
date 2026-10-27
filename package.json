@@ -11,6 +11,10 @@
     "packages/tk-claude-plugin",
     "packages/tk-codex-plugin",
     "packages/tk-opencode-plugin",
+    "packages/tk-gemini-extension",
+    "packages/tk-hermes-plugin",
+    "packages/tk-openclaw-plugin",
+    "packages/tk-kilo-plugin",
     "library"
   ],
   "scripts": {

@@ -248,9 +248,13 @@ mod tests {
                 p.id
             );
         }
+        // The verified rows carry no TODO. The `planned` rows (integration
+        // w1: the agents tk connect does not cover yet) are TODO by design.
+        let rows = serde_json::to_string(&contract["harnesses"]).unwrap();
+        assert!(!rows.contains("TODO"), "no TODO left in the verified rows");
         assert!(
-            !PRESETS_JSON.contains("TODO"),
-            "no TODO left in presets.json"
+            contract["planned"].is_array(),
+            "the planned rows are listed apart"
         );
     }
 

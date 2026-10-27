@@ -8,6 +8,6 @@
   "keywords": ["pi-package"],
   "engines": { "node": ">=22.19.0" },
   "pi": {
-    "extensions": ["./extensions/gate.ts", "./extensions/emitter.ts"]
+    "extensions": ["./extensions/gate.ts", "./extensions/emitter.ts", "./extensions/memory.ts"]
   }
 }

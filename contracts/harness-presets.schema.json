@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/contracts/harness-presets.schema.json",
+  "title": "tk harness presets",
+  "description": "contracts/harness-presets.json. `harnesses` are the rows tk connect writes for (lane C's fields, not all listed here); `planned` are agents tk does not cover yet. Every row carries `coverage` (integration w1, note AQ section 4).",
+  "type": "object",
+  "required": ["version", "harnesses", "planned"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "version": { "const": 1 },
+    "harnesses": { "type": "array", "items": { "$ref": "#/$defs/harness" } },
+    "planned": { "type": "array", "items": { "$ref": "#/$defs/planned" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+    "harness": {
+      "type": "object",
+      "required": ["id", "name", "cli", "configFiles", "format", "write", "verified", "sources", "coverage"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "cli": { "type": ["string", "null"] },
+        "configFiles": { "type": "object" },
+        "format": { "enum": ["json", "jsonc", "toml", "yaml"] },
+        "write": { "enum": ["write", "print"] },
+        "verified": { "type": "string", "pattern": "^2026-" },
+        "sources": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "coverage": { "$ref": "#/$defs/coverage" }
+      }
+    },
+    "planned": {
+      "type": "object",
+      "required": ["id", "name", "cli", "mcpFile", "toolNameForm", "verified", "coverage"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string" },
+        "cli": { "type": "string" },
+        "mcpFile": { "type": "string" },
+        "toolNameForm": { "type": "string" },
+        "verified": { "const": "TODO" },
+        "coverage": { "$ref": "#/$defs/coverage" }
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["tier", "orcaId", "gate", "failMode", "failSwitch", "ask", "shellAliases", "verifiedAt"],
+      "properties": {
+        "tier": { "enum": ["G", "A", "O", null] },
+        "orcaId": { "type": ["string", "null"] },
+        "gate": {
+          "type": "object",
+          "required": ["family", "where", "status", "wave", "lane"],
+          "properties": {
+            "family": { "enum": ["pi-extension", "command-hook", "plugin", "rules", "none"] },
+            "where": { "type": "string" },
+            "status": { "enum": ["built", "planned", "none"] },
+            "wave": { "type": ["integer", "null"] },
+            "lane": { "type": ["string", "null"], "pattern": "^[A-Z]$" },
+            "package": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "failMode": { "enum": ["blocks", "blocks-with-switch", "open", "open-on-timeout", "unknown"] },
+        "failSwitch": { "type": ["string", "null"] },
+        "ask": { "enum": ["own-prompt", "approver-or-deny", "unknown"] },
+        "shellAliases": { "type": "array", "items": { "type": "string" } },
+        "verifiedAt": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

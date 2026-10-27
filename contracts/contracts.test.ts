@@ -19,6 +19,7 @@ function validator() {
     "shapes/skill.schema.json",
     "shapes/plugin.schema.json",
     "shapes/marketplace.schema.json",
+    "harness-presets.schema.json",
   ]) {
     ajv.addSchema(read(p) as object);
   }
@@ -94,6 +95,8 @@ describe("harness presets", () => {
     const ids = presets.harnesses.map((h) => h.id);
     expect(ids).toHaveLength(14);
     expect(new Set(ids).size).toBe(14);
+    const planned = (presets as unknown as { planned: { id: string }[] }).planned.map((p) => p.id);
+    expect(new Set([...ids, ...planned]).size).toBe(29);
     for (const id of ["claude-code", "codex", "pi", "opencode", "gemini"]) expect(ids).toContain(id);
   });
 
@@ -142,5 +145,26 @@ describe("tk's own marketplaces", () => {
   it("the managed settings fragment enables exactly tk@tk", () => {
     const frag = readFileSync(join(root, "packages", "tk-claude-plugin", "managed-settings.fragment.json"), "utf8");
     expect(frag).toContain('"tk@tk"');
+  });
+});
+
+// Integration w1: the coverage fields lane J's `tk status` reads (note AQ section 4).
+describe("harness coverage", () => {
+  type Row = { id: string; coverage: { tier: string | null; orcaId: string | null; gate: { status: string } } };
+  const data = read("harness-presets.json") as { harnesses: Row[]; planned: Row[] };
+  it("the file follows harness-presets.schema.json", () => {
+    expect(check("harness-presets.schema.json", data)).toEqual([]);
+  });
+  it("covers Orca's 27 agents with note AQ's tiers: 24 G, 2 A, 1 O", () => {
+    const orca = [...data.harnesses, ...data.planned].filter((r) => r.coverage.orcaId !== null);
+    expect(orca).toHaveLength(27);
+    expect(new Set(orca.map((r) => r.coverage.orcaId)).size).toBe(27);
+    const tiers = { G: 0, A: 0, O: 0 } as Record<string, number>;
+    for (const r of orca) tiers[r.coverage.tier ?? "none"] = (tiers[r.coverage.tier ?? "none"] ?? 0) + 1;
+    expect(tiers).toEqual({ G: 24, A: 2, O: 1 });
+  });
+  it("marks built only the four wave 1 adapters", () => {
+    const built = [...data.harnesses, ...data.planned].filter((r) => r.coverage.gate.status === "built").map((r) => r.id).sort();
+    expect(built).toEqual(["claude-code", "codex", "opencode", "pi"]);
   });
 });

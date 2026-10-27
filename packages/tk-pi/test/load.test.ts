@@ -50,7 +50,7 @@ describe("default exports at load (corner case 46)", () => {
     vi.useRealTimers();
   });
 
-  it("the memory stub (lane K's file, not listed in package.json) touches nothing", () => {
+  it("the memory stub (lane K's file, listed in package.json since integration w1) touches nothing", () => {
     const { api, used } = recordingApi();
     memory(api);
     expect(used).toEqual([]);

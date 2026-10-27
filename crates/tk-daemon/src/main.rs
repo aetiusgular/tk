@@ -68,6 +68,9 @@ fn main() -> ExitCode {
             return ExitCode::from(1);
         }
     };
+    // Lane K's seam (wave 2): the Mac collector's registration and the
+    // computer-use bridge. Does nothing until lane K fills it.
+    tk_daemon::collector::start(&running.daemon, &running.paths);
     // Serves until the listener fails; `running` (and the pid file's lock)
     // lives until then.
     tk_daemon::socket::serve(listener, running.daemon.clone());

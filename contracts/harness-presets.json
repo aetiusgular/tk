@@ -1,5 +1,5 @@
 {
-  "$comment": "The per-harness table (contracts/harness-presets.json): tk session 0's skeleton, filled and verified by lane C on 27 Oct 2026, made the one table by integration w1 (crates/tk-cli embeds this file; there is no second copy). Each row is checked against the harness's own docs or source at the version named in `sources`, and where the CLI could be installed in the cloud, against what its own `mcp add` wrote into a scratch HOME (crates/tk-cli/src/connect/fixtures/recorded/). Marks inside strings: (V) read in a primary source or run; (I) inference; (NF) searched, not found. `tokens` in paths: ~ is the home folder; <project> the project root. Fields added to the skeleton by lane C: format, entryPath, entryStyle, trailingNewline, write, writeNote, envRef, homeEnv, xdgConfig. tk writes only `configFiles.user`; `project` and `managedFiles` are listed so tk can refuse them.",
+  "$comment": "The per-harness table (contracts/harness-presets.json): tk session 0's skeleton, filled and verified by lane C on 27 Oct 2026, made the one table by integration w1 (crates/tk-cli embeds this file; there is no second copy). Each row is checked against the harness's own docs or source at the version named in `sources`, and where the CLI could be installed in the cloud, against what its own `mcp add` wrote into a scratch HOME (crates/tk-cli/src/connect/fixtures/recorded/). Marks inside strings: (V) read in a primary source or run; (I) inference; (NF) searched, not found. `tokens` in paths: ~ is the home folder; <project> the project root. Fields added to the skeleton by lane C: format, entryPath, entryStyle, trailingNewline, write, writeNote, envRef, homeEnv, xdgConfig. tk writes only `configFiles.user`; `project` and `managedFiles` are listed so tk can refuse them. Integration w1 added a `coverage` object to every row (tier G, A or O; the gate's family, place, status, wave and lane; what the agent does when the gate fails and the switch that stops it; how an ask is answered; shell tools under other names; the version the coverage was read at; note AQ section 4) and a `planned` list of the 15 agents in Orca's grid that tk connect does not cover yet, with TODO where note AQ found nothing. Wave 4 lane Q moves a row from `planned` to `harnesses` when it verifies the connect fields. Schema: harness-presets.schema.json.",
   "version": 1,
   "harnesses": [
     {
@@ -70,7 +70,24 @@
         "code.claude.com/docs/en/mcp and code.claude.com/docs/en/managed-mcp, read 27 Oct 2026 (managed-mcp.json paths, allowedMcpServers shapes, env expansion, reserved names, list_changed)",
         "Claude Code 2.1.311 binary strings: the managed folder holds managed-settings.json, managed-settings.d/ and managed-mcp.json; allowedMcpServers entries take exactly one of serverName (^[a-zA-Z0-9_-]+$), serverCommand, serverUrl (lane C research, batch 1, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "claude",
+        "gate": {
+          "family": "command-hook",
+          "where": "plugin hooks/hooks.json, PreToolUse",
+          "status": "built",
+          "wave": 1,
+          "lane": "F",
+          "package": "packages/tk-claude-plugin"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "onFailure: \"block\" (tk sets it)",
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "2.1.311, run"
+      }
     },
     {
       "id": "codex",
@@ -126,7 +143,25 @@
         "github.com/openai/codex at rust-v0.164.0 (6aaac69): codex-rs/config/src/mcp_types.rs, core/src/config/edit.rs, cli/src/mcp_cmd.rs, codex-mcp/src/tools.rs, config/src/config_requirements.rs, config/src/loader/mod.rs (lane C research, batch 1, 27 Oct 2026)"
       ],
       "verified": "2026-10-27",
-      "allowlist": "requirements.toml: once [mcp_servers] exists it is an allowlist; [mcp_servers.<name>.identity] command = \"<cmd>\" matches the command string only, url = \"<url>\" matches exactly, and a matcher form pins executable and every arg; an unlisted server is forced to enabled=false (V, config/src/mcp_requirements.rs#L50-L89, core/src/config/mod.rs#L2248-L2271). macOS also reads MDM preferences com.openai.codex (requirements_toml_base64)"
+      "allowlist": "requirements.toml: once [mcp_servers] exists it is an allowlist; [mcp_servers.<name>.identity] command = \"<cmd>\" matches the command string only, url = \"<url>\" matches exactly, and a matcher form pins executable and every arg; an unlisted server is forced to enabled=false (V, config/src/mcp_requirements.rs#L50-L89, core/src/config/mod.rs#L2248-L2271). macOS also reads MDM preferences com.openai.codex (requirements_toml_base64)",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "codex",
+        "gate": {
+          "family": "command-hook",
+          "where": "plugin hooks/hooks.json, PreToolUse, exit 2",
+          "status": "built",
+          "wave": 1,
+          "lane": "F",
+          "package": "packages/tk-codex-plugin"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "0.163.0, run",
+        "note": "Codex's sandbox, approvals and requirements.toml are the lock; the hook is best-effort"
+      }
     },
     {
       "id": "pi",
@@ -179,7 +214,24 @@
         "github.com/earendil-works/pi at v1.4.0: packages/coding-agent/src/core/mcp-servers.ts, extensions/mcp/config.ts, cli.ts, tools.ts, runtime.ts, core/resolve-config-value.ts, docs/mcp.md (lane C research, batch 1, 27 Oct 2026)"
       ],
       "verified": "2026-10-27",
-      "homeEnv": "PI_CODING_AGENT_DIR"
+      "homeEnv": "PI_CODING_AGENT_DIR",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "pi",
+        "gate": {
+          "family": "pi-extension",
+          "where": "tk-pi package, tool_call",
+          "status": "built",
+          "wave": 1,
+          "lane": "A",
+          "package": "packages/tk-pi"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "1.4.0, run"
+      }
     },
     {
       "id": "opencode",
@@ -241,7 +293,24 @@
         "note AP section 4 (opencode.ai/docs/mcp-servers/, /plugins/)"
       ],
       "verified": "2026-10-27",
-      "notes": "Files in ~/.config/opencode (XDG_CONFIG_HOME) merge config.json, then opencode.json, then opencode.jsonc; `opencode mcp add` writes opencode.json by default, and the loader seeds opencode.jsonc with only $schema on first run (V, config/config.ts#L141-L148, #L259-L276; cli/cmd/mcp.ts#L394-L410). tk writes opencode.json too. JSONC with trailing commas (jsonc-parser). Entry: local {type, command as one argv array, cwd, environment, enabled, timeout ms} or remote {type, url, headers, oauth, enabled, timeout}; no SSE value (V, packages/core/src/v1/config/mcp.ts#L6-L62). {env:VAR} and {file:path} are substituted in the raw file text before parsing, and a missing variable becomes empty (V, config/variable.ts#L33-L38), so tk refuses both forms in entry values. `opencode mcp add` edits with jsonc-parser modify, keeps comments and appends no newline (V). The macOS plist domain ai.opencode.managed is managed too."
+      "notes": "Files in ~/.config/opencode (XDG_CONFIG_HOME) merge config.json, then opencode.json, then opencode.jsonc; `opencode mcp add` writes opencode.json by default, and the loader seeds opencode.jsonc with only $schema on first run (V, config/config.ts#L141-L148, #L259-L276; cli/cmd/mcp.ts#L394-L410). tk writes opencode.json too. JSONC with trailing commas (jsonc-parser). Entry: local {type, command as one argv array, cwd, environment, enabled, timeout ms} or remote {type, url, headers, oauth, enabled, timeout}; no SSE value (V, packages/core/src/v1/config/mcp.ts#L6-L62). {env:VAR} and {file:path} are substituted in the raw file text before parsing, and a missing variable becomes empty (V, config/variable.ts#L33-L38), so tk refuses both forms in entry values. `opencode mcp add` edits with jsonc-parser modify, keeps comments and appends no newline (V). The macOS plist domain ai.opencode.managed is managed too.",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "opencode",
+        "gate": {
+          "family": "plugin",
+          "where": "plugin tool.execute.before",
+          "status": "built",
+          "wave": 1,
+          "lane": "F",
+          "package": "packages/tk-opencode-plugin"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "1.19.4, source"
+      }
     },
     {
       "id": "gemini",
@@ -301,7 +370,25 @@
         "note AP section 4 (geminicli.com/docs/tools/mcp-server/)",
         "github.com/google-gemini/gemini-cli at v0.65.0: packages/core/src/config/config.ts, tools/mcp-client.ts, tools/mcp-tool.ts, cli/src/config/settings.ts, cli/src/utils/envVarResolver.ts, cli/src/commands/mcp/add.ts, cli/src/utils/commentJson.ts (lane C research, batch 1, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "gemini",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.gemini/settings.json BeforeTool, or an extension's hooks/hooks.json",
+          "status": "planned",
+          "wave": 2,
+          "lane": "I",
+          "package": "packages/tk-gemini-extension"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "0.65.0, source",
+        "note": "a hook cannot approve; pair with deny and allow rules in ~/.gemini/policies"
+      }
     },
     {
       "id": "cursor",
@@ -334,7 +421,24 @@
       "sources": [
         "cursor.com/docs/context/mcp and cursor.com/docs/cli/mcp, read through Exa 27 Oct 2026 (no version stamp)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "cursor",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.cursor/hooks.json version 1: preToolUse, beforeShellExecution, beforeMCPExecution",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "failClosed: true",
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "2026.10.22, docs",
+        "note": "needs an account: fixtures only unless call 8 buys a seat"
+      }
     },
     {
       "id": "hermes",
@@ -377,7 +481,24 @@
       "sources": [
         "github.com/NousResearch/hermes-agent at v2026.9.24: hermes_constants.py, hermes_cli/mcp_config.py#L232-L243 and #L611-L640, website/docs/reference/mcp-config-reference.md, tools/mcp_tool_schema.py, tools/mcp_tool_health.py (lane C research, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "hermes",
+        "gate": {
+          "family": "plugin",
+          "where": "Python plugin pre_tool_call in ~/.hermes/plugins/<tk>/",
+          "status": "planned",
+          "wave": 2,
+          "lane": "I",
+          "package": "packages/tk-hermes-plugin"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "v0.22.5, source"
+      }
     },
     {
       "id": "openclaw",
@@ -420,7 +541,25 @@
       "sources": [
         "github.com/openclaw/openclaw at v2026.10.8: src/config/paths.ts, src/agents/mcp-transport-config.ts, src/config/env-substitution.ts, src/cli/mcp-cli.ts#L948-L1010, docs/tools/mcp.md, docs/cli/mcp/transports.md (lane C research, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": null,
+        "orcaId": null,
+        "gate": {
+          "family": "plugin",
+          "where": "OpenClaw plugin",
+          "status": "planned",
+          "wave": 2,
+          "lane": "I",
+          "package": "packages/tk-openclaw-plugin"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "unknown",
+        "shellAliases": [],
+        "verifiedAt": "NF",
+        "note": "not in Orca's grid; kept from the toolkit plan"
+      }
     },
     {
       "id": "goose",
@@ -457,7 +596,24 @@
       "sources": [
         "github.com/block/goose at v1.56.0: crates/goose/src/config/base.rs, config/paths.rs, config/extensions.rs, agents/extension.rs, mcp_client.rs; lunacookies/etcetera v0.11.0 src/app_strategy.rs (lane C research, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "goose",
+        "gate": {
+          "family": "plugin",
+          "where": "plugin ~/.agents/plugins/<tk>/hooks/hooks.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "on_failure: \"block\"",
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "1.56.0, source",
+        "note": "Auto mode, the default, asks nothing; tk run sets GOOSE_MODE=approve when the policy has asks"
+      }
     },
     {
       "id": "qwen-code",
@@ -504,7 +660,24 @@
         "github.com/QwenLM/qwen-code at v0.26.1: packages/core/src/config/storage.ts, config/mcp-server-config.ts, utils/envVarResolver.ts, utils/tool-name-utils.ts, cli/src/commands/mcp/add.ts, cli/src/utils/jsonc-editor.ts, cli/src/config/storage-paths-lite.ts (lane C research, batch 1, 27 Oct 2026)"
       ],
       "verified": "2026-10-27",
-      "homeEnv": "QWEN_HOME"
+      "homeEnv": "QWEN_HOME",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "qwen-code",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.qwen/settings.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "0.26.1, source",
+        "note": "ask becomes deny in -p, background subagents and ACP"
+      }
     },
     {
       "id": "copilot-cli",
@@ -548,7 +721,23 @@
       ],
       "verified": "2026-10-27",
       "homeEnv": "COPILOT_HOME",
-      "envRefWholeValue": true
+      "envRefWholeValue": true,
+      "coverage": {
+        "tier": "G",
+        "orcaId": "copilot",
+        "gate": {
+          "family": "command-hook",
+          "where": "own file ~/.copilot/hooks/<tk>.json, preToolUse with permissionRequest",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open-on-timeout",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "1.0.104, docs"
+      }
     },
     {
       "id": "amp",
@@ -591,7 +780,24 @@
       "sources": [
         "ampcode.com/docs/customize/mcp, ampcode.com/docs/cli/settings and ampcode.com/cli-settings.schema.json, read through Exa 27 Oct 2026 (no version stamp)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "amp",
+        "gate": {
+          "family": "plugin",
+          "where": "Bun plugin ~/.config/amp/plugins/<tk>.ts, tool.call",
+          "status": "planned",
+          "wave": 4,
+          "lane": "P"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "0.0.1793104576, types",
+        "note": "needs an account: fixtures only unless call 8 buys a seat"
+      }
     },
     {
       "id": "crush",
@@ -629,7 +835,23 @@
       "sources": [
         "github.com/charmbracelet/crush at v0.98.2: README.md, docs/config/README.md, internal/config/load.go, internal/config/config.go#L209-L265, internal/shellconfig/mcp.go, internal/agent/tools/mcp-tools.go (lane C research, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "crush",
+        "gate": {
+          "family": "command-hook",
+          "where": "hooks in ~/.config/crush/crush.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "0.98.2, source"
+      }
     },
     {
       "id": "zed",
@@ -663,7 +885,413 @@
       "sources": [
         "github.com/zed-industries/zed at v1.25.3: crates/paths/src/paths.rs, crates/settings_content/src/project.rs and settings_content.rs, crates/agent/src/thread.rs, docs/src/ai/mcp.md (lane C research, 27 Oct 2026)"
       ],
-      "verified": "2026-10-27"
+      "verified": "2026-10-27",
+      "coverage": {
+        "tier": null,
+        "orcaId": null,
+        "gate": {
+          "family": "none",
+          "where": "none: tk connect writes its MCP file only",
+          "status": "none",
+          "wave": null,
+          "lane": null
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "unknown",
+        "shellAliases": [],
+        "verifiedAt": "NF",
+        "note": "not in Orca's grid"
+      }
+    }
+  ],
+  "planned": [
+    {
+      "id": "grok",
+      "name": "Grok Build",
+      "cli": "grok",
+      "mcpFile": "~/.grok/config.toml [mcp_servers.<n>]",
+      "toolNameForm": "s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "grok",
+        "gate": {
+          "family": "command-hook",
+          "where": "own file ~/.grok/hooks/<tk>.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "failClosed: true",
+        "ask": "own-prompt",
+        "shellAliases": [
+          "run_terminal_command"
+        ],
+        "verifiedAt": "1.0.71, embedded docs",
+        "note": "also reads Claude Code's and Cursor's hook files: turn its compat imports off"
+      }
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity CLI",
+      "cli": "TODO",
+      "mcpFile": "~/.gemini/config/mcp_config.json",
+      "toolNameForm": "NF",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "antigravity",
+        "gate": {
+          "family": "command-hook",
+          "where": "a named bundle in ~/.gemini/config/hooks.json (shared with the app and IDE), PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [
+          "run_command"
+        ],
+        "verifiedAt": "changelog 1.4.8, docs"
+      }
+    },
+    {
+      "id": "openclaude",
+      "name": "OpenClaude",
+      "cli": "TODO",
+      "mcpFile": "~/.openclaude.json",
+      "toolNameForm": "mcp__s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "openclaude",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.openclaude/settings.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "0.33.0, bundle"
+      }
+    },
+    {
+      "id": "oh-my-pi",
+      "name": "oh-my-pi",
+      "cli": "omp",
+      "mcpFile": "~/.omp/agent/mcp.json",
+      "toolNameForm": "mcp__s_t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "omp",
+        "gate": {
+          "family": "pi-extension",
+          "where": "the tk-pi package, omp install",
+          "status": "planned",
+          "wave": 2,
+          "lane": "I"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "18.13.1, source",
+        "note": "its default approval mode is yolo, so the gate is its only check"
+      }
+    },
+    {
+      "id": "auggie",
+      "name": "Auggie",
+      "cli": "TODO",
+      "mcpFile": "~/.augment/settings.json",
+      "toolNameForm": "t_s",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "aug",
+        "gate": {
+          "family": "command-hook",
+          "where": "PreToolUse in ~/.augment/settings.json, or a script-policy rule",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [
+          "launch-process"
+        ],
+        "verifiedAt": "0.36.0, npm",
+        "note": "needs an account: fixtures only unless call 8 buys a seat"
+      }
+    },
+    {
+      "id": "cline",
+      "name": "Cline CLI",
+      "cli": "cline",
+      "mcpFile": "~/.cline/data/settings/cline_mcp_settings.json",
+      "toolNameForm": "s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "cline",
+        "gate": {
+          "family": "plugin",
+          "where": "the approval-file callback (CLINE_TOOL_APPROVAL_MODE=desktop, --auto-approve false)",
+          "status": "planned",
+          "wave": 4,
+          "lane": "P"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [
+          "run_commands"
+        ],
+        "verifiedAt": "3.0.74, source",
+        "note": "Orca launches it with --auto-approve true, which skips the approval file"
+      }
+    },
+    {
+      "id": "codebuff",
+      "name": "Codebuff",
+      "cli": "TODO",
+      "mcpFile": "~/.agents/mcp.json",
+      "toolNameForm": "s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "O",
+        "orcaId": "codebuff",
+        "gate": {
+          "family": "none",
+          "where": "none: tk run and tk watch only",
+          "status": "planned",
+          "wave": 4,
+          "lane": "R"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "unknown",
+        "shellAliases": [],
+        "verifiedAt": "1.0.688, source",
+        "note": "needs an account"
+      }
+    },
+    {
+      "id": "command-code",
+      "name": "Command Code",
+      "cli": "cmd",
+      "mcpFile": "~/.commandcode/mcp.json",
+      "toolNameForm": "mcp__s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "command-code",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.commandcode/settings.json, PreToolUse",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "failClosed: true",
+        "ask": "approver-or-deny",
+        "shellAliases": [
+          "shell_command"
+        ],
+        "verifiedAt": "1.88.0, bundle",
+        "note": "strips secret-named variables from the hook's environment: the chat token comes from TK_CHAT_TOKEN_FILE"
+      }
+    },
+    {
+      "id": "continue",
+      "name": "Continue",
+      "cli": "TODO",
+      "mcpFile": "~/.continue/config.yaml mcpServers",
+      "toolNameForm": "the bare tool name",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "A",
+        "orcaId": "continue",
+        "gate": {
+          "family": "rules",
+          "where": "~/.continue/permissions.yaml",
+          "status": "planned",
+          "wave": 4,
+          "lane": "Q"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "1.5.47, bundle",
+        "note": "headless -p allows every tool unless a rule says otherwise"
+      }
+    },
+    {
+      "id": "droid",
+      "name": "Droid",
+      "cli": "droid",
+      "mcpFile": "~/.factory/mcp.json",
+      "toolNameForm": "s___t (binary), mcp__s__t (docs)",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "droid",
+        "gate": {
+          "family": "command-hook",
+          "where": "hooks in ~/.factory/settings.json beside Orca's entry; never create ~/.factory/hooks.json",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [
+          "execute"
+        ],
+        "verifiedAt": "0.250.0, binary strings",
+        "note": "needs an account: fixtures only unless call 8 buys a seat"
+      }
+    },
+    {
+      "id": "kilo",
+      "name": "Kilo Code CLI",
+      "cli": "kilo",
+      "mcpFile": "~/.config/kilo/kilo.json mcp",
+      "toolNameForm": "s_t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "kilo",
+        "gate": {
+          "family": "plugin",
+          "where": "plugin ~/.config/kilo/plugin/<tk>.ts, tool.execute.before",
+          "status": "planned",
+          "wave": 2,
+          "lane": "I"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "7.8.18, source",
+        "note": "fail mode inferred; Kilo never fires permission.ask"
+      }
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi Code",
+      "cli": "kimi",
+      "mcpFile": "~/.kimi-code/mcp.json",
+      "toolNameForm": "mcp__s__t",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "kimi",
+        "gate": {
+          "family": "command-hook",
+          "where": "[[hooks]] in ~/.kimi-code/config.toml, exactly four keys",
+          "status": "planned",
+          "wave": 4,
+          "lane": "L"
+        },
+        "failMode": "open",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "2.3.3, npm"
+      }
+    },
+    {
+      "id": "kiro",
+      "name": "Kiro CLI",
+      "cli": "kiro-cli",
+      "mcpFile": "~/.kiro/settings/mcp.json",
+      "toolNameForm": "mcp_s_t (hooks)",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "kiro",
+        "gate": {
+          "family": "command-hook",
+          "where": "a version 1 hook file in ~/.kiro/hooks/, PreToolUse, exit codes only",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "blocks",
+        "failSwitch": null,
+        "ask": "approver-or-deny",
+        "shellAliases": [],
+        "verifiedAt": "2.34.0, docs",
+        "note": "stdout on exit 0 goes into the model's context; needs an account"
+      }
+    },
+    {
+      "id": "mistral-vibe",
+      "name": "Mistral Vibe",
+      "cli": "TODO",
+      "mcpFile": "~/.vibe/config.toml [[mcp_servers]]",
+      "toolNameForm": "mcp_s.t (hooks), s_t (model)",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "G",
+        "orcaId": "mistral-vibe",
+        "gate": {
+          "family": "command-hook",
+          "where": "~/.vibe/hooks.toml, pre_tool",
+          "status": "planned",
+          "wave": 4,
+          "lane": "N"
+        },
+        "failMode": "blocks-with-switch",
+        "failSwitch": "strict = true",
+        "ask": "approver-or-deny",
+        "shellAliases": [
+          "file_system.bash",
+          "process.start"
+        ],
+        "verifiedAt": "3.0.3, source",
+        "note": "exit 2 counts as a failure, not a deny"
+      }
+    },
+    {
+      "id": "rovo-dev",
+      "name": "Rovo Dev",
+      "cli": "TODO",
+      "mcpFile": "~/.rovodev/mcp.json or mcp_config.json (its pages disagree)",
+      "toolNameForm": "NF",
+      "verified": "TODO",
+      "coverage": {
+        "tier": "A",
+        "orcaId": "rovo",
+        "gate": {
+          "family": "rules",
+          "where": "toolPermissions in ~/.rovodev/config.yml",
+          "status": "planned",
+          "wave": 4,
+          "lane": "Q"
+        },
+        "failMode": "unknown",
+        "failSwitch": null,
+        "ask": "own-prompt",
+        "shellAliases": [],
+        "verifiedAt": "NF",
+        "note": "its only gate is server mode's pause-and-resume API; needs an account"
+      }
     }
   ]
 }
