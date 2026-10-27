@@ -514,6 +514,7 @@ fn connect(args: &[String], o: &Opts, preset: &Preset, ctx: &mut Ctx) -> Result<
             ));
         }
     }
+    let spec = spec.map(|s| pi_optional_headers(preset, s, ctx));
     if o.check_profile {
         let profile = o
             .profile
@@ -743,6 +744,37 @@ fn connect(args: &[String], o: &Opts, preset: &Preset, ctx: &mut Ctx) -> Result<
             .map_or(String::new(), |b| format!(" Backup: {}.", b.display()))
     ));
     Ok(0)
+}
+
+/// Pi 1.4.0 refuses a server whose header names an unset or empty variable
+/// ("Failed to resolve MCP server ... from environment variable", box test
+/// w1 E8 and a cloud run of `pi mcp list`). For Pi, a header the entry marks
+/// optional (`isRequired: false`) is left out while its variable is unset,
+/// and the output says so (BX6). The diff `--write` prints is computed the
+/// same way, so what is confirmed is what is written.
+fn pi_optional_headers(preset: &Preset, mut spec: ServerSpec, ctx: &mut Ctx) -> ServerSpec {
+    if preset.id != "pi" {
+        return spec;
+    }
+    if let spec::Transport::Http { headers, .. } = &mut spec.transport {
+        let env = ctx.env;
+        let mut left_out = Vec::new();
+        headers.retain(|h| match &h.value {
+            spec::HeaderValue::Ref { var, .. }
+                if h.optional && env.var(var).is_none_or(|v| v.is_empty()) =>
+            {
+                left_out.push((h.name.clone(), var.clone()));
+                false
+            }
+            _ => true,
+        });
+        for (name, var) in left_out {
+            ctx.out.push_str(&format!(
+                "note:   {name} is optional for this server and {var} is not set; Pi refuses a server whose header variable is unset, so tk leaves the header out. Set {var} and run again with --replace to add it.\n"
+            ));
+        }
+    }
+    spec
 }
 
 /// Whether the server is in the file already (for the log's `replace`).

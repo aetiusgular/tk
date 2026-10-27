@@ -70,7 +70,7 @@ fn pairs(s: &str) -> String {
             j += 1;
         }
         let is_pair = j < c.len() && (c[j] == ':' || c[j] == '=');
-        if !is_pair || !secret_like(&key) {
+        if !is_pair || !secret_like(&key) || names_a_variable(&key) {
             out.extend(&c[i..key_end]);
             i = key_end;
             continue;
@@ -96,6 +96,10 @@ fn pairs(s: &str) -> String {
                 i = v;
             }
             '"' | '\'' => match quoted_end(&c, v) {
+                Some(e) if is_reference(&c[v + 1..e].iter().collect::<String>()) => {
+                    out.extend(&c[v..=e]);
+                    i = e + 1;
+                }
                 Some(e) => {
                     out.push(c[v]);
                     out.push_str(REDACTED);
@@ -121,6 +125,32 @@ fn pairs(s: &str) -> String {
         }
     }
     out
+}
+
+/// A key whose value is the name of a variable, not its value: Codex's
+/// `bearer_token_env_var`, `env_vars`. The name is kept.
+fn names_a_variable(key: &str) -> bool {
+    let k = key.to_ascii_lowercase().replace(['_', '-'], "");
+    k.ends_with("envvar") || k.ends_with("envvars")
+}
+
+/// A value that names a variable the harness reads at start, not a secret:
+/// `${VAR}` (Claude Code, Codex, Pi), `{env:VAR}` (OpenCode), optionally
+/// after an auth scheme (`Bearer ${VAR}`). tk writes these itself; hiding
+/// them would hide what the entry does.
+fn is_reference(v: &str) -> bool {
+    let v = match v.split_once(' ') {
+        Some((scheme, rest)) if scheme.chars().all(|c| c.is_ascii_alphabetic()) => rest,
+        _ => v,
+    };
+    let name = v
+        .strip_prefix("${")
+        .and_then(|r| r.strip_suffix('}'))
+        .or_else(|| v.strip_prefix("{env:").and_then(|r| r.strip_suffix('}')));
+    name.is_some_and(|n| {
+        n.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+            && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    })
 }
 
 /// The index of the quote that closes the one at `start`, backslash escapes
@@ -151,10 +181,16 @@ fn after_scheme(s: &str, scheme: &str) -> String {
         let start = from + k + scheme.len();
         out.push_str(&s[from..start]);
         let rest = &s[start..];
-        let end = rest
+        let mut end = rest
             .find(|ch: char| matches!(ch, '"' | '\'' | ' ' | ',' | '}' | ']'))
             .unwrap_or(rest.len());
-        if end > 0 && !rest[..end].starts_with(REDACTED) {
+        // `${VAR}` and `{env:VAR}` end at their own brace.
+        if rest.starts_with("${") || rest.starts_with("{env:") {
+            if let Some(close) = rest.find('}') {
+                end = close + 1;
+            }
+        }
+        if end > 0 && !rest[..end].starts_with(REDACTED) && !is_reference(&rest[..end]) {
             out.push_str(REDACTED);
         } else {
             out.push_str(&rest[..end]);
@@ -253,6 +289,23 @@ mod tests {
         assert_eq!(
             line(r#""token": "a\"b", "n": 1"#),
             r#""token": "[redacted]", "n": 1"#
+        );
+    }
+
+    #[test]
+    fn variable_references_are_not_secrets() {
+        for l in [
+            "        \"CONTEXT7_API_KEY\": \"${CONTEXT7_API_KEY}\"",
+            "        \"Authorization\": \"Bearer ${TK_GATEWAY_TOKEN}\"",
+            "      \"x-api-key\": \"{env:EXA_API_KEY}\",",
+            "bearer_token_env_var = \"TK_GATEWAY_TOKEN\"",
+        ] {
+            assert_eq!(line(l), l);
+        }
+        // Text around a reference is not a reference.
+        assert_eq!(
+            line("\"token\": \"abc${X}\""),
+            "\"token\": \"[redacted]\""
         );
     }
 

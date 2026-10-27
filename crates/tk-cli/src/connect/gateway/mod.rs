@@ -63,6 +63,7 @@ pub fn docker_spec(
                         prefix: "Bearer ".into(),
                         var: v.to_string(),
                     },
+                    optional: false,
                 })
                 .into_iter()
                 .collect(),

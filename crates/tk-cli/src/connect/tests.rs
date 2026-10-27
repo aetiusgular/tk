@@ -63,6 +63,7 @@ fn bearer(var: &str) -> Header {
             prefix: "Bearer ".into(),
             var: var.into(),
         },
+        optional: false,
     }
 }
 
@@ -73,6 +74,7 @@ fn header(name: &str, var: &str) -> Header {
             prefix: String::new(),
             var: var.into(),
         },
+        optional: false,
     }
 }
 
@@ -896,4 +898,30 @@ fn the_codex_allowlist_pins_the_arguments_of_a_stdio_server() {
     let cmd = &v["mcp_servers"]["exa"]["identity"]["command"];
     assert_eq!(cmd["executable"].as_str(), Some("docker"));
     assert_eq!(cmd["args"].as_array().unwrap().len(), 5);
+}
+
+// Box test w1, BX6: Pi 1.4.0 refuses a server whose header variable is
+// unset or empty ("Failed to resolve MCP server ... from environment
+// variable", run on the box and in the cloud). Context7's key is optional
+// (`isRequired: false`), so for Pi tk leaves an optional header out while
+// its variable is unset, and says so; with the variable set it is kept.
+#[test]
+fn pi_leaves_out_an_optional_header_whose_variable_is_unset() {
+    let home = scratch("bx6");
+    fs::create_dir_all(home.join(".pi/agent")).unwrap();
+    let e = home.join("context7.json");
+    fs::write(&e, include_str!("../../../../library/catalog/context7/server.json")).unwrap();
+    let ef = e.to_str().unwrap();
+    let r = go(&home, &no_env(), true, &["pi", "--from", ef]);
+    assert_eq!(r.code, 0, "{}", r.err);
+    assert!(!r.out.contains("+        \"CONTEXT7_API_KEY\""), "{}", r.out);
+    assert!(r.out.contains("CONTEXT7_API_KEY is optional"), "{}", r.out);
+    let set = MapEnv(HashMap::from([("CONTEXT7_API_KEY".to_string(), "k".to_string())]));
+    let r = go(&home, &set, true, &["pi", "--from", ef]);
+    assert!(r.out.contains("\"CONTEXT7_API_KEY\": \"${CONTEXT7_API_KEY}\""), "{}", r.out);
+    // Another harness keeps the header: only Pi refuses an unset variable.
+    fs::create_dir_all(home.join(".config/opencode")).unwrap();
+    let r = go(&home, &no_env(), true, &["opencode", "--from", ef]);
+    assert!(r.out.contains("CONTEXT7_API_KEY"), "{}", r.out);
+    assert!(!r.out.contains("is optional"), "{}", r.out);
 }

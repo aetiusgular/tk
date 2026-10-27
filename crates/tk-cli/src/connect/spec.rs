@@ -51,6 +51,11 @@ pub enum HeaderValue {
 pub struct Header {
     pub name: String,
     pub value: HeaderValue,
+    /// The entry says `isRequired: false` in so many words (upstream's
+    /// default is false, but tk reads only an explicit false as optional, so
+    /// an entry that says nothing keeps its header). Pi leaves such a header
+    /// out while its variable is unset (box test w1, BX6).
+    pub optional: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -441,6 +446,7 @@ fn remote_transport(file: &str, doc: &J) -> Result<(Transport, Vec<EnvRef>), Str
         headers.push(Header {
             name: name.to_string(),
             value: header_value(name, h.get("value").and_then(J::as_str), secret)?,
+            optional: h.get("isRequired").and_then(J::as_bool) == Some(false),
         });
     }
     Ok((Transport::Http { kind, url, headers }, Vec::new()))
