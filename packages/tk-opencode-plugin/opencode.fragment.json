@@ -1,0 +1,10 @@
+{
+  "$comment": "A fragment for ~/.config/opencode/opencode.json. `plugin` loads the tk gate; `permission` keeps OpenCode's own prompts as a second layer for the tools that run or write (keys from OpenCode 1.19.4, packages/core/src/v1/config/permission.ts). tk connect prints this; it never writes a project-level opencode.json.",
+  "plugin": ["tk-opencode-plugin"],
+  "permission": {
+    "bash": "ask",
+    "edit": "ask",
+    "webfetch": "ask",
+    "external_directory": "ask"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "$comment": "A fragment for an admin's managed-settings.json (macOS /Library/Application Support/ClaudeCode/, Linux /etc/claude-code/). tk never writes it (rules corner case 65); `tk connect claude-code --allowlist` prints it. enabledPlugins force-enables the tk plugin by its full plugin@marketplace id: without it, allowManagedHooksOnly blocks the plugin's hooks too. Replace the example server with your own entries. Read in Claude Code's managed settings and settings reference, 27 Oct 2026.",
+  "allowManagedHooksOnly": true,
+  "enabledPlugins": { "tk@tk": true },
+  "allowManagedMcpServersOnly": true,
+  "allowedMcpServers": [
+    { "serverCommand": ["docker", "mcp", "gateway", "run", "--profile", "tk_example"] }
+  ]
+}

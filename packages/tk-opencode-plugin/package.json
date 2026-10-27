@@ -5,5 +5,8 @@
   "type": "module",
   "license": "MIT",
   "description": "OpenCode plugin: tool.execute.before and after (lane F, T2.3)",
+  "main": "./src/plugin.ts",
+  "exports": { "./server": "./src/plugin.ts" },
+  "files": ["src/plugin.ts", "src/opencode.ts", "src/core/", "README.md", "opencode.fragment.json"],
   "engines": { "node": ">=22.19.0" }
 }
