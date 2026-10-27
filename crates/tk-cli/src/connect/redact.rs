@@ -148,7 +148,9 @@ fn is_reference(v: &str) -> bool {
         .and_then(|r| r.strip_suffix('}'))
         .or_else(|| v.strip_prefix("{env:").and_then(|r| r.strip_suffix('}')));
     name.is_some_and(|n| {
-        n.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        n.chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
             && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
     })
 }
@@ -182,7 +184,7 @@ fn after_scheme(s: &str, scheme: &str) -> String {
         out.push_str(&s[from..start]);
         let rest = &s[start..];
         let mut end = rest
-            .find(|ch: char| matches!(ch, '"' | '\'' | ' ' | ',' | '}' | ']'))
+            .find(['"', '\'', ' ', ',', '}', ']'])
             .unwrap_or(rest.len());
         // `${VAR}` and `{env:VAR}` end at their own brace.
         if rest.starts_with("${") || rest.starts_with("{env:") {
@@ -210,7 +212,7 @@ fn userinfo(s: &str) -> String {
         out.push_str(&s[from..auth_start]);
         let rest = &s[auth_start..];
         let auth_end = rest
-            .find(|ch: char| matches!(ch, '/' | '"' | '\'' | ' ' | '?' | '#'))
+            .find(['/', '"', '\'', ' ', '?', '#'])
             .unwrap_or(rest.len());
         let auth = &rest[..auth_end];
         match (auth.rfind('@'), auth.find(':')) {
@@ -303,10 +305,7 @@ mod tests {
             assert_eq!(line(l), l);
         }
         // Text around a reference is not a reference.
-        assert_eq!(
-            line("\"token\": \"abc${X}\""),
-            "\"token\": \"[redacted]\""
-        );
+        assert_eq!(line("\"token\": \"abc${X}\""), "\"token\": \"[redacted]\"");
     }
 
     #[test]

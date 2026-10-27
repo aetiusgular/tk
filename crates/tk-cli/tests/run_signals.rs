@@ -37,7 +37,11 @@ fn signal_tk_alone(sig: libc::c_int, name: &str) {
     std::fs::create_dir_all(&dir).unwrap();
     fake_pi(&dir);
     let out = dir.join("seen");
-    let path = format!("{}:{}", dir.display(), std::env::var("PATH").unwrap_or_default());
+    let path = format!(
+        "{}:{}",
+        dir.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
     let mut tk = Command::new(env!("CARGO_BIN_EXE_tk"))
         .args(["run", "pi", "--boundary", "none", "--no-daemon", "--cwd"])
         .arg(&dir)
@@ -58,9 +62,15 @@ fn signal_tk_alone(sig: libc::c_int, name: &str) {
     unsafe {
         libc::kill(tk.id() as libc::pid_t, sig);
     }
-    let seen = wait_for(&out, if sig == libc::SIGINT { "int" } else { "term" }, Duration::from_secs(5));
+    let seen = wait_for(
+        &out,
+        if sig == libc::SIGINT { "int" } else { "term" },
+        Duration::from_secs(5),
+    );
     // Whatever happened, do not leave the fake running.
-    let _ = Command::new("pkill").args(["-f", &dir.display().to_string()]).status();
+    let _ = Command::new("pkill")
+        .args(["-f", &dir.display().to_string()])
+        .status();
     let status = tk.wait().unwrap();
     assert!(
         seen.contains(if sig == libc::SIGINT { "int" } else { "term" }),
@@ -102,7 +112,11 @@ fn a_terminal_ctrl_c_reaches_the_harness_once() {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o755)).unwrap();
     let out = dir.join("seen");
-    let path = format!("{}:{}", dir.display(), std::env::var("PATH").unwrap_or_default());
+    let path = format!(
+        "{}:{}",
+        dir.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
     let cmd = format!(
         "'{}' run pi --boundary none --no-daemon --cwd '{}'",
         env!("CARGO_BIN_EXE_tk"),

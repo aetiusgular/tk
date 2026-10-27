@@ -20,7 +20,11 @@ use std::path::Path;
 /// A missing dependency stops the run before srt starts; the userns sysctl
 /// only warns, since an AppArmor profile can grant what the sysctl takes
 /// away and tk cannot read profiles.
-pub fn srt(path_var: &str, linux: bool, userns_sysctl: Option<&str>) -> Result<Vec<String>, String> {
+pub fn srt(
+    path_var: &str,
+    linux: bool,
+    userns_sysctl: Option<&str>,
+) -> Result<Vec<String>, String> {
     let needed: &[(&str, &str)] = if linux {
         &[
             ("bwrap", "bubblewrap"),
@@ -106,7 +110,10 @@ mod tests {
         let d = dir_with("all", &["bwrap", "socat", "rg"]);
         let n = srt(&d, true, Some("1\n")).unwrap();
         assert_eq!(n.len(), 1);
-        assert!(n[0].contains("apparmor_restrict_unprivileged_userns"), "{n:?}");
+        assert!(
+            n[0].contains("apparmor_restrict_unprivileged_userns"),
+            "{n:?}"
+        );
         assert!(srt(&d, true, Some("0")).unwrap().is_empty());
         assert!(srt(&d, true, None).unwrap().is_empty(), "no such sysctl");
         // macOS needs rg only, and has no such sysctl.

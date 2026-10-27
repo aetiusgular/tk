@@ -185,10 +185,7 @@ impl Daemon {
     /// since `tk run` started. The new token must still give daemon scope,
     /// as at the start.
     fn post_after_restart(&self, e: &Event) -> Result<(), String> {
-        let dir = self
-            .socket
-            .parent()
-            .ok_or("the socket has no folder")?;
+        let dir = self.socket.parent().ok_or("the socket has no folder")?;
         let token = client::read_daemon_token(dir).map_err(|e| e.to_string())?;
         if token == self.token {
             return Err("the token file has not changed".into());
@@ -682,11 +679,27 @@ mod end_to_end {
         let rest = s(&["-p", "hello there"]);
         assert_eq!(
             recorded_argv("srt", &args, &rest, false),
-            s(&["srt", "--settings", "/x/s.json", "--", "pi", "-p", "[11 chars]"])
+            s(&[
+                "srt",
+                "--settings",
+                "/x/s.json",
+                "--",
+                "pi",
+                "-p",
+                "[11 chars]"
+            ])
         );
         assert_eq!(
             recorded_argv("srt", &args, &rest, true),
-            s(&["srt", "--settings", "/x/s.json", "--", "pi", "-p", "hello there"])
+            s(&[
+                "srt",
+                "--settings",
+                "/x/s.json",
+                "--",
+                "pi",
+                "-p",
+                "hello there"
+            ])
         );
         // With content on, a key is still redacted.
         let rest = s(&["--api-key", "sk-ant-aaaaaaaaaaaaaaaaaaaaaaaa"]);
@@ -861,7 +874,15 @@ mod end_to_end {
         st.env.programs.push(("pi".into(), pi));
         let cwd = st.work.to_string_lossy().into_owned();
         let code = run(
-            &s(&["pi", "--boundary", "none", "--chat", "chat-r2", "--cwd", &cwd]),
+            &s(&[
+                "pi",
+                "--boundary",
+                "none",
+                "--chat",
+                "chat-r2",
+                "--cwd",
+                &cwd,
+            ]),
             &st.env,
         )
         .unwrap();
@@ -877,7 +898,10 @@ mod end_to_end {
             .filter(|l| l["op"] == "hello")
             .map(|l| l["token"].as_str().unwrap_or("").to_string())
             .collect();
-        assert_eq!(hellos.last().map(String::as_str), Some(fake::RESTARTED_TOKEN));
+        assert_eq!(
+            hellos.last().map(String::as_str),
+            Some(fake::RESTARTED_TOKEN)
+        );
     }
 
     #[test]

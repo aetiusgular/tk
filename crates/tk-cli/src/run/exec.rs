@@ -204,7 +204,10 @@ mod tests {
         assert!(!forward_sigint(0, true), "the terminal's Ctrl-C, Linux");
         assert!(!forward_sigint(0, false));
         assert!(forward_sigint(-1, false), "macOS, no terminal: a process");
-        assert!(!forward_sigint(-1, true), "macOS in the foreground: unknown");
+        assert!(
+            !forward_sigint(-1, true),
+            "macOS in the foreground: unknown"
+        );
     }
 
     #[test]

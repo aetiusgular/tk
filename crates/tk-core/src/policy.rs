@@ -1046,7 +1046,8 @@ mod tests {
             let d = evaluate(&p, &call("bash", "claude-code", text));
             assert_eq!(d.action, Action::Ask, "{text:?}");
             assert!(
-                d.reason.starts_with("shell text the matcher cannot read: `"),
+                d.reason
+                    .starts_with("shell text the matcher cannot read: `"),
                 "{}",
                 d.reason
             );

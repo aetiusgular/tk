@@ -648,14 +648,23 @@ mod tests {
             .any(|w| w.as_str().unwrap_or("").contains(".tk")));
         // A TK_POLICY anywhere but tk's own folder is not re-opened: it could
         // name a file srt hides on purpose.
-        for elsewhere in ["/home/u/.ssh/id_ed25519", "/home/u/.tk/../.ssh/x.json", "/home/u/.tk/backups/a.json", "/home/u/.tk/policy"] {
+        for elsewhere in [
+            "/home/u/.ssh/id_ed25519",
+            "/home/u/.tk/../.ssh/x.json",
+            "/home/u/.tk/backups/a.json",
+            "/home/u/.tk/policy",
+        ] {
             let mut i = inputs(&args);
             i.policy = elsewhere.into();
             let p = build(&i).unwrap();
             let s: serde_json::Value =
                 serde_json::from_str(p.srt_settings.as_deref().unwrap()).unwrap();
             assert_eq!(s["filesystem"]["allowRead"], json!([]), "{elsewhere}");
-            assert!(p.notes.iter().any(|n| n.contains("every call will ask")), "{:?}", p.notes);
+            assert!(
+                p.notes.iter().any(|n| n.contains("every call will ask")),
+                "{:?}",
+                p.notes
+            );
         }
     }
 

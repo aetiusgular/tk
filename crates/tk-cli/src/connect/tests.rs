@@ -813,7 +813,11 @@ fn the_dry_run_prints_no_secret_from_the_lines_around_the_change() {
         assert!(!r.out.contains(s), "{}", r.out);
     }
     // The context is still there, with its keys.
-    assert!(r.out.contains(" OPENAI_API_KEY = \"[redacted]\""), "{}", r.out);
+    assert!(
+        r.out.contains(" OPENAI_API_KEY = \"[redacted]\""),
+        "{}",
+        r.out
+    );
 }
 
 #[test]
@@ -826,7 +830,12 @@ fn removing_an_entry_prints_no_secret_from_its_lines() {
         ),
     )
     .unwrap();
-    let r = go(&home, &no_env(), true, &["claude-code", "--remove", "supabase"]);
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &["claude-code", "--remove", "supabase"],
+    );
     assert_eq!(r.code, 0, "{}", r.err);
     assert!(r.out.contains("-    \"supabase\": {"), "{}", r.out);
     for s in [FAKE_OPAQUE, "hunter2pass", "opaqueBearerValue"] {
@@ -858,15 +867,33 @@ fn the_allowlist_for_an_http_gateway_names_its_url() {
         ],
     );
     assert_eq!(r.code, 0, "{}", r.err);
-    assert!(r.out.contains("\"serverUrl\": \"http://127.0.0.1:8811/mcp\""), "{}", r.out);
+    assert!(
+        r.out
+            .contains("\"serverUrl\": \"http://127.0.0.1:8811/mcp\""),
+        "{}",
+        r.out
+    );
     assert!(!r.out.contains("serverCommand"), "{}", r.out);
     let r = go(
         &home,
         &no_env(),
         true,
-        &["codex", "--allowlist", "--gateway", "docker", "--profile", "tk_box", "--url", "http://127.0.0.1:8811/mcp"],
+        &[
+            "codex",
+            "--allowlist",
+            "--gateway",
+            "docker",
+            "--profile",
+            "tk_box",
+            "--url",
+            "http://127.0.0.1:8811/mcp",
+        ],
     );
-    assert!(r.out.contains("url = \"http://127.0.0.1:8811/mcp\""), "{}", r.out);
+    assert!(
+        r.out.contains("url = \"http://127.0.0.1:8811/mcp\""),
+        "{}",
+        r.out
+    );
 }
 
 // Mac test w1, M5: `identity.command = "docker"` matches any server named
@@ -880,20 +907,38 @@ fn the_codex_allowlist_pins_the_arguments_of_a_stdio_server() {
         &home,
         &no_env(),
         true,
-        &["codex", "--allowlist", "--gateway", "docker", "--profile", "tk_exa"],
+        &[
+            "codex",
+            "--allowlist",
+            "--gateway",
+            "docker",
+            "--profile",
+            "tk_exa",
+        ],
     );
     assert_eq!(r.code, 0, "{}", r.err);
-    assert!(r.out.contains("[mcp_servers.exa.identity.command]\nexecutable = \"docker\"\n"), "{}", r.out);
+    assert!(
+        r.out
+            .contains("[mcp_servers.exa.identity.command]\nexecutable = \"docker\"\n"),
+        "{}",
+        r.out
+    );
     for a in ["mcp", "gateway", "run", "--profile", "tk_exa"] {
         assert!(
-            r.out.contains(&format!("  {{ match = \"exact\", value = \"{a}\" }},\n")),
+            r.out
+                .contains(&format!("  {{ match = \"exact\", value = \"{a}\" }},\n")),
             "{a}: {}",
             r.out
         );
     }
     assert!(!r.out.contains("command = \"docker\""), "{}", r.out);
     // The fragment is TOML a parser takes, with the shape Codex documents.
-    let body: String = r.out.lines().filter(|l| !l.starts_with('#')).collect::<Vec<_>>().join("\n");
+    let body: String = r
+        .out
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+        .collect::<Vec<_>>()
+        .join("\n");
     let v: toml_edit::DocumentMut = body.parse().unwrap();
     let cmd = &v["mcp_servers"]["exa"]["identity"]["command"];
     assert_eq!(cmd["executable"].as_str(), Some("docker"));
@@ -910,15 +955,31 @@ fn pi_leaves_out_an_optional_header_whose_variable_is_unset() {
     let home = scratch("bx6");
     fs::create_dir_all(home.join(".pi/agent")).unwrap();
     let e = home.join("context7.json");
-    fs::write(&e, include_str!("../../../../library/catalog/context7/server.json")).unwrap();
+    fs::write(
+        &e,
+        include_str!("../../../../library/catalog/context7/server.json"),
+    )
+    .unwrap();
     let ef = e.to_str().unwrap();
     let r = go(&home, &no_env(), true, &["pi", "--from", ef]);
     assert_eq!(r.code, 0, "{}", r.err);
-    assert!(!r.out.contains("+        \"CONTEXT7_API_KEY\""), "{}", r.out);
+    assert!(
+        !r.out.contains("+        \"CONTEXT7_API_KEY\""),
+        "{}",
+        r.out
+    );
     assert!(r.out.contains("CONTEXT7_API_KEY is optional"), "{}", r.out);
-    let set = MapEnv(HashMap::from([("CONTEXT7_API_KEY".to_string(), "k".to_string())]));
+    let set = MapEnv(HashMap::from([(
+        "CONTEXT7_API_KEY".to_string(),
+        "k".to_string(),
+    )]));
     let r = go(&home, &set, true, &["pi", "--from", ef]);
-    assert!(r.out.contains("\"CONTEXT7_API_KEY\": \"${CONTEXT7_API_KEY}\""), "{}", r.out);
+    assert!(
+        r.out
+            .contains("\"CONTEXT7_API_KEY\": \"${CONTEXT7_API_KEY}\""),
+        "{}",
+        r.out
+    );
     // Another harness keeps the header: only Pi refuses an unset variable.
     fs::create_dir_all(home.join(".config/opencode")).unwrap();
     let r = go(&home, &no_env(), true, &["opencode", "--from", ef]);

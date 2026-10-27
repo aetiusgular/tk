@@ -91,12 +91,7 @@ pub fn docker_spec(
 /// allowlist, to confirm the profile exists before an entry names it.
 pub fn docker_profile_exists(profile: &str) -> Result<bool, String> {
     profile_exists_with(profile, |args| {
-        docker_mcp::docker_mcp(
-            args.iter().map(|a| a.to_string()).collect(),
-            None,
-            None,
-        )
-        .map(|_| ())
+        docker_mcp::docker_mcp(args.iter().map(|a| a.to_string()).collect(), None, None).map(|_| ())
     })
 }
 
@@ -130,7 +125,9 @@ mod tests {
         // Box test w1, BX5: Docker Engine 29.9.2 with no `docker mcp`.
         let no_plugin = |args: &[&str]| -> Result<(), String> {
             Err(match args {
-                ["mcp", "version"] => "docker: unknown command: docker mcp\n\nRun 'docker --help'".into(),
+                ["mcp", "version"] => {
+                    "docker: unknown command: docker mcp\n\nRun 'docker --help'".into()
+                }
                 _ => "unknown flag: --format\nSee 'docker --help'.".into(),
             })
         };
@@ -147,7 +144,10 @@ mod tests {
                 }
             }
         };
-        assert_eq!(profile_exists_with("p", with(Err("profile p not found".into()))), Ok(false));
+        assert_eq!(
+            profile_exists_with("p", with(Err("profile p not found".into()))),
+            Ok(false)
+        );
         assert_eq!(profile_exists_with("p", with(Ok(()))), Ok(true));
         assert_eq!(
             profile_exists_with("p", with(Err("daemon not running".into()))),
