@@ -55,13 +55,16 @@ export { insideFolder };
  * daemon's own `daemon.token`: a hook is not the daemon, and the daemon scope
  * can mint tokens, read every chat and become an approver (integration w1
  * decision). The file must be absolute, a regular file (not a link), yours,
- * readable by you alone, small, and outside the session folder.
+ * readable by you alone, small, outside the session folder, and not named
+ * `daemon.token` (security finding S3; `exchange` also closes when the daemon
+ * says the token it got has daemon scope).
  */
 export function chatToken(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): string | undefined {
   const fromEnv = env.TK_CHAT_TOKEN?.trim();
   if (fromEnv && HEX64.test(fromEnv)) return fromEnv;
   const file = env.TK_CHAT_TOKEN_FILE?.trim();
   if (!file || !path.isAbsolute(file) || insideFolder(file, cwd)) return undefined;
+  if (path.basename(file) === "daemon.token") return undefined;
   try {
     const st = lstatSync(file);
     if (!st.isFile() || st.size > 256) return undefined;
@@ -131,6 +134,9 @@ export async function exchange(
         }
         if (typeof reply !== "object" || reply === null) return finish({ error: "daemon sent a bad line" });
         if (replies.length === 0 && reply.ok !== true) return finish({ error: `daemon refused hello: ${String(reply.error ?? "no reason")}` });
+        // A hook is never the daemon: a token that got daemon scope (a copy of
+        // daemon.token under another name) is not used (security finding S3).
+        if (replies.length === 0 && reply.scope !== "chat") return finish({ error: "the token has daemon scope; a hook presents only a chat token" });
         replies.push(reply);
         if (replies.length === lines.length) return finish({ replies: replies.slice(1) });
         socket.write(`${JSON.stringify(lines[replies.length])}\n`);

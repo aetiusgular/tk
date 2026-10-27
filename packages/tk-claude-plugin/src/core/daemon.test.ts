@@ -61,6 +61,37 @@ describe("chatToken", () => {
   });
 });
 
+describe("a daemon-scope token is never presented (security finding S3)", () => {
+  it("refuses TK_CHAT_TOKEN_FILE naming daemon.token beside the socket", async () => {
+    const d = await startFakeDaemon({ approve: "yes" });
+    try {
+      const env = { TK_DAEMON_SOCKET: d.socket, TK_CHAT_TOKEN_FILE: path.join(d.dir, "daemon.token") };
+      expect(chatToken(env, project)).toBeUndefined();
+      const r = await exchange([{ op: "event", event: { id: "x" } }], { env, client: "t", replyTimeoutMs: 500, cwd: project });
+      expect("error" in r && r.error).toMatch(/no chat token/);
+      expect(d.lines).toHaveLength(0);
+    } finally {
+      await d.close();
+    }
+  });
+
+  it("closes when the daemon says the token it got has daemon scope, whatever file it came from", async () => {
+    const d = await startFakeDaemon({ approve: "yes" });
+    try {
+      const copy = path.join(safe, "copied-token");
+      writeFileSync(copy, `${d.token}\n`, { mode: 0o600 });
+      const env = { TK_DAEMON_SOCKET: d.socket, TK_CHAT_TOKEN_FILE: copy };
+      const r = await exchange([{ op: "approve", request: { id: "ap-1" } }], { env, client: "t", replyTimeoutMs: 500, cwd: project });
+      expect("error" in r && r.error).toMatch(/daemon scope/);
+      expect(d.lines.filter((l) => l.line.op !== "hello")).toHaveLength(0);
+      const r2 = await exchange([{ op: "approve", request: { id: "ap-2" } }], { env: { TK_DAEMON_SOCKET: d.socket, TK_CHAT_TOKEN: d.token }, client: "t", replyTimeoutMs: 500, cwd: project });
+      expect("error" in r2 && r2.error).toMatch(/daemon scope/);
+    } finally {
+      await d.close();
+    }
+  });
+});
+
 describe("paths from the environment", () => {
   it("insideFolder follows links on the folder and handles missing files", () => {
     expect(insideFolder(path.join(project, "a", "b.json"), project)).toBe(true);
