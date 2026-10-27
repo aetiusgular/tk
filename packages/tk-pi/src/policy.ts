@@ -12,7 +12,7 @@
 // - the policy file is refused when another user can write it.
 
 import { createHash } from "node:crypto";
-import { foldText } from "./fold.ts";
+import { decodeEscapes, foldText } from "./fold.ts";
 
 export type Action = "allow" | "ask" | "deny";
 
@@ -139,20 +139,32 @@ function schemaProblem(raw: unknown): string | undefined {
 // --------------------------------------------------------- normalization
 
 /** contracts/policy.md, section 2. Mirrors `normalize_tool_name` in tk-core. */
-export function normalizeToolName(raw: string, servers: readonly string[]): string {
+/** Step 1: trim, ASCII-lowercase, every character outside `[a-z0-9_/]` to `_`. Also applied to each `servers` entry (integration w1). */
+export function lowerName(raw: string): string {
   let lowered = "";
   for (const ch of raw.trim()) {
     const c = ch.length === 1 && ch.charCodeAt(0) < 0x80 ? ch.toLowerCase() : "_";
     lowered += /[a-z0-9_/]/.test(c) ? c : "_";
   }
+  return lowered;
+}
+
+/**
+ * contracts/policy.md section 2, the same steps as the hook core and
+ * tk-core. `harness` is the agent's id, for the per-agent name forms later
+ * waves add from preset rows (note AQ section 6); unused in wave 1.
+ */
+export function normalizeToolName(raw: string, servers: readonly string[], harness?: string): string {
+  void harness;
+  const lowered = lowerName(raw);
   const slash = lowered.indexOf("/");
   if (slash >= 0) return `${stripPlugin(lowered.slice(0, slash))}/${lowered.slice(slash + 1)}`;
   if (lowered.startsWith("mcp__")) return join(splitDoubleThenSingle(lowered.slice(5)));
   if (lowered.startsWith("mcp_")) return join(splitDoubleThenSingle(lowered.slice(4)));
-  const dbl = lowered.indexOf("__");
-  if (dbl >= 0) return join([lowered.slice(0, dbl), lowered.slice(dbl + 2)]);
+  const run = splitAtRun(lowered);
+  if (run) return join(run);
   let best: string | undefined;
-  for (const s of servers.map((x) => x.toLowerCase())) {
+  for (const s of servers.map(lowerName)) {
     if (lowered.length > s.length + 1 && lowered.startsWith(s) && lowered[s.length] === "_") {
       if (best === undefined || s.length > best.length) best = s;
     }
@@ -161,9 +173,18 @@ export function normalizeToolName(raw: string, servers: readonly string[]): stri
   return lowered;
 }
 
+/** Splits at the first run of two or more `_`, the whole run consumed (Droid's `s___t`; note AQ section 6). */
+function splitAtRun(s: string): [string, string] | undefined {
+  const d = s.indexOf("__");
+  if (d < 0) return undefined;
+  let e = d;
+  while (e < s.length && s[e] === "_") e++;
+  return [s.slice(0, d), s.slice(e)];
+}
+
 function splitDoubleThenSingle(rest: string): [string, string] {
-  const d = rest.indexOf("__");
-  if (d >= 0) return [rest.slice(0, d), rest.slice(d + 2)];
+  const run = splitAtRun(rest);
+  if (run) return run;
   const s = rest.indexOf("_");
   if (s >= 0) return [rest.slice(0, s), rest.slice(s + 1)];
   return ["", rest];
@@ -249,8 +270,10 @@ export const SHELL_TOOLS = new Set([
 export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\"] as const;
 
 /**
- * Control files an `allow` never covers (tk-pi addition): text naming one of
- * these makes the call `ask`. Matched on folded text.
+ * Files that control tk or a harness's hooks: an `allow` whose folded input
+ * names one becomes `ask` (contracts/policy.md section 4, step 7a). The same
+ * list as the hook core's `CONTROL_PATHS` (integration w1; lane A's list plus
+ * each harness's own files). Matched on folded text.
  */
 export const CONTROL_PATH_MARKERS = [
   ".tk/",
@@ -259,6 +282,18 @@ export const CONTROL_PATH_MARKERS = [
   "tk_policy",
   "tk_chat_token",
   ".pi/agent/",
+  ".claude/settings",
+  ".claude.json",
+  ".claude/plugins",
+  "disableallhooks",
+  "managed-settings",
+  ".codex/config.toml",
+  ".codex/hooks.json",
+  ".codex/plugins",
+  "requirements.toml",
+  "opencode.json",
+  ".config/opencode/",
+  ".cache/opencode/",
 ] as const;
 
 const GIT_WORD = /(^|[^a-z0-9_])git(?![a-z0-9_])/g;
@@ -278,7 +313,7 @@ export function isGitContext(folded: string): boolean {
 
 /** The first reject key the text hits, or undefined. Runs `foldText` itself. */
 export function rejectKey(inputText: string): string | undefined {
-  return rejectKeyFolded(foldText(inputText));
+  return rejectKeyFolded(foldText(decodeEscapes(inputText)));
 }
 
 function rejectKeyFolded(folded: string): string | undefined {
@@ -318,8 +353,9 @@ function describeRule(r: Rule): string {
  * holds the input text.
  */
 export function evaluate(policy: PolicyFile, call: Call, problem?: string): Decision {
-  const normalizedTool = normalizeToolName(call.tool, policy.servers);
-  const folded = foldText(call.inputText);
+  const normalizedTool = normalizeToolName(call.tool, policy.servers, call.harness);
+  // JSON and TOML escapes decoded before folding (section 3; integration w1).
+  const folded = foldText(decodeEscapes(call.inputText));
   const hit = rejectKeyFolded(folded);
   if (hit !== undefined) return { action: "deny", normalizedTool, reason: `reject list: ${hit}` };
 
@@ -347,11 +383,14 @@ export function evaluate(policy: PolicyFile, call: Call, problem?: string): Deci
       return { action: "ask", normalizedTool, reason: "description changed since it was approved" };
     }
   }
-  if (SHELL_TOOLS.has(normalizedTool) && UNREADABLE_SHELL_TOKENS.some((t) => call.inputText.includes(t))) {
-    return { action: "ask", normalizedTool, reason: "shell text the matcher cannot read" };
+  // Control files before shell text (section 4, step 7; the hook core's order).
+  const control = CONTROL_PATH_MARKERS.find((m) => folded.includes(m));
+  if (control !== undefined) {
+    return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
   }
-  if (CONTROL_PATH_MARKERS.some((m) => folded.includes(m))) {
-    return { action: "ask", normalizedTool, reason: "names a tk or pi control file" };
+  // On the folded text, so `＄HOME` asks (integration w1; the hook core and tk-core do the same).
+  if (SHELL_TOOLS.has(normalizedTool) && UNREADABLE_SHELL_TOKENS.some((t) => folded.includes(t))) {
+    return { action: "ask", normalizedTool, reason: "shell text the matcher cannot read" };
   }
   return { action: "allow", normalizedTool, reason: describeRule(winner) };
 }

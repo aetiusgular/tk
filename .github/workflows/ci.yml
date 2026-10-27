@@ -29,6 +29,11 @@ jobs:
       - run: npx tsc --noEmit
       - run: npx vitest run
       - run: node scripts/lane-scope.test.mjs
+      # The Rust fold's tables and contracts/fixtures/policy/fold.json come
+      # from the hook core; this fails when they drift (it skips, saying why,
+      # on a Node whose Unicode version differs from the tables').
+      - run: node --no-warnings crates/tk-core/gen/gen-fold-tables.mjs --check
+      - run: node packages/tk-claude-plugin/scripts/sync-core.mjs --check
       # tests/cli-contract needs the real Claude Code and Codex CLIs; it runs
       # when they are installed (integration installs them under /tmp/cli).
       - name: cli contract

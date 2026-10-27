@@ -11,7 +11,5 @@ description = "Shared types for the toolkit layer: policy, events, tokens"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
-# TR39 confusable prototypes for fold_text (contracts/policy.md, section 3).
-# Exact pin; its tables are Unicode 16.0.0. Pulls unicode-normalization and
-# unicode-script, no build script, no unsafe beyond table lookups.
-unicode-security = "=0.1.2"
+# No Unicode crate: fold_text's tables are generated from the TypeScript
+# gate core's sources (gen/gen-fold-tables.mjs; integration w1).

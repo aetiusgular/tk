@@ -219,30 +219,51 @@ function join(server: string, tool: string): string {
   return server === "" ? tool : `${stripPlugin(server)}/${tool}`;
 }
 
+/** Splits at the first run of two or more `_`, the whole run consumed (Droid's `s___t`; note AQ section 6). */
+function splitAtRun(s: string): [string, string] | undefined {
+  const d = s.indexOf("__");
+  if (d < 0) return undefined;
+  let e = d;
+  while (e < s.length && s[e] === "_") e++;
+  return [s.slice(0, d), s.slice(e)];
+}
+
 function splitDoubleThenSingle(rest: string): [string, string] {
-  const d = rest.indexOf("__");
-  if (d >= 0) return [rest.slice(0, d), rest.slice(d + 2)];
+  const run = splitAtRun(rest);
+  if (run) return run;
   const s = rest.indexOf("_");
   if (s >= 0) return [rest.slice(0, s), rest.slice(s + 1)];
   return ["", rest];
 }
 
-/** contracts/policy.md section 2, the same steps as tk-core's normalize_tool_name. */
-export function normalizeToolName(raw: string, servers: readonly string[]): string {
+/** Step 1: trim, ASCII-lowercase, every character outside `[a-z0-9_/]` to `_`. Also applied to each `servers` entry. */
+export function lowerName(raw: string): string {
   let lowered = "";
   for (const ch of raw.trim()) {
     const c = ch.length === 1 && ch <= "\x7f" ? ch.toLowerCase() : ch;
     lowered += /^[a-z0-9_/]$/.test(c) ? c : "_";
   }
+  return lowered;
+}
+
+/**
+ * contracts/policy.md section 2, the same steps as tk-core's
+ * normalize_tool_name. `harness` is the agent's id: later waves apply the
+ * agent's declared name form from its preset row before the generic steps
+ * (note AQ section 6). No wave 1 agent declares one, so it is unused here.
+ */
+export function normalizeToolName(raw: string, servers: readonly string[], harness?: string): string {
+  void harness;
+  const lowered = lowerName(raw);
   const slash = lowered.indexOf("/");
   if (slash >= 0) return `${stripPlugin(lowered.slice(0, slash))}/${lowered.slice(slash + 1)}`;
   if (lowered.startsWith("mcp__")) return join(...splitDoubleThenSingle(lowered.slice(5)));
   if (lowered.startsWith("mcp_")) return join(...splitDoubleThenSingle(lowered.slice(4)));
-  const dd = lowered.indexOf("__");
-  if (dd >= 0) return join(lowered.slice(0, dd), lowered.slice(dd + 2));
+  const run = splitAtRun(lowered);
+  if (run) return join(run[0], run[1]);
   let best: string | undefined;
   for (const s0 of servers) {
-    const s = s0.toLowerCase();
+    const s = lowerName(s0);
     if (lowered.length > s.length + 1 && lowered.startsWith(s) && lowered[s.length] === "_" && (best === undefined || s.length > best.length)) {
       best = s;
     }
@@ -395,7 +416,7 @@ export function sha256Hex(text: string): string {
 /** contracts/policy.md section 4, steps 1 to 7. Step 8 (the wait) is the caller's. */
 export function evaluate(loaded: LoadedPolicy, call: Call): Decision {
   const { policy } = loaded;
-  const normalizedTool = normalizeToolName(call.tool, policy.servers);
+  const normalizedTool = normalizeToolName(call.tool, policy.servers, call.harness);
   const key = rejectKey(call.inputText);
   if (key !== undefined) return { action: "deny", normalizedTool, reason: `reject list: ${key}` };
 
@@ -423,9 +444,9 @@ export function evaluate(loaded: LoadedPolicy, call: Call): Decision {
     const folded = fold(decodeEscapes(call.inputText));
     const control = CONTROL_PATHS.find((p) => folded.includes(p));
     if (control !== undefined) return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
-  }
-  if (top.action === "allow" && isShellTool(normalizedTool)) {
-    if (UNREADABLE_SHELL_TOKENS.some((t) => call.inputText.includes(t))) {
+    // On the folded text, so `＄HOME` asks: stricter than the raw input, the
+    // side that fails safe (integration w1; tk-core and tk-pi do the same).
+    if (isShellTool(normalizedTool) && UNREADABLE_SHELL_TOKENS.some((t) => folded.includes(t))) {
       return { action: "ask", normalizedTool, reason: "shell text the matcher cannot read" };
     }
   }

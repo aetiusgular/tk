@@ -93,13 +93,12 @@ pub struct Decision {
     pub reason: String,
 }
 
-/// Normalizes a tool name the way the contract says (`policy.md`, section
-/// 2). Returns `server/tool` for an MCP tool and the bare lowercased name for
-/// a built-in. `servers` are the connected server names, lowercased by the
-/// caller or not: they are lowercased here.
-pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
-    let lowered: String = raw
-        .trim()
+/// Step 1 of the contract's section 2: trim, ASCII-lowercase, every
+/// character outside `[a-z0-9_/]` to `_`. Also applied to each `servers`
+/// entry (integration w1; lane F's request), so a server named `my-server`
+/// matches `my-server_fetch` and Copilot's `my-server-fetch`.
+pub fn lower_name(raw: &str) -> String {
+    raw.trim()
         .chars()
         .map(|c| {
             let c = c.to_ascii_lowercase();
@@ -109,7 +108,24 @@ pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
                 '_'
             }
         })
-        .collect();
+        .collect()
+}
+
+/// Normalizes a tool name the way the contract says (`policy.md`, section
+/// 2). Returns `server/tool` for an MCP tool and the bare lowercased name for
+/// a built-in. `servers` are the connected server names, normalized here
+/// with step 1.
+pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
+    normalize_tool_name_for(raw, servers, "")
+}
+
+/// The same, for one agent. `harness` is the agent's id: later waves apply
+/// the agent's declared name form from its preset row before the generic
+/// steps (note AQ section 6). No wave 1 agent declares one, so it does not
+/// change the result yet.
+pub fn normalize_tool_name_for(raw: &str, servers: &[String], harness: &str) -> String {
+    let _ = harness;
+    let lowered = lower_name(raw);
     if let Some((server, tool)) = lowered.split_once('/') {
         return format!("{}/{}", strip_plugin(server), tool);
     }
@@ -119,10 +135,10 @@ pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
     if let Some(rest) = lowered.strip_prefix("mcp_") {
         return join(split_at_double_then_single(rest));
     }
-    if let Some((server, tool)) = lowered.split_once("__") {
-        return join((server, tool));
+    if let Some(parts) = split_at_run(&lowered) {
+        return join(parts);
     }
-    let known: Vec<String> = servers.iter().map(|s| s.to_ascii_lowercase()).collect();
+    let known: Vec<String> = servers.iter().map(|s| lower_name(s)).collect();
     // `{server}_{tool}` (OpenCode, ToolHive vMCP): the longest known server
     // that is a prefix followed by `_` wins.
     let mut best: Option<&str> = None;
@@ -141,8 +157,16 @@ pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
     lowered
 }
 
+/// Splits at the first run of two or more `_`, the whole run consumed
+/// (Droid's `s___t`; note AQ section 6).
+fn split_at_run(s: &str) -> Option<(&str, &str)> {
+    let d = s.find("__")?;
+    let end = d + s[d..].bytes().take_while(|&b| b == b'_').count();
+    Some((&s[..d], &s[end..]))
+}
+
 fn split_at_double_then_single(rest: &str) -> (&str, &str) {
-    if let Some(p) = rest.split_once("__") {
+    if let Some(p) = split_at_run(rest) {
         p
     } else if let Some(p) = rest.split_once('_') {
         p
@@ -171,59 +195,107 @@ fn strip_plugin(server: &str) -> &str {
     server
 }
 
-/// Folds text before the reject list runs over it: lowercase; invisible and
-/// format characters dropped; every Unicode space mapped to one ASCII space;
-/// fullwidth ASCII mapped to ASCII; any other non-ASCII character whose
-/// Unicode TR39 confusable prototype is one printable ASCII character mapped
-/// to it, lowercased (Cyrillic `а` to `a`, `‐` to `-`). The prototypes come
-/// from `unicode-security` 0.1.2, whose tables are Unicode 16.0.0's
-/// `confusables.txt`. A character whose prototype is longer, or not ASCII,
-/// stays as it is (contract, section 3: Latin targets only).
+/// The Unicode version of `fold_text`'s tables (Node's ICU when they were
+/// generated). `tk doctor` and the parity test read it.
+pub const FOLD_UNICODE_VERSION: &str = crate::fold_tables::UNICODE_VERSION;
+
+/// Folds text before the reject list runs over it, exactly as the TypeScript
+/// gate core does (packages/tk-claude-plugin/src/core/fold.ts, and lane A's
+/// copy in tk-pi): NFKD; combining marks (general category Mn and Me)
+/// dropped; then per character: invisible and format characters dropped,
+/// every Unicode space mapped to one ASCII space, fullwidth ASCII mapped to
+/// ASCII, a confusable mapped to its ASCII look-alike (Unicode
+/// `confusables.txt` 17.0.0, one or more ASCII characters); the result
+/// lowercased and mapped once more. Linear in the text.
+///
+/// Integration w1 replaced lane B's `unicode-security` skeleton (Unicode
+/// 16.0.0, one-character targets, no NFKD), which disagreed with the
+/// TypeScript fold on 18,099 of 194,432 non-ASCII code points (`ſ` folded to
+/// `f`, not `s`). The tables are generated from the same sources by
+/// `crates/tk-core/gen/gen-fold-tables.mjs`; `tests/fold_parity.rs` holds the
+/// two folds equal.
 pub fn fold_text(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    for c in text.chars() {
-        let c = match c {
-            '\u{00AD}'
-            | '\u{034F}'
-            | '\u{200B}'..='\u{200F}'
-            | '\u{2060}'..='\u{2064}'
-            | '\u{FEFF}'
-            | '\u{180E}' => continue,
-            '\u{0085}'
-            | '\u{00A0}'
-            | '\u{1680}'
-            | '\u{2000}'..='\u{200A}'
-            | '\u{2028}'
-            | '\u{2029}'
-            | '\u{202F}'
-            | '\u{205F}'
-            | '\u{3000}' => ' ',
-            '\u{FF01}'..='\u{FF5E}' => char::from_u32(c as u32 - 0xFF01 + 0x21).unwrap_or(c),
-            _ => c,
-        };
-        for l in c.to_lowercase() {
-            match ascii_prototype(l) {
-                Some(a) => out.push(a.to_ascii_lowercase()),
-                None => out.push(l),
+    use crate::fold_tables::{CONFUSABLES, DECOMP, MARKS};
+    use std::cmp::Ordering;
+
+    fn lookup(table: &'static [(u32, &'static str)], c: u32) -> Option<&'static str> {
+        table
+            .binary_search_by_key(&c, |&(k, _)| k)
+            .ok()
+            .map(|i| table[i].1)
+    }
+    fn is_mark(c: u32) -> bool {
+        MARKS
+            .binary_search_by(|&(a, b)| {
+                if c < a {
+                    Ordering::Greater
+                } else if c > b {
+                    Ordering::Less
+                } else {
+                    Ordering::Equal
+                }
+            })
+            .is_ok()
+    }
+    fn nfkd(c: char, out: &mut String) {
+        let u = c as u32;
+        if (0xAC00..=0xD7A3).contains(&u) {
+            // Hangul syllables (Unicode, section 3.12).
+            let s = u - 0xAC00;
+            for j in [0x1100 + s / 588, 0x1161 + (s % 588) / 28] {
+                out.extend(char::from_u32(j));
             }
+            if !s.is_multiple_of(28) {
+                out.extend(char::from_u32(0x11A7 + s % 28));
+            }
+        } else if let Some(d) = lookup(DECOMP, u) {
+            out.push_str(d);
+        } else {
+            out.push(c);
+        }
+    }
+    fn map_one(c: char, out: &mut String) {
+        let u = c as u32;
+        if u < 0x80 {
+            out.push(c);
+            return;
+        }
+        match u {
+            0x00AD | 0x034F | 0x200B..=0x200F | 0x2060..=0x2064 | 0xFEFF | 0x180E => {}
+            0x0085
+            | 0x00A0
+            | 0x1680
+            | 0x2000..=0x200A
+            | 0x2028
+            | 0x2029
+            | 0x202F
+            | 0x205F
+            | 0x3000 => out.push(' '),
+            0xFF01..=0xFF5E => out.extend(char::from_u32(u - 0xFF01 + 0x21)),
+            _ => match lookup(CONFUSABLES, u) {
+                Some(t) => out.push_str(t),
+                None => out.push(c),
+            },
+        }
+    }
+
+    let mut decomposed = String::with_capacity(text.len());
+    for c in text.chars() {
+        nfkd(c, &mut decomposed);
+    }
+    let mut out = String::with_capacity(decomposed.len());
+    let mut first = String::new();
+    for c in decomposed.chars() {
+        if is_mark(c as u32) {
+            continue;
+        }
+        first.clear();
+        map_one(c, &mut first);
+        for l in first.to_lowercase().chars() {
+            map_one(l, &mut out);
         }
     }
     out
-}
-
-/// The one printable ASCII character a non-ASCII character is confusable
-/// with, by its TR39 skeleton, or `None`.
-fn ascii_prototype(c: char) -> Option<char> {
-    if c.is_ascii() {
-        return None;
-    }
-    let mut buf = [0u8; 4];
-    let mut skeleton = unicode_security::confusable_detection::skeleton(c.encode_utf8(&mut buf));
-    let first = skeleton.next()?;
-    if skeleton.next().is_some() || !first.is_ascii_graphic() {
-        return None;
-    }
-    Some(first)
 }
 
 /// The fixed reject list, part 1 (contract, section 3.1): endpoint, sandbox
@@ -301,7 +373,81 @@ pub const SHELL_TOOLS: &[&str] = &[
     "run_shell_command",
     "user_bash",
     "terminal",
+    "powershell",
 ];
+
+/// Files that control tk or a harness's hooks (contract, section 4, step
+/// 7a): an `allow` whose folded input names one is `Ask`, so an allowed tool
+/// cannot quietly rewrite the policy or switch a gate off. The same list as
+/// the hook core's `CONTROL_PATHS` and tk-pi's (integration w1).
+pub const CONTROL_PATHS: &[&str] = &[
+    ".tk/",
+    "tk/daemon.",
+    "tk/otlp.endpoint",
+    "tk_policy",
+    "tk_chat_token",
+    ".pi/agent/",
+    ".claude/settings",
+    ".claude.json",
+    ".claude/plugins",
+    "disableallhooks",
+    "managed-settings",
+    ".codex/config.toml",
+    ".codex/hooks.json",
+    ".codex/plugins",
+    "requirements.toml",
+    "opencode.json",
+    ".config/opencode/",
+    ".cache/opencode/",
+];
+
+/// Decodes the escapes a config parser would decode (`\uXXXX` in JSON and
+/// TOML, `\UXXXXXXXX` in TOML), so `\u0041NTHROPIC_BASE_URL` in a file a tool
+/// writes is seen as the key it becomes. Applied before `fold_text`. The
+/// same as the hook core's `decodeEscapes`: `\U` first, then `\u`, each
+/// decoded once, a code unit at a time (integration w1).
+pub fn decode_escapes(text: &str) -> String {
+    fn pass(text: &str, marker: char, digits: usize) -> String {
+        let mut out = String::with_capacity(text.len());
+        let mut units: Vec<u16> = Vec::new();
+        let flush = |units: &mut Vec<u16>, out: &mut String| {
+            out.extend(char::decode_utf16(units.drain(..)).map(|r| r.unwrap_or('\u{FFFD}')));
+        };
+        let mut rest = text;
+        while let Some(i) = rest.find('\\') {
+            let after = &rest[i + 1..];
+            let hex = after.strip_prefix(marker).and_then(|h| h.get(..digits));
+            match hex.filter(|h| h.bytes().all(|b| b.is_ascii_hexdigit())) {
+                Some(h) => {
+                    let v = u32::from_str_radix(h, 16).unwrap_or(0);
+                    if i > 0 {
+                        flush(&mut units, &mut out);
+                        out.push_str(&rest[..i]);
+                    }
+                    if digits == 4 {
+                        units.push(v as u16);
+                    } else {
+                        flush(&mut units, &mut out);
+                        match char::from_u32(v) {
+                            Some(c) => out.push(c),
+                            None => out.push_str(&rest[i..i + 2 + digits]),
+                        }
+                    }
+                    rest = &rest[i + 2 + digits..];
+                }
+                None => {
+                    flush(&mut units, &mut out);
+                    out.push_str(&rest[..=i]);
+                    rest = &rest[i + 1..];
+                }
+            }
+        }
+        flush(&mut units, &mut out);
+        out.push_str(rest);
+        out
+    }
+    pass(&pass(text, 'U', 8), 'u', 4)
+}
 
 /// Text the shell reads in a way a matcher cannot (case 30). An `allow`
 /// never applies to a shell tool whose input contains one; the call is
@@ -424,13 +570,13 @@ fn safe_label(text: &str) -> String {
 /// shell reads in a way a matcher cannot is `Ask`. The reason never holds
 /// the input text. `Ask` times out to `Deny` in the caller.
 pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
-    let normalized = normalize_tool_name(&call.tool, &policy.servers);
+    let normalized = normalize_tool_name_for(&call.tool, &policy.servers, &call.harness);
     let decide = |action: Action, reason: String| Decision {
         action,
         normalized_tool: normalized.clone(),
         reason,
     };
-    let folded = fold_text(&call.input_text);
+    let folded = fold_text(&decode_escapes(&call.input_text));
     if let Some(key) = reject_hit(&folded) {
         return decide(Action::Deny, format!("reject list: {key}"));
     }
@@ -491,6 +637,15 @@ pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
             return decide(Action::Ask, "description changed".to_string());
         }
     }
+    // Control files before shell text (contract, section 4, step 7).
+    if let Some(control) = CONTROL_PATHS.iter().find(|p| folded.contains(*p)) {
+        return decide(
+            Action::Ask,
+            format!("input names a control file ({control})"),
+        );
+    }
+    // On the folded, escape-decoded text: stricter than the raw input
+    // (`＄HOME` asks), the side that fails safe (rules section 9, item 7).
     if SHELL_TOOLS.contains(&normalized.as_str())
         && UNREADABLE_SHELL_TOKENS.iter().any(|t| folded.contains(t))
     {
@@ -743,8 +898,12 @@ mod tests {
         assert_eq!(fold_text("\u{0410}\u{0430}\u{03BF}\u{2010}"), "aao-");
         // ASCII never changes, even letters TR39 maps elsewhere (`m` to `rn`).
         assert_eq!(fold_text("rm -rf ~/1Il0O"), "rm -rf ~/1il0o");
-        // A character whose prototype is longer than one character stays.
-        assert_eq!(fold_text("\u{2474}"), "\u{2474}");
+        // Integration w1 settled the TypeScript fold (NFKD first, multi-
+        // character ASCII targets): `⑴` folds to `(1)` in all three matchers.
+        // Lane B's first version kept it, as single-character skeletons do.
+        assert_eq!(fold_text("\u{2474}"), "(1)");
+        // Long s: NFKD gives `s`; a TR39 skeleton alone gave `f`.
+        assert_eq!(fold_text("\u{017F}"), "s");
     }
 
     #[test]
@@ -910,5 +1069,27 @@ mod tests {
         assert_eq!(problem, None);
         assert_eq!(p.rules.len(), 1);
         std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    /// Integration w1: the same results as the hook core's `decodeEscapes`
+    /// on these inputs (recorded from it with Node 22.23.4). One deliberate
+    /// difference: a lone surrogate, which a JavaScript string keeps and a
+    /// Rust string cannot hold, becomes U+FFFD; neither folds to ASCII.
+    #[test]
+    fn decode_escapes_matches_the_typescript_decoder() {
+        for (input, want) in [
+            ("\\u0041NTHROPIC", "ANTHROPIC"),
+            ("\\ud83d\\ude00", "\u{1F600}"),
+            ("\\U0001F600x", "\u{1F600}x"),
+            ("\\U99999999", "\\U99999999"),
+            ("a\\", "a\\"),
+            ("\\u00", "\\u00"),
+            ("\\\\u0041", "\\A"),
+            ("\\uD800 lone", "\u{FFFD} lone"),
+            ("\\u0024HOME", "$HOME"),
+            ("x\\U0000004Ay", "xJy"),
+        ] {
+            assert_eq!(decode_escapes(input), want, "{input:?}");
+        }
     }
 }

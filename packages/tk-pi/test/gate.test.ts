@@ -138,7 +138,7 @@ describe("decisions", () => {
   it("a bash command that names the policy file is asked about", async () => {
     const s = setup({ answer: () => ({ confirmed: false }) });
     expect(await s.call("bash", { command: "cp x /home/u/.tk/policy.json" })).toMatchObject({ block: true });
-    expect(s.client.requests[0]?.message).toContain("names a tk or pi control file");
+    expect(s.client.requests[0]?.message).toContain("input names a control file (.tk/)");
   });
 });
 

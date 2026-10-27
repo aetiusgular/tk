@@ -94,3 +94,18 @@ export function foldText(text: string): string {
   }
   return out.join("");
 }
+
+/**
+ * Decodes the escapes a config parser would decode, so a key written as
+ * `\u0041NTHROPIC_BASE_URL` in a JSON file is seen as the key it becomes.
+ * JSON and TOML read `\uXXXX`; TOML also reads `\UXXXXXXXX`. Applied before
+ * folding. The same function as the hook core's (integration w1).
+ */
+export function decodeEscapes(text: string): string {
+  return text
+    .replace(/\\U([0-9a-fA-F]{8})/g, (m, hex: string) => {
+      const cp = Number.parseInt(hex, 16);
+      return cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+    })
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_m, hex: string) => String.fromCharCode(Number.parseInt(hex, 16)));
+}

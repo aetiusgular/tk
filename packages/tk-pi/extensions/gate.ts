@@ -87,7 +87,7 @@ export function createGate(options: GateOptions = {}) {
       let normalized = event.toolName;
       try {
         const { policy, problem } = await policyStore().get();
-        normalized = normalizeToolName(event.toolName, policy.servers);
+        normalized = normalizeToolName(event.toolName, policy.servers, "pi");
         const inputText = inputTextFor(normalized, event.input);
         const chat = chatFor(environment(), ctx);
         const d = evaluate(

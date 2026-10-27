@@ -1,14 +1,16 @@
 {
   "version": 1,
   "askTimeoutSeconds": 30,
-  "servers": ["exa", "github", "cu", "fs"],
+  "servers": ["exa", "github", "cu", "fs", "my-server"],
   "rules": [
     { "tool": "exa/*", "action": "allow" },
     { "tool": "exa/delete_index", "action": "deny" },
     { "tool": "github/*", "action": "ask" },
     { "tool": "github/get_issue", "action": "allow" },
     { "tool": "cu/*", "action": "ask" },
+    { "tool": "my_server/*", "action": "deny" },
     { "tool": "bash", "action": "allow" },
+    { "tool": "powershell", "action": "allow" },
     { "tool": "bash", "harness": "codex", "action": "ask" },
     { "tool": "read", "action": "allow" },
     {

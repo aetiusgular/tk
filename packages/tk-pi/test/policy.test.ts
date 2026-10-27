@@ -31,12 +31,12 @@ const cases = (JSON.parse(readFileSync(join(fixtures, "cases.json"), "utf8")) as
 describe("contract fixture (contracts/fixtures/policy)", () => {
   it("the fixture policy parses with no problem", () => {
     expect(loaded.problem).toBeUndefined();
-    expect(loaded.policy.rules).toHaveLength(10);
+    expect(loaded.policy.rules).toHaveLength(12);
     expect(loaded.policy.askTimeoutSeconds).toBe(30);
   });
 
-  it("has all 21 cases", () => {
-    expect(cases).toHaveLength(21);
+  it("has all 33 cases (21 from session 0, 12 from integration w1)", () => {
+    expect(cases).toHaveLength(33);
   });
 
   for (const c of cases) {
@@ -211,7 +211,7 @@ describe("matcher beyond the fixture", () => {
     ]) {
       const d = evaluate(base, { tool: "write", harness: "pi", inputText: text });
       expect(d.action, text).toBe("ask");
-      expect(d.reason).toBe("names a tk or pi control file");
+      expect(d.reason).toMatch(/^input names a control file \(/);
     }
     expect(evaluate(base, { tool: "write", harness: "pi", inputText: "/home/u/proj/.pi/settings.json" }).action).toBe(
       "allow",

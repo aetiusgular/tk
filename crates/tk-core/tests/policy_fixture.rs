@@ -35,10 +35,14 @@ fn load() -> (PolicyFile, Vec<Case>) {
 }
 
 #[test]
-fn fixture_has_ten_rules_and_at_least_twenty_cases() {
+fn fixture_has_twelve_rules_and_at_least_thirty_cases() {
     let (policy, cases) = load();
-    assert_eq!(policy.rules.len(), 10);
-    assert!(cases.len() >= 20, "{}", cases.len());
+    assert_eq!(
+        policy.rules.len(),
+        12,
+        "10 from session 0, 2 added by integration w1"
+    );
+    assert!(cases.len() >= 33, "{}", cases.len());
 }
 
 #[test]

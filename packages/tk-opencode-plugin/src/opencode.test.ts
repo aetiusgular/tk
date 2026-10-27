@@ -104,8 +104,10 @@ describe("plugin files", () => {
     const hooks = await entry.default.server();
     expect(Object.keys(hooks).sort()).toEqual(["tool.execute.after", "tool.execute.before"]);
   });
-  it("MCP names with a dash in the server do not match the server (a contract gap, recorded)", () => {
-    expect(decide({ tool: "my-server_x", args: {} }, { policy: { version: 1, askTimeoutSeconds: 60, servers: ["my-server"], rules: [{ tool: "my_server/*", action: "allow" }] } }).action).toBe("ask");
+  it("MCP names with a dash in the server match the server (lane F's gap, closed by integration w1: servers are normalized with step 1)", () => {
+    const d = decide({ tool: "my-server_x", args: {} }, { policy: { version: 1, askTimeoutSeconds: 60, servers: ["my-server"], rules: [{ tool: "my_server/*", action: "allow" }] } });
+    expect(d.action).toBe("allow");
+    expect(d.reason).toMatch(/^rule my_server\/\*/);
   });
   it("decide denies anything that is not a tool call", () => {
     expect(decide({}).action).toBe("deny");

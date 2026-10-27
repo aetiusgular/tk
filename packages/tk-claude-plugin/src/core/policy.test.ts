@@ -214,7 +214,7 @@ describe("loadPolicy (contract section 1; case 46 is the caller's)", () => {
   it("reads a good file through a symlink", () => {
     const good = file("good.json", JSON.stringify(policyFixture));
     symlinkSync(good, path.join(dir, "link.json"));
-    expect(loadPolicy(path.join(dir, "link.json")).policy.rules.length).toBe(10);
+    expect(loadPolicy(path.join(dir, "link.json")).policy.rules.length).toBe(12);
   });
   it("cleans up", () => {
     rmSync(dir, { recursive: true, force: true });

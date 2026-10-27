@@ -14,7 +14,7 @@
 use serde_json::Value as J;
 use sha2::{Digest, Sha256};
 
-use tk_core::policy::{fold_text, ENDPOINT_KEYS, GIT_CONFIG_KEYS, GIT_CONTEXT_PATHS};
+use tk_core::policy::{decode_escapes, fold_text, reject_hit};
 
 /// The `_meta` key that holds the tk block (`contracts/entry.schema.json`).
 pub const META_PUBLISHER: &str = "io.modelcontextprotocol.registry/publisher-provided";
@@ -706,51 +706,14 @@ pub fn check_text(t: &str) -> Result<(), String> {
 
 /// The reject list of `contracts/policy.md`, section 3, applied to what tk
 /// would write: endpoint, sandbox and approval keys always; git config keys
-/// in a git context. Folded first (case 30, case 33).
+/// in a git context. Escapes decoded and folded first (case 30, case 33), the
+/// same pipeline as every matcher: tk-core's `reject_hit` (integration w1
+/// replaced lane C's own copy of the git-context test, as lane C asked).
 pub fn reject_list(text: &str) -> Result<(), String> {
-    let folded = fold_text(text);
-    for key in ENDPOINT_KEYS {
-        if folded.contains(key) {
-            return Err(format!("reject list: {key}"));
-        }
+    match reject_hit(&fold_text(&decode_escapes(text))) {
+        Some(key) => Err(format!("reject list: {key}")),
+        None => Ok(()),
     }
-    if git_context(&folded) {
-        for key in GIT_CONFIG_KEYS {
-            if folded.contains(key) {
-                return Err(format!("reject list: {key}"));
-            }
-        }
-    }
-    Ok(())
-}
-
-/// `contracts/policy.md`, section 3.2: a git config path, or the word `git`
-/// followed later on the same line by `-c`, `config` or `--config-env`.
-/// Lane B implements the same test in `tk-core`; this copy keeps lane C's
-/// branch self-contained until the two are merged (request for integration).
-fn git_context(folded: &str) -> bool {
-    if GIT_CONTEXT_PATHS.iter().any(|p| folded.contains(p)) {
-        return true;
-    }
-    for line in folded.lines() {
-        let b = line.as_bytes();
-        let mut i = 0;
-        while let Some(pos) = line[i..].find("git") {
-            let at = i + pos;
-            let before_ok = at == 0 || !(b[at - 1].is_ascii_alphanumeric() || b[at - 1] == b'_');
-            let after = at + 3;
-            let after_ok =
-                after >= b.len() || !(b[after].is_ascii_alphanumeric() || b[after] == b'_');
-            if before_ok && after_ok {
-                let rest = &line[after..];
-                if rest.contains("-c") || rest.contains("config") || rest.contains("--config-env") {
-                    return true;
-                }
-            }
-            i = after;
-        }
-    }
-    false
 }
 
 #[cfg(test)]

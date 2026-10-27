@@ -65,7 +65,7 @@ export function inputTextFor(normalizedTool: string, toolInput: unknown): string
 }
 
 export function decideCall(loaded: LoadedPolicy, call: GateCall): GateAnswer {
-  const normalizedTool = normalizeToolName(call.tool, loaded.policy.servers);
+  const normalizedTool = normalizeToolName(call.tool, loaded.policy.servers, call.harness);
   const decision = evaluate(loaded, {
     tool: call.tool,
     harness: call.harness,
