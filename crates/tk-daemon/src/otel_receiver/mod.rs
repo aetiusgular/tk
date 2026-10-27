@@ -214,6 +214,25 @@ impl Receiver {
         Some(token)
     }
 
+    /// Drops every token minted for `chat_id` (the daemon calls it at the
+    /// chat's `run.stop`). A later hello or OTLP post with one of them is
+    /// refused. Returns how many were dropped.
+    pub fn revoke_chat(&self, chat_id: &str) -> usize {
+        let (Ok(mut tokens), Ok(mut holders)) = (self.tokens.lock(), self.holders.lock()) else {
+            return 0;
+        };
+        let before = tokens.len();
+        tokens.retain(|((chat, _), token)| {
+            if chat == chat_id {
+                holders.remove(&hash(token));
+                false
+            } else {
+                true
+            }
+        });
+        before - tokens.len()
+    }
+
     /// The chat and harness a token was minted for, by its hash.
     pub fn holder_of(&self, token: &str) -> Option<(String, &'static str)> {
         self.holder(token).map(|h| (h.chat_id, h.harness))

@@ -661,3 +661,46 @@ fn one_chat_cannot_hold_every_approval_slot_or_reuse_a_waiting_id() {
         assert_eq!(c.recv()["answer"], "no");
     }
 }
+
+/// Integration w1, lane D's request 2: a chat token sits in the harness's
+/// environment and, under sbx, in the sandbox's saved config. Once its run
+/// stops, the token opens nothing: no new hello, no OTLP post. Only the
+/// daemon scope (tk run) can stop a run; another chat's tokens stay valid.
+#[test]
+fn a_chat_token_is_revoked_when_its_run_stops() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let tok = mint(&mut d, "chat-r", "pi");
+    let tok2 = mint(&mut d, "chat-r", "pi");
+    let other = mint(&mut d, "chat-o", "pi");
+    let r = d.ask(event(
+        "run-1",
+        "chat-r",
+        "run",
+        "run.start",
+        json!({"cwd": "/w"}),
+    ));
+    assert_eq!(r["ok"], true, "{r}");
+    let (mut c, r) = Client::hello(&f, &tok);
+    assert_eq!(r["ok"], true, "{r}");
+    let r = c.ask(event("run-2", "chat-r", "run", "run.stop", json!({})));
+    assert_eq!(r["ok"], false, "a chat cannot stop its own run: {r}");
+    assert_eq!(Client::hello(&f, &tok).1["ok"], true);
+    let r = d.ask(event(
+        "run-2",
+        "chat-r",
+        "run",
+        "run.stop",
+        json!({"exitCode": 0}),
+    ));
+    assert_eq!(r["ok"], true, "{r}");
+    for t in [&tok, &tok2] {
+        let (_c, r) = Client::hello(&f, t);
+        assert_eq!(r["ok"], false, "revoked: {r}");
+    }
+    assert_eq!(
+        Client::hello(&f, &other).1["ok"],
+        true,
+        "another chat's token stays"
+    );
+}

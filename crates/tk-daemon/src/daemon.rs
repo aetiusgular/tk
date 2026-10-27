@@ -413,6 +413,12 @@ impl Daemon {
                 if event.source == Source::Run && event.kind == "run.start" {
                     self.set_chat_from_run(&event);
                 }
+                // The run is over: its chat tokens open nothing from now on
+                // (integration w1, lane D's request 2). A connection already
+                // greeted keeps its scope until it closes.
+                if event.source == Source::Run && event.kind == "run.stop" {
+                    self.receiver.revoke_chat(&event.chat_id);
+                }
             }
         }
         if store::bound_event(event.clone()).id.is_empty() {
