@@ -89,20 +89,70 @@ pub fn docker_spec(
 /// `docker mcp profile show <id> --format json` through the copied
 /// allowlist, to confirm the profile exists before an entry names it.
 pub fn docker_profile_exists(profile: &str) -> Result<bool, String> {
-    let args: Vec<String> = ["mcp", "profile", "show", profile, "--format", "json"]
-        .into_iter()
-        .map(String::from)
-        .collect();
-    match docker_mcp::docker_mcp(args, None, None) {
-        Ok(_) => Ok(true),
+    profile_exists_with(profile, |args| {
+        docker_mcp::docker_mcp(
+            args.iter().map(|a| a.to_string()).collect(),
+            None,
+            None,
+        )
+        .map(|_| ())
+    })
+}
+
+/// Any other failure of `profile show` is checked against `docker mcp
+/// version` (on the copied allowlist): with no MCP plugin, docker reads
+/// `--format` as its own and prints `unknown flag: --format` and its usage,
+/// which told the box test nothing (BX5).
+fn profile_exists_with(
+    profile: &str,
+    docker: impl Fn(&[&str]) -> Result<(), String>,
+) -> Result<bool, String> {
+    match docker(&["mcp", "profile", "show", profile, "--format", "json"]) {
+        Ok(()) => Ok(true),
         Err(e) if e.contains("not found") => Ok(false),
-        Err(e) => Err(e),
+        Err(e) => match docker(&["mcp", "version"]) {
+            Ok(()) => Err(e),
+            Err(v) => Err(format!(
+                "the `docker mcp` plugin is not installed or does not run here (`docker mcp version`: {}); install Docker's MCP Toolkit plugin, or leave out --check-profile",
+                v.lines().next().unwrap_or("failed")
+            )),
+        },
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_missing_docker_mcp_plugin_is_named_as_such() {
+        // Box test w1, BX5: Docker Engine 29.9.2 with no `docker mcp`.
+        let no_plugin = |args: &[&str]| -> Result<(), String> {
+            Err(match args {
+                ["mcp", "version"] => "docker: unknown command: docker mcp\n\nRun 'docker --help'".into(),
+                _ => "unknown flag: --format\nSee 'docker --help'.".into(),
+            })
+        };
+        let e = profile_exists_with("tk_box", no_plugin).unwrap_err();
+        assert!(e.contains("`docker mcp` plugin is not installed"), "{e}");
+        assert!(e.contains("unknown command: docker mcp"), "{e}");
+        assert!(!e.contains("--help"), "only the first line: {e}");
+        // The plugin present: a missing profile, an existing one, another error.
+        let with = |show: Result<(), String>| {
+            move |args: &[&str]| -> Result<(), String> {
+                match args {
+                    ["mcp", "version"] => Ok(()),
+                    _ => show.clone(),
+                }
+            }
+        };
+        assert_eq!(profile_exists_with("p", with(Err("profile p not found".into()))), Ok(false));
+        assert_eq!(profile_exists_with("p", with(Ok(()))), Ok(true));
+        assert_eq!(
+            profile_exists_with("p", with(Err("daemon not running".into()))),
+            Err("daemon not running".into())
+        );
+    }
 
     #[test]
     fn stdio_gateway_entry() {
