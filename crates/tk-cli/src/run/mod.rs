@@ -48,6 +48,9 @@ struct RunEnv {
     gateway: Option<String>,
     /// Program name to path, for tests only (`main` passes none).
     programs: Vec<(String, String)>,
+    /// `TK_LOG_CONTENT=1`: run records keep the harness's own arguments
+    /// (still through the secret redactor). Off by default (finding M8).
+    log_content: bool,
 }
 
 impl RunEnv {
@@ -57,6 +60,7 @@ impl RunEnv {
             home: std::env::var("HOME").ok(),
             gateway: std::env::var("TK_GATEWAY_URL").ok(),
             programs: Vec::new(),
+            log_content: std::env::var("TK_LOG_CONTENT").is_ok_and(|v| v == "1"),
         }
     }
 
@@ -162,6 +166,37 @@ impl Daemon {
             Client::connect(&self.socket, &self.token, "tk run").map_err(|e| e.to_string())?;
         c.post(e).map(|_| ()).map_err(|e| e.to_string())
     }
+}
+
+/// The argv a run record keeps. tk's own part (the wrapper and its flags,
+/// the harness program) is kept; the harness's own arguments, which every
+/// plan appends last, keep their flag names and lose every other word to its
+/// length, unless `content` (Mac test w1, finding M8: a `-p "<prompt>"` sat
+/// in the activity log). Both go through the secret redactor (S13).
+fn recorded_argv(program: &str, args: &[String], rest: &[String], content: bool) -> Vec<String> {
+    let mask = |w: &String| -> String {
+        if content {
+            return w.clone();
+        }
+        let n = |v: &str| format!("[{} chars]", v.chars().count());
+        match w.strip_prefix('-') {
+            Some(_) if w.len() > 1 => match w.split_once('=') {
+                Some((flag, value)) => format!("{flag}={}", n(value)),
+                None => w.clone(),
+            },
+            _ => n(w),
+        }
+    };
+    let split = if args.ends_with(rest) {
+        args.len() - rest.len()
+    } else {
+        // Not expected (plan.rs appends `rest` last); mask everything.
+        0
+    };
+    let mut out = vec![program.to_string()];
+    out.extend(args[..split].iter().cloned());
+    out.extend(args[split..].iter().map(mask));
+    tk_audit_linux::redact::argv(&out)
 }
 
 fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
@@ -293,11 +328,10 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
     launch.program = env.program(&p.program).to_string();
     let mut child = exec::spawn(&launch, &cwd).map_err(|e| (127, format!("{}: {e}", p.program)))?;
     let pid = child.id();
-    let mut full_argv = vec![p.program.clone()];
-    full_argv.extend(p.args.iter().cloned());
     // The record keeps the shape of the command, not a key passed on it
-    // (integration w1, security finding S13; the audit feed's own redactor).
-    let full_argv = tk_audit_linux::redact::argv(&full_argv);
+    // (integration w1, security finding S13; the audit feed's own redactor),
+    // and not the harness's own words unless TK_LOG_CONTENT=1 (finding M8).
+    let full_argv = recorded_argv(&p.program, &p.args, &a.rest, env.log_content);
     let dangerous: Vec<&String> = a
         .rest
         .iter()
@@ -527,6 +561,7 @@ mod end_to_end {
             home: Some(fake.dir.to_string_lossy().into_owned()),
             gateway: None,
             programs: vec![("pi".into(), pi), ("srt".into(), srt)],
+            log_content: false,
         };
         Setup { fake, work, env }
     }
@@ -576,6 +611,64 @@ mod end_to_end {
         assert!(!all.contains(&secret), "{all}");
         assert!(!all.contains("sk-ant-inline"), "{all}");
         assert!(all.contains("--api-key"), "{all}");
+    }
+
+    #[test]
+    fn recorded_argv_keeps_tk_s_part_and_the_words_with_content_on() {
+        let args = s(&["--settings", "/x/s.json", "--", "pi", "-p", "hello there"]);
+        let rest = s(&["-p", "hello there"]);
+        assert_eq!(
+            recorded_argv("srt", &args, &rest, false),
+            s(&["srt", "--settings", "/x/s.json", "--", "pi", "-p", "[11 chars]"])
+        );
+        assert_eq!(
+            recorded_argv("srt", &args, &rest, true),
+            s(&["srt", "--settings", "/x/s.json", "--", "pi", "-p", "hello there"])
+        );
+        // With content on, a key is still redacted.
+        let rest = s(&["--api-key", "sk-ant-aaaaaaaaaaaaaaaaaaaaaaaa"]);
+        assert_eq!(
+            recorded_argv("pi", &rest, &rest, true),
+            s(&["pi", "--api-key", "[redacted]"])
+        );
+    }
+
+    #[test]
+    fn run_records_hold_no_prompt_text_from_the_harness_argv() {
+        // Mac test w1, finding M8: `claude -p "<prompt>"` put the prompt in
+        // the activity log. Content is off unless TK_LOG_CONTENT=1, as in the
+        // emitter and the receiver: flags stay, other words become lengths.
+        let st = setup("none-prompt");
+        let cwd = st.work.to_string_lossy().into_owned();
+        run(
+            &s(&[
+                "pi",
+                "--boundary",
+                "none",
+                "--chat",
+                "chat-p",
+                "--cwd",
+                &cwd,
+                "--",
+                "--model=qwen27b",
+                "-p",
+                "summarise my private plan",
+            ]),
+            &st.env,
+        )
+        .unwrap();
+        let ev = events(&st);
+        let argv = ev[0]["detail"]["argv"].clone();
+        let all = serde_json::to_string(&ev).unwrap();
+        assert!(!all.contains("private plan"), "{all}");
+        assert!(!all.contains("qwen27b"), "{all}");
+        assert_eq!(
+            argv,
+            serde_json::json!(["pi", "--model=[7 chars]", "-p", "[25 chars]"]),
+            "{argv}"
+        );
+        // The harness itself still got them.
+        assert!(seen(&st).contains("arg=summarise my private plan"));
     }
 
     #[test]
@@ -713,6 +806,7 @@ mod end_to_end {
             home: st.env.home.clone(),
             gateway: None,
             programs: st.env.programs.clone(),
+            log_content: false,
         };
         env.programs.push(("sbx".into(), sbx));
         let cwd = st.work.to_string_lossy().into_owned();
@@ -750,6 +844,7 @@ mod end_to_end {
             home: st.env.home.clone(),
             gateway: None,
             programs: st.env.programs.clone(),
+            log_content: false,
         };
         let cwd = st.work.to_string_lossy().into_owned();
         let err = run(&s(&["pi", "--boundary", "none", "--cwd", &cwd]), &env).unwrap_err();
