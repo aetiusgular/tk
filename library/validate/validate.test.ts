@@ -71,11 +71,10 @@ describe("the contract fixtures (contracts/fixtures/entry)", () => {
     const e: LoadedEntry = { id: "exa-fixture", kind: "server", dir: join(CONTRACTS_DIR, "fixtures/entry"), file: "server.json", data: readJson(join(CONTRACTS_DIR, "fixtures/entry/server.json")) as Record<string, unknown> };
     expect(rules(validateEntry(e, { brands }))).toEqual(["lib/tools-record"]);
   });
-  it("the skill fixture's SKILL.md fails the specification on 'version' and on its folder name (request for integration)", () => {
+  it("the skill fixture's SKILL.md passes the specification (fixed by integration w1: version under metadata, folder web-search)", () => {
     const e = loadEntry(join(CONTRACTS_DIR, "fixtures/entry/skill"))!;
     const r = validateEntry(e, { brands });
-    expect(errors(r)).toEqual(expect.arrayContaining(["skill/unexpected-field", "skill/dir-name"]));
-    expect(r.find((f) => f.rule === "skill/unexpected-field")?.message).toContain("version");
+    expect(r.filter((f) => f.rule.startsWith("skill/"))).toEqual([]);
   });
   it("the bundle fixture passes apart from its folder name", () => {
     const e = loadEntry(join(CONTRACTS_DIR, "fixtures/entry/bundle"))!;

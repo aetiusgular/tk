@@ -84,9 +84,9 @@ pub fn parse(args: &[String]) -> Result<Args, String> {
     };
     let harness = match harness::find(id) {
         Some(h) => h,
-        None if harness::NO_CLI.contains(&id.as_str()) => {
+        None if harness::NOT_RUN.contains(&id.as_str()) => {
             return Err(format!(
-                "{id} has no command line to start; tk run cannot wrap it"
+                "tk run does not start {id}: its preset names no agent command line to wrap"
             ))
         }
         None => return Err(format!("unknown harness {id:?}\n{USAGE}")),
@@ -206,9 +206,11 @@ mod tests {
         assert!(parse(&s(&["vim", "--boundary", "none"]))
             .unwrap_err()
             .contains("unknown harness"));
-        assert!(parse(&s(&["cursor", "--boundary", "none"]))
-            .unwrap_err()
-            .contains("no command line"));
+        for app in ["cursor", "zed"] {
+            assert!(parse(&s(&[app, "--boundary", "none"]))
+                .unwrap_err()
+                .contains("tk run does not start"));
+        }
         assert!(parse(&s(&["pi", "--boundary", "none", "--model", "x"]))
             .unwrap_err()
             .contains("after --"));

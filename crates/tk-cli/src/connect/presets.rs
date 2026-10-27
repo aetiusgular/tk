@@ -1,14 +1,13 @@
 //! The per-harness table: where each harness keeps its MCP servers, in
-//! what shape, and what tk must never write. Lane C's verified copy of
-//! `contracts/harness-presets.json` lives beside this file
-//! (`presets.json`, embedded at build time); integration copies it over the
-//! contract skeleton (lane C status doc, "Requests for integration").
+//! what shape, and what tk must never write. It is
+//! `contracts/harness-presets.json`, embedded at build time: lane C verified
+//! it, and integration w1 made the contract the one copy (lane C's request).
 
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-pub const PRESETS_JSON: &str = include_str!("presets.json");
+pub const PRESETS_JSON: &str = include_str!("../../../../contracts/harness-presets.json");
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

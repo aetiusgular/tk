@@ -21,8 +21,8 @@
 //! managed file (case 65), and a harness that is not installed gets the
 //! entry printed and nothing written (case 54).
 //!
-//! Reads: `contracts/harness-presets.json` (lane C's verified copy is
-//! `presets.json` here), `contracts/docker-args.md`,
+//! Reads: `contracts/harness-presets.json` (the verified table, embedded),
+//! `contracts/docker-args.md`,
 //! `contracts/entry.schema.json`, `contracts/policy.md` section 3.
 
 pub mod gateway;

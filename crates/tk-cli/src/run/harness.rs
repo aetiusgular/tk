@@ -101,6 +101,16 @@ pub const HARNESSES: &[Harness] = &[
         state: &[".copilot"],
         credential: None,
     },
+    // Hermes: lane C verified the CLI `hermes` and the folder `~/.hermes`
+    // (HERMES_HOME; contracts/harness-presets.json). Added by integration
+    // w1; sbx has no Hermes agent, and its credential file is not read (NF).
+    Harness {
+        id: "hermes",
+        command: "hermes",
+        sbx: None,
+        state: &[".hermes"],
+        credential: None,
+    },
     Harness {
         id: "openclaw",
         command: "openclaw",
@@ -138,9 +148,11 @@ pub const HARNESSES: &[Harness] = &[
     },
 ];
 
-/// Ids in the presets that have no command line to start (`cli: null`):
-/// Cursor, Hermes and Zed are apps or have no CLI named there.
-pub const NO_CLI: &[&str] = &["cursor", "hermes", "zed"];
+/// Ids in the presets that `tk run` does not start: Cursor (no CLI in its
+/// preset row) and Zed (its `zed` command opens the editor app, not an
+/// agent; lane C's row names it for `tk connect`). Integration w1 renamed
+/// lane D's `NO_CLI` when the verified table gave Zed a `cli`.
+pub const NOT_RUN: &[&str] = &["cursor", "zed"];
 
 pub fn find(id: &str) -> Option<&'static Harness> {
     HARNESSES.iter().find(|h| h.id == id)
@@ -156,13 +168,17 @@ mod tests {
     fn every_preset_with_a_cli_is_here_with_the_same_command() {
         let v: serde_json::Value = serde_json::from_str(PRESETS).unwrap();
         let rows = v["harnesses"].as_array().unwrap();
-        assert_eq!(rows.len(), HARNESSES.len() + NO_CLI.len());
+        assert_eq!(rows.len(), HARNESSES.len() + NOT_RUN.len());
         for row in rows {
             let id = row["id"].as_str().unwrap();
-            match row["cli"].as_str() {
-                Some(cli) => assert_eq!(find(id).map(|h| h.command), Some(cli), "{id}"),
-                None => assert!(NO_CLI.contains(&id) && find(id).is_none(), "{id}"),
+            if NOT_RUN.contains(&id) {
+                assert!(find(id).is_none(), "{id}");
+                continue;
             }
+            let cli = row["cli"]
+                .as_str()
+                .unwrap_or_else(|| panic!("{id} has no cli"));
+            assert_eq!(find(id).map(|h| h.command), Some(cli), "{id}");
         }
     }
 

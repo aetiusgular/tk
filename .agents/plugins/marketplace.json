@@ -1,0 +1,6 @@
+{
+  "name": "tk",
+  "plugins": [
+    { "name": "tk", "source": { "source": "local", "path": "./packages/tk-codex-plugin" } }
+  ]
+}

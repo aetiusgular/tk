@@ -34,7 +34,7 @@ pub fn fragment(preset: &Preset, spec: &ServerSpec, macos: bool) -> Result<Strin
     match preset.id.as_str() {
         // Claude Code managed settings: `allowedMcpServers` entries match by
         // `serverName`, `serverCommand` (the exact argv) or `serverUrl`
-        // (wildcards allowed). Sources in presets.json.
+        // (wildcards allowed). Sources in contracts/harness-presets.json.
         "claude-code" => {
             let entry = match &spec.transport {
                 Transport::Stdio { command, args } => {
@@ -52,7 +52,7 @@ pub fn fragment(preset: &Preset, spec: &ServerSpec, macos: bool) -> Result<Strin
             out.push('\n');
         }
         // Codex requirements.toml: an allowlisted server is pinned by its
-        // identity, a command or a URL. Sources in presets.json.
+        // identity, a command or a URL. Sources in contracts/harness-presets.json.
         "codex" => {
             out.push_str("# add to requirements.toml (managed); tk does not write it\n");
             out.push_str(&format!("[mcp_servers.{}.identity]\n", spec.name));
