@@ -95,8 +95,13 @@ fn sigterm_to_tk_alone_reaches_the_harness() {
 #[test]
 fn a_terminal_ctrl_c_reaches_the_harness_once() {
     use std::io::Write;
-    if Command::new("script").arg("--version").output().is_err() {
-        eprintln!("script not installed: the terminal half is a box step");
+    // util-linux `script` only: BSD `script` (macOS) has no `-c`.
+    let util_linux = Command::new("script")
+        .arg("--version")
+        .output()
+        .is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("util-linux"));
+    if !util_linux {
+        eprintln!("no util-linux script: the terminal half is a box and Mac step");
         return;
     }
     let dir = std::env::temp_dir().join(format!("tk-sig-tty-{}", std::process::id()));
