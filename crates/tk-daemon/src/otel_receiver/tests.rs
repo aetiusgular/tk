@@ -78,10 +78,7 @@ fn a_chats_events_arrive_attributed_by_token() {
     let status = post(
         f.receiver.port(),
         "/v1/logs",
-        &[
-            ("content-type", "application/json"),
-            ("x-monocode-token", &token),
-        ],
+        &[("content-type", "application/json"), ("x-tk-token", &token)],
         &logs_json("Bash"),
     );
     assert_eq!(status, 200);
@@ -136,7 +133,7 @@ fn protobuf_body_is_decoded() {
         "/v1/logs",
         &[
             ("content-type", "application/x-protobuf"),
-            ("x-monocode-token", &token),
+            ("x-tk-token", &token),
         ],
         &body,
     );
@@ -162,10 +159,7 @@ fn no_token_or_a_wrong_one_is_refused_before_the_body() {
         post(
             port,
             "/v1/logs",
-            &[
-                ("content-type", "application/json"),
-                ("x-monocode-token", "nope")
-            ],
+            &[("content-type", "application/json"), ("x-tk-token", "nope")],
             &logs_json("x")
         ),
         401
@@ -193,10 +187,10 @@ fn wrong_host_method_path_type_encoding_and_size_are_refused() {
     let port = f.receiver.port();
     let json = [
         ("content-type", "application/json"),
-        ("x-monocode-token", token.as_str()),
+        ("x-tk-token", token.as_str()),
     ];
     // DNS rebinding: a page's request carries its own host name.
-    let rebound = format!("POST /v1/logs HTTP/1.1\r\nhost: evil.example:{port}\r\nx-monocode-token: {token}\r\ncontent-type: application/json\r\ncontent-length: 2\r\n\r\n{{}}");
+    let rebound = format!("POST /v1/logs HTTP/1.1\r\nhost: evil.example:{port}\r\nx-tk-token: {token}\r\ncontent-type: application/json\r\ncontent-length: 2\r\n\r\n{{}}");
     assert_eq!(send_raw(port, rebound.as_bytes()), 403);
     // A browser preflight.
     let preflight = format!("OPTIONS /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\n\r\n");
@@ -206,7 +200,7 @@ fn wrong_host_method_path_type_encoding_and_size_are_refused() {
         post(
             port,
             "/v1/logs",
-            &[("content-type", "text/plain"), ("x-monocode-token", &token)],
+            &[("content-type", "text/plain"), ("x-tk-token", &token)],
             b"{}"
         ),
         415
@@ -218,18 +212,18 @@ fn wrong_host_method_path_type_encoding_and_size_are_refused() {
             &[
                 ("content-type", "application/json"),
                 ("content-encoding", "gzip"),
-                ("x-monocode-token", &token)
+                ("x-tk-token", &token)
             ],
             b"{}"
         ),
         415
     );
-    let big = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-monocode-token: {token}\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n", MAX_BODY_BYTES + 1);
+    let big = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-tk-token: {token}\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n", MAX_BODY_BYTES + 1);
     assert_eq!(send_raw(port, big.as_bytes()), 413);
-    let no_length = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-monocode-token: {token}\r\ncontent-type: application/json\r\n\r\n");
+    let no_length = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-tk-token: {token}\r\ncontent-type: application/json\r\n\r\n");
     assert_eq!(send_raw(port, no_length.as_bytes()), 411);
     // A chunk size near usize::MAX must not wrap past the limit.
-    let chunked = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-monocode-token: {token}\r\ncontent-type: application/json\r\ntransfer-encoding: chunked\r\n\r\nffffffffffffffff\r\n");
+    let chunked = format!("POST /v1/logs HTTP/1.1\r\nhost: 127.0.0.1:{port}\r\nx-tk-token: {token}\r\ncontent-type: application/json\r\ntransfer-encoding: chunked\r\n\r\nffffffffffffffff\r\n");
     assert_eq!(send_raw(port, chunked.as_bytes()), 413);
     assert_eq!(post(port, "/v1/logs", &json, b"not json"), 400);
     let huge_head = format!(
@@ -245,7 +239,7 @@ fn chunked_body_is_read() {
     let token = f.receiver.token_for("c", "claude").unwrap();
     let port = f.receiver.port();
     let body = logs_json("Read");
-    let mut req = format!("POST /v1/logs HTTP/1.1\r\nhost: localhost:{port}\r\nx-monocode-token: {token}\r\ncontent-type: application/json\r\ntransfer-encoding: chunked\r\n\r\n{:x}\r\n", body.len()).into_bytes();
+    let mut req = format!("POST /v1/logs HTTP/1.1\r\nhost: localhost:{port}\r\nx-tk-token: {token}\r\ncontent-type: application/json\r\ntransfer-encoding: chunked\r\n\r\n{:x}\r\n", body.len()).into_bytes();
     req.extend_from_slice(&body);
     req.extend_from_slice(b"\r\n0\r\n\r\n");
     assert_eq!(send_raw(port, &req), 200);
@@ -261,7 +255,7 @@ fn metrics_and_traces_are_accepted_and_dropped() {
     let token = f.receiver.token_for("c", "claude").unwrap();
     let headers = [
         ("content-type", "application/json"),
-        ("x-monocode-token", token.as_str()),
+        ("x-tk-token", token.as_str()),
     ];
     assert_eq!(
         post(
@@ -283,10 +277,7 @@ fn switched_off_drops_what_still_arrives() {
     let status = post(
         f.receiver.port(),
         "/v1/logs",
-        &[
-            ("content-type", "application/json"),
-            ("x-monocode-token", &token),
-        ],
+        &[("content-type", "application/json"), ("x-tk-token", &token)],
         &logs_json("Bash"),
     );
     assert_eq!(status, 200);
@@ -295,10 +286,7 @@ fn switched_off_drops_what_still_arrives() {
     post(
         f.receiver.port(),
         "/v1/logs",
-        &[
-            ("content-type", "application/json"),
-            ("x-monocode-token", &token),
-        ],
+        &[("content-type", "application/json"), ("x-tk-token", &token)],
         &logs_json("Bash"),
     );
     assert!(f.events.recv_timeout(Duration::from_secs(5)).is_ok());
@@ -327,7 +315,7 @@ fn rate_cap_answers_429_after_the_burst() {
     let token = f.receiver.token_for("c", "claude").unwrap();
     let headers = [
         ("content-type", "application/json"),
-        ("x-monocode-token", token.as_str()),
+        ("x-tk-token", token.as_str()),
     ];
     let mut limited = 0;
     for _ in 0..(RATE_BURST as usize + 60) {
@@ -584,4 +572,163 @@ fn quitting_removes_the_helper_folder_and_never_follows_a_link() {
     assert!(std::fs::symlink_metadata(&dir).is_err());
     assert!(elsewhere.join("keep").exists());
     std::fs::remove_dir_all(&root).unwrap();
+}
+
+// ---------------------------------------------------------------- tk lane B
+
+const TK_TOKEN: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+fn args_of(cmd: &Command) -> Vec<String> {
+    cmd.get_args()
+        .map(|a| a.to_string_lossy().into_owned())
+        .collect()
+}
+
+fn env_of(cmd: &Command, name: &str) -> Option<Option<String>> {
+    cmd.get_envs()
+        .find(|(k, _)| *k == name)
+        .map(|(_, v)| v.map(|v| v.to_string_lossy().into_owned()))
+}
+
+#[test]
+fn only_a_loopback_http_endpoint_is_usable() {
+    assert!(loopback_endpoint("http://127.0.0.1:4318"));
+    for bad in [
+        "http://127.0.0.1:0",
+        "http://127.0.0.1:99999",
+        "https://127.0.0.1:4318",
+        "http://localhost:4318",
+        "http://203.0.113.9:4318",
+        "http://127.0.0.1:4318/v1/logs",
+        "http://127.0.0.1.evil.test:4318",
+    ] {
+        assert!(!loopback_endpoint(bad), "{bad}");
+    }
+}
+
+#[test]
+fn codex_gets_the_endpoint_in_flags_and_the_token_only_in_its_environment() {
+    let home = std::env::temp_dir().join(format!("tk-codex-home-{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&home).unwrap();
+    let mut cmd = Command::new("codex");
+    cmd.env("CODEX_HOME", &home);
+    let applied = apply_export(
+        &Export {
+            harness: "codex",
+            endpoint: "http://127.0.0.1:4318",
+            token: TK_TOKEN,
+            log_prompts: false,
+            helper_dir: None,
+        },
+        &[],
+        &mut cmd,
+    );
+    assert_eq!(applied, Applied::Codex);
+    let args = args_of(&cmd);
+    assert!(args
+        .iter()
+        .any(|a| a.contains("http://127.0.0.1:4318/v1/logs")));
+    assert!(
+        args.iter().all(|a| !a.contains(TK_TOKEN)),
+        "no token in an argument"
+    );
+    assert_eq!(
+        env_of(&cmd, "OTEL_EXPORTER_OTLP_HEADERS"),
+        Some(Some(format!("x-tk-token={TK_TOKEN}")))
+    );
+    let _ = std::fs::remove_dir_all(&home);
+}
+
+#[cfg(unix)]
+#[test]
+fn claude_code_gets_a_private_helper_and_no_token_in_arguments() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("tk-helper-{}", uuid::Uuid::new_v4()));
+    let dir = root.join("run-1");
+    let mut cmd = Command::new("claude");
+    let applied = apply_export(
+        &Export {
+            harness: "claude-code",
+            endpoint: "http://127.0.0.1:4318",
+            token: TK_TOKEN,
+            log_prompts: false,
+            helper_dir: Some(&dir),
+        },
+        &[],
+        &mut cmd,
+    );
+    let Applied::Claude {
+        helper: Some(helper),
+    } = applied
+    else {
+        panic!("{applied:?}");
+    };
+    assert!(helper.starts_with(&dir));
+    assert_eq!(
+        std::fs::metadata(&dir).unwrap().permissions().mode() & 0o777,
+        0o700
+    );
+    let args = args_of(&cmd);
+    assert!(args.iter().all(|a| !a.contains(TK_TOKEN)));
+    assert!(args.iter().any(|a| a.contains("otelHeadersHelper")));
+    assert_eq!(
+        env_of(&cmd, "OTEL_EXPORTER_OTLP_HEADERS"),
+        Some(None),
+        "removed"
+    );
+    assert!(std::fs::read_to_string(&helper)
+        .unwrap()
+        .contains("x-tk-token"));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn the_export_stands_down_for_a_users_own_otel_and_for_other_harnesses() {
+    let export = |harness| Export {
+        harness,
+        endpoint: "http://127.0.0.1:4318",
+        token: TK_TOKEN,
+        log_prompts: false,
+        helper_dir: None,
+    };
+    let mut cmd = Command::new("claude");
+    cmd.env("OTEL_EXPORTER_OTLP_ENDPOINT", "https://collector.example");
+    assert!(matches!(
+        apply_export(&export("claude-code"), &[], &mut cmd),
+        Applied::StoodDown(_)
+    ));
+    assert!(args_of(&cmd).is_empty());
+    let mut cmd = Command::new("pi");
+    assert!(matches!(
+        apply_export(&export("pi"), &[], &mut cmd),
+        Applied::StoodDown(_)
+    ));
+    let mut cmd = Command::new("claude");
+    let bad = Export {
+        endpoint: "http://203.0.113.9:4318",
+        ..export("claude-code")
+    };
+    assert!(matches!(
+        apply_export(&bad, &[], &mut cmd),
+        Applied::StoodDown(_)
+    ));
+    assert!(cmd.get_envs().next().is_none(), "nothing set");
+}
+
+#[test]
+fn minted_tokens_are_fresh_and_name_their_chat() {
+    let f = fixture(true);
+    let a = f.receiver.mint("c1", "pi").unwrap();
+    let b = f.receiver.mint("c1", "pi").unwrap();
+    assert_ne!(a, b);
+    assert!(tk_core::token::well_formed(&a));
+    assert_eq!(f.receiver.holder_of(&a), Some(("c1".to_string(), "pi")));
+    assert_eq!(f.receiver.holder_of(&"0".repeat(64)), None);
+    assert_eq!(harness_env::harness_id("pi"), Some("pi"));
+    assert_eq!(
+        harness_env::harness_id("claude"),
+        None,
+        "tk uses the preset ids"
+    );
+    assert_eq!(normalize::short_name("pi.tool_result"), "tool_result");
 }

@@ -1,119 +1,237 @@
-//! The Unix socket server. STUB (session 0): binds the path with mode 0600,
-//! answers `hello` and refuses every other op with `not implemented`. Lane B
-//! fills it (contract sections 1, 2, 4): the token check, `event`, `tail`,
-//! `report`, `approve`, `approver`, `token.mint`.
+//! The Unix socket server (`contracts/daemon-protocol.md`, sections 1 and 2):
+//! JSON lines, one object per line, at most 1 MiB per line. Each connection
+//! gets a reader thread (this file) and a writer thread, so pushes from
+//! `tail` and `approver` never wait on the reader, and a slow client never
+//! holds up the daemon.
 
-use std::io::{BufRead, BufReader, Write};
-use std::os::unix::fs::PermissionsExt;
+use std::io::{BufRead, BufReader, Read, Write};
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 
-use crate::protocol::{DaemonInfo, Reply, Request, Scope, PROTOCOL_VERSION};
+use crate::daemon::{error, After, Daemon, Outbox};
+use crate::protocol::Request;
+
+/// Longest line read, in bytes, before the newline.
+pub const MAX_LINE_BYTES: usize = 1024 * 1024;
+/// Connections served at once. One more gets `busy` and is closed.
+pub const MAX_CONNECTIONS: usize = 64;
+/// Time a new connection has to send its `hello`.
+pub const HELLO_DEADLINE: Duration = Duration::from_secs(10);
 
 /// Binds `path`, replacing a stale socket file, and sets it to 0600. The
-/// parent folder is created 0700 when missing.
+/// parent folder is created 0700 when missing, and refused when it is a link
+/// or belongs to another user.
 pub fn bind(path: &Path) -> std::io::Result<UnixListener> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-        std::fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
+        private_dir(parent)?;
     }
-    if path.exists() {
-        std::fs::remove_file(path)?;
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_dir() => {
+            return Err(std::io::Error::other("socket path is a folder"));
+        }
+        Ok(_) => std::fs::remove_file(path)?,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(e),
     }
     let listener = UnixListener::bind(path)?;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
     Ok(listener)
 }
 
-/// Serves one connection: reads lines, answers each. The stub accepts any
-/// `hello` whose token has the right shape and refuses the rest.
-pub fn serve_one(stream: UnixStream) -> std::io::Result<()> {
-    let mut reader = BufReader::new(stream.try_clone()?);
-    let mut writer = stream;
-    let mut line = String::new();
-    let mut greeted = false;
-    loop {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-            return Ok(());
+/// Makes `dir` (and its parents) and holds it to 0700, owned by this user,
+/// not a link.
+pub fn private_dir(dir: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dir)?;
+    let meta = std::fs::symlink_metadata(dir)?;
+    if !meta.file_type().is_dir() {
+        return Err(std::io::Error::other(format!(
+            "{} is not a folder",
+            dir.display()
+        )));
+    }
+    // SAFETY: geteuid has no preconditions and cannot fail.
+    let me = unsafe { libc::geteuid() };
+    if meta.uid() != me {
+        return Err(std::io::Error::other(format!(
+            "{} belongs to another user",
+            dir.display()
+        )));
+    }
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
+}
+
+/// Accepts connections until the listener fails. Each one runs on its own
+/// thread.
+pub fn serve(listener: UnixListener, daemon: Arc<Daemon>) {
+    let open = Arc::new(AtomicUsize::new(0));
+    for stream in listener.incoming() {
+        let Ok(stream) = stream else { continue };
+        if open.fetch_add(1, Ordering::SeqCst) >= MAX_CONNECTIONS {
+            open.fetch_sub(1, Ordering::SeqCst);
+            let mut stream = stream;
+            let _ = write_line(&mut stream, &error("busy"));
+            continue;
         }
-        let reply = match serde_json::from_str::<Request>(line.trim_end()) {
-            Err(e) => error(format!("bad line: {e}")),
-            Ok(Request::Hello { token, .. }) if !greeted => {
-                if tk_core::token::well_formed(&token) {
-                    greeted = true;
-                    Reply {
-                        scope: Some(Scope::Daemon),
-                        daemon: Some(DaemonInfo {
-                            version: env!("CARGO_PKG_VERSION").to_string(),
-                            pid: std::process::id(),
-                            protocol: PROTOCOL_VERSION,
-                        }),
-                        ..ok()
-                    }
-                } else {
-                    let r = error("bad token".to_string());
-                    write_line(&mut writer, &r)?;
-                    return Ok(());
-                }
-            }
-            Ok(_) if !greeted => {
-                let r = error("hello first".to_string());
-                write_line(&mut writer, &r)?;
-                return Ok(());
-            }
-            Ok(_) => error("not implemented (session 0 stub; lane B)".to_string()),
-        };
-        write_line(&mut writer, &reply)?;
+        let daemon = daemon.clone();
+        let open = open.clone();
+        let spawned = std::thread::Builder::new()
+            .name("tk-daemon-conn".into())
+            .spawn(move || {
+                let _ = serve_one(stream, &daemon);
+                open.fetch_sub(1, Ordering::SeqCst);
+            });
+        if spawned.is_err() {
+            eprintln!("tk-daemon: could not start a connection thread");
+        }
     }
 }
 
-fn ok() -> Reply {
-    Reply {
-        ok: true,
-        error: None,
-        scope: None,
-        chat: None,
-        daemon: None,
-        id: None,
-        token: None,
-        answer: None,
-        by: None,
-        report: None,
-    }
-}
-
-fn error(message: String) -> Reply {
-    Reply {
-        ok: false,
-        error: Some(message),
-        ..ok()
-    }
-}
-
-fn write_line(w: &mut UnixStream, reply: &Reply) -> std::io::Result<()> {
-    let mut text = serde_json::to_string(reply).map_err(std::io::Error::other)?;
+fn write_line<T: serde::Serialize>(w: &mut UnixStream, value: &T) -> std::io::Result<()> {
+    let mut text = serde_json::to_string(value).map_err(std::io::Error::other)?;
     text.push('\n');
     w.write_all(text.as_bytes())
+}
+
+/// What one read of a line gave.
+enum Line {
+    Text(String),
+    TooLong,
+    NotUtf8,
+    Closed,
+}
+
+fn read_line(reader: &mut impl BufRead) -> std::io::Result<Line> {
+    let mut buf = Vec::new();
+    let n = reader
+        .by_ref()
+        .take(MAX_LINE_BYTES as u64 + 1)
+        .read_until(b'\n', &mut buf)?;
+    if n == 0 {
+        return Ok(Line::Closed);
+    }
+    if buf.last() == Some(&b'\n') {
+        buf.pop();
+        if buf.last() == Some(&b'\r') {
+            buf.pop();
+        }
+    } else if buf.len() > MAX_LINE_BYTES {
+        return Ok(Line::TooLong);
+    }
+    Ok(match String::from_utf8(buf) {
+        Ok(text) => Line::Text(text),
+        Err(_) => Line::NotUtf8,
+    })
+}
+
+/// Serves one connection until the client closes or a rule closes it.
+pub fn serve_one(stream: UnixStream, daemon: &Arc<Daemon>) -> std::io::Result<()> {
+    let conn = daemon.next_conn();
+    let (out, rx, pending) = Outbox::new(conn);
+    let mut writer = stream.try_clone()?;
+    let writer_thread = std::thread::Builder::new()
+        .name("tk-daemon-write".into())
+        .spawn(move || {
+            for mut line in rx {
+                line.push('\n');
+                let failed = writer.write_all(line.as_bytes()).is_err();
+                pending.fetch_sub(1, Ordering::SeqCst);
+                if failed {
+                    let _ = writer.shutdown(std::net::Shutdown::Both);
+                    break;
+                }
+            }
+        })?;
+    let result = read_loop(&stream, daemon, &out);
+    daemon.forget(conn);
+    drop(out);
+    // The writer drains what is queued (the last reply included), then
+    // ends when every sender is gone.
+    let _ = writer_thread.join();
+    let _ = stream.shutdown(std::net::Shutdown::Both);
+    result
+}
+
+fn read_loop(stream: &UnixStream, daemon: &Arc<Daemon>, out: &Outbox) -> std::io::Result<()> {
+    stream.set_read_timeout(Some(HELLO_DEADLINE))?;
+    let mut reader = BufReader::new(stream.try_clone()?);
+    // The first line: `hello`, or one error and the connection closes.
+    let who = match read_line(&mut reader) {
+        Ok(Line::Text(text)) => match serde_json::from_str::<Request>(&text) {
+            Ok(Request::Hello { token, .. }) => match daemon.hello(&token) {
+                Some(who) => who,
+                None => {
+                    out.send(&error("bad token"));
+                    return Ok(());
+                }
+            },
+            _ => {
+                out.send(&error("hello first"));
+                return Ok(());
+            }
+        },
+        Ok(Line::TooLong) => {
+            out.send(&error("line too long"));
+            return Ok(());
+        }
+        Ok(Line::NotUtf8) => {
+            out.send(&error("hello first"));
+            return Ok(());
+        }
+        Ok(Line::Closed) | Err(_) => return Ok(()),
+    };
+    out.send(&Daemon::hello_reply(&who));
+    stream.set_read_timeout(None)?;
+    loop {
+        let text = match read_line(&mut reader)? {
+            Line::Closed => return Ok(()),
+            Line::TooLong => {
+                out.send(&error("line too long"));
+                return Ok(());
+            }
+            Line::NotUtf8 => {
+                out.send(&error("bad line: not UTF-8"));
+                continue;
+            }
+            Line::Text(text) => text,
+        };
+        if text.trim().is_empty() {
+            continue;
+        }
+        let request = match serde_json::from_str::<Request>(&text) {
+            Ok(r) => r,
+            Err(e) => {
+                out.send(&error(format!("bad line: {e}")));
+                continue;
+            }
+        };
+        if let After::Close = daemon.handle(&who, request, out) {
+            return Ok(());
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::BufRead;
 
-    fn temp_socket() -> std::path::PathBuf {
-        let dir = std::env::temp_dir().join(format!(
+    fn temp_root() -> std::path::PathBuf {
+        std::env::temp_dir().join(format!(
             "tk-sock-test-{}-{}",
             std::process::id(),
-            tk_core::token::mint().unwrap()
-        ));
-        dir.join("tk/daemon.sock")
+            &tk_core::token::mint().unwrap()[..12]
+        ))
     }
 
     #[test]
-    fn bind_sets_0600_and_a_0700_parent() {
-        let path = temp_socket();
+    fn bind_sets_0600_and_a_0700_parent_and_replaces_a_stale_socket() {
+        let root = temp_root();
+        let path = root.join("tk/daemon.sock");
+        drop(bind(&path).unwrap());
+        // A stale socket file from a daemon that died is replaced.
         let _l = bind(&path).unwrap();
         let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o600);
@@ -123,53 +241,25 @@ mod tests {
             .mode()
             & 0o777;
         assert_eq!(parent, 0o700);
-        std::fs::remove_dir_all(path.parent().unwrap().parent().unwrap()).unwrap();
+        std::fs::remove_dir_all(&root).unwrap();
     }
 
     #[test]
-    fn hello_then_other_ops_get_a_reply_each_and_bad_token_closes() {
-        let path = temp_socket();
-        let listener = bind(&path).unwrap();
-        let server = std::thread::spawn(move || {
-            for stream in listener.incoming().take(2) {
-                serve_one(stream.unwrap()).unwrap();
-            }
-        });
-        // good token
-        let client = UnixStream::connect(&path).unwrap();
-        let mut w = client.try_clone().unwrap();
-        let mut r = BufReader::new(client);
-        let tok = tk_core::token::mint().unwrap();
-        writeln!(w, r#"{{"op":"hello","token":"{tok}","client":"test"}}"#).unwrap();
-        let mut line = String::new();
-        r.read_line(&mut line).unwrap();
-        let reply: Reply = serde_json::from_str(&line).unwrap();
-        assert!(reply.ok);
-        assert_eq!(reply.scope, Some(Scope::Daemon));
-        writeln!(w, r#"{{"op":"approver"}}"#).unwrap();
-        line.clear();
-        r.read_line(&mut line).unwrap();
-        let reply: Reply = serde_json::from_str(&line).unwrap();
-        assert!(!reply.ok);
-        assert!(reply.error.unwrap().contains("not implemented"));
-        drop(w);
-        drop(r);
-        // bad token
-        let client = UnixStream::connect(&path).unwrap();
-        let mut w = client.try_clone().unwrap();
-        let mut r = BufReader::new(client);
-        writeln!(w, r#"{{"op":"hello","token":"short","client":"test"}}"#).unwrap();
-        line.clear();
-        r.read_line(&mut line).unwrap();
-        let reply: Reply = serde_json::from_str(&line).unwrap();
-        assert_eq!(reply.error.as_deref(), Some("bad token"));
-        line.clear();
-        assert_eq!(
-            r.read_line(&mut line).unwrap(),
-            0,
-            "the daemon closes after a bad token"
-        );
-        server.join().unwrap();
-        std::fs::remove_dir_all(path.parent().unwrap().parent().unwrap()).unwrap();
+    fn a_linked_socket_folder_is_refused() {
+        let root = temp_root();
+        let real = root.join("elsewhere");
+        std::fs::create_dir_all(&real).unwrap();
+        std::os::unix::fs::symlink(&real, root.join("tk")).unwrap();
+        assert!(bind(&root.join("tk/daemon.sock")).is_err());
+        assert!(!real.join("daemon.sock").exists());
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn a_folder_at_the_socket_path_is_refused() {
+        let root = temp_root();
+        std::fs::create_dir_all(root.join("tk/daemon.sock")).unwrap();
+        assert!(bind(&root.join("tk/daemon.sock")).is_err());
+        std::fs::remove_dir_all(&root).unwrap();
     }
 }

@@ -1,6 +1,7 @@
-//! The activity log (wave 3, lane B). Detection only: nothing here blocks an
-//! action. Design: research note X, section 4; plan `parallel_build_w3.md`,
-//! lane card B.
+//! The activity log. Copied from the fork (`activity/` at `159ef3e`, wave 3
+//! lane B) and taken out of Tauri by tk lane B: `init` takes the daemon's
+//! data folder instead of an `AppHandle`. Detection only: nothing here
+//! blocks an action.
 //!
 //! - `record`, `record_approval`: the write side lanes A and C call. Neither
 //!   returns an error or panics; before `init`, or with a full queue, the
@@ -23,8 +24,6 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 
-use tauri::{AppHandle, Manager};
-
 pub use types::{ActivityEvent, ApprovalRecord, ProcessKind};
 
 static LOG: OnceLock<store::ActivityLog> = OnceLock::new();
@@ -36,20 +35,20 @@ static SCREENSHOT_FLOOR: AtomicU64 = AtomicU64::new(retention::DEFAULT_SCREENSHO
 static DATA_DIR: OnceLock<String> = OnceLock::new();
 static IDENTIFIER: OnceLock<String> = OnceLock::new();
 
-/// Starts the log in the app's data folder. Called once from `setup`. A
-/// failure leaves the log off; the app runs on.
-pub fn init(app: &AppHandle) {
-    let _ = IDENTIFIER.set(app.config().identifier.clone());
-    let Ok(base) = app.path().app_data_dir() else {
-        eprintln!("activity log: no data folder, log off");
-        return;
-    };
-    let _ = DATA_DIR.set(base.to_string_lossy().into_owned());
-    let _ = LOG.set(store::ActivityLog::start(base.join("activity")));
+/// Starts the log in `<data_dir>/activity`. Called once by the daemon at
+/// start. `identifier` names the collector's launchd label (lane K); `None`
+/// keeps the release one. The log thread starts here; a second call is a
+/// no-op.
+pub fn init(data_dir: &std::path::Path, identifier: Option<&str>) {
+    if let Some(id) = identifier {
+        let _ = IDENTIFIER.set(id.to_string());
+    }
+    let _ = DATA_DIR.set(data_dir.to_string_lossy().into_owned());
+    let _ = LOG.set(store::ActivityLog::start(data_dir.join("activity")));
 }
 
 /// The app's data folder, once `init` ran.
-pub(crate) fn data_dir() -> Option<&'static str> {
+pub fn data_dir() -> Option<&'static str> {
     DATA_DIR.get().map(String::as_str)
 }
 
@@ -61,11 +60,11 @@ pub(crate) fn identifier() -> &'static str {
         .unwrap_or(collector::RELEASE_IDENTIFIER)
 }
 
-pub(crate) fn log() -> Option<&'static store::ActivityLog> {
+pub fn log() -> Option<&'static store::ActivityLog> {
     LOG.get()
 }
 
-pub(crate) fn chats() -> &'static Mutex<HashMap<String, check::ChatContext>> {
+pub fn chats() -> &'static Mutex<HashMap<String, check::ChatContext>> {
     CHATS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 

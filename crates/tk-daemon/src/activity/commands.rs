@@ -1,11 +1,14 @@
-//! The activity log's Tauri commands: the approvals bridge's writes, the
-//! panel's reads (B6) and the collector's install (B4).
+//! What the fork's panel called as Tauri commands, as plain functions the
+//! daemon calls: the approvals bridge's writes, the panel's reads (B6) and
+//! the collector's install (B4). tk lane B removed the `#[tauri::command]`
+//! attributes and the `AppHandle`; the blocking calls that ran on Tauri's
+//! blocking pool now run on the caller's thread (the daemon serves each
+//! connection on its own thread).
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
 
 use super::check::{self, ChatContext, Flag};
 use super::collector::{self, CollectorStatus, InstallPlan};
@@ -22,7 +25,6 @@ fn now() -> i64 {
     store::now_ms()
 }
 
-#[tauri::command]
 pub fn activity_record(events: Vec<ActivityEvent>) {
     let Some(log) = super::log() else { return };
     for event in webview_events(events) {
@@ -41,7 +43,6 @@ pub fn webview_events(events: Vec<ActivityEvent>) -> impl Iterator<Item = Activi
         .filter(|e| matches!(e.source, ActivitySource::Adapter | ActivitySource::Otel))
 }
 
-#[tauri::command]
 pub fn activity_record_approvals(records: Vec<ApprovalRecord>) {
     let Some(log) = super::log() else { return };
     for record in records.into_iter().take(MAX_BATCH) {
@@ -80,7 +81,6 @@ pub fn clean_context(mut context: ChatContext) -> Option<ChatContext> {
 
 /// The chat's harness and folders, for the check. Sent by the webview when a
 /// chat opens or its folders change.
-#[tauri::command]
 pub fn activity_set_chat(context: ChatContext) {
     let Some(context) = clean_context(context) else {
         return;
@@ -201,64 +201,52 @@ pub fn flags_report(
     report
 }
 
-#[tauri::command]
-pub async fn activity_flags(
-    chat_id: Option<String>,
-    since: i64,
-    until: Option<i64>,
-) -> Result<FlagsReport, String> {
+pub fn activity_flags(chat_id: Option<String>, since: i64, until: Option<i64>) -> FlagsReport {
     let Some(log) = super::log() else {
-        return Ok(FlagsReport::default());
+        return FlagsReport::default();
     };
     let dir = log.dir().to_path_buf();
     let dropped = log.dropped();
-    tauri::async_runtime::spawn_blocking(move || {
-        let until = until.unwrap_or_else(now);
-        let chats = super::chats().lock().map(|c| c.clone()).unwrap_or_default();
-        let collector_events = if cfg!(target_os = "macos") {
-            let started = std::time::Instant::now();
-            let mut reply =
-                collector::fetch_events(since, until, chat_id.as_deref(), collector::MAX_EVENTS);
-            if reply.complete || !reply.events.is_empty() {
-                // It answered; still say when eslogger itself is down.
-                if let Some(problem) = collector::fetch_status_detail()
-                    .as_ref()
-                    .and_then(collector::eslogger_problem)
-                {
-                    reply.problem.get_or_insert(problem);
-                }
+    let until = until.unwrap_or_else(now);
+    let chats = super::chats().lock().map(|c| c.clone()).unwrap_or_default();
+    let collector_events = if cfg!(target_os = "macos") {
+        let started = std::time::Instant::now();
+        let mut reply =
+            collector::fetch_events(since, until, chat_id.as_deref(), collector::MAX_EVENTS);
+        if reply.complete || !reply.events.is_empty() {
+            // It answered; still say when eslogger itself is down.
+            if let Some(problem) = collector::fetch_status_detail()
+                .as_ref()
+                .and_then(collector::eslogger_problem)
+            {
+                reply.problem.get_or_insert(problem);
             }
-            let took = started.elapsed();
-            if took > std::time::Duration::from_secs(2) {
-                eprintln!("activity: collector read took {} ms", took.as_millis());
-            }
-            Some(reply)
-        } else {
-            None
-        };
-        let _guard = super::log().map(|l| l.read_lock.lock());
-        let mut report = flags_report(
-            &dir,
-            super::data_dir(),
-            chat_id.as_deref(),
-            since,
-            until,
-            &chats,
-            collector_events,
-            now(),
-        );
-        report.dropped = dropped;
-        report
-    })
-    .await
-    .map_err(|e| e.to_string())
+        }
+        let took = started.elapsed();
+        if took > std::time::Duration::from_secs(2) {
+            eprintln!("activity: collector read took {} ms", took.as_millis());
+        }
+        Some(reply)
+    } else {
+        None
+    };
+    let _guard = log.read_lock.lock();
+    let mut report = flags_report(
+        &dir,
+        super::data_dir(),
+        chat_id.as_deref(),
+        since,
+        until,
+        &chats,
+        collector_events,
+        now(),
+    );
+    report.dropped = dropped;
+    report
 }
 
-#[tauri::command]
-pub async fn activity_collector_status() -> CollectorStatus {
-    tauri::async_runtime::spawn_blocking(collector::status)
-        .await
-        .unwrap_or_default()
+pub fn activity_collector_status() -> CollectorStatus {
+    collector::status()
 }
 
 /// Where `cargo build --release` in `macos/activity-collector` puts the
@@ -267,7 +255,7 @@ pub async fn activity_collector_status() -> CollectorStatus {
 /// a fixed number of folders below it (Mac test 3.4).
 const SOURCE_TREE_COLLECTOR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../macos/activity-collector/target/release/monocode-activity-collector"
+    "/../../macos/activity-collector/target/release/monocode-activity-collector"
 );
 
 fn regular_file(path: &Path) -> bool {
@@ -329,8 +317,7 @@ fn built_collector(exe: &Path) -> Option<PathBuf> {
 }
 
 /// What the install will do. Writes nothing outside the app's data folder.
-#[tauri::command]
-pub async fn activity_collector_install_plan(app: AppHandle) -> Result<InstallPlan, String> {
+pub fn activity_collector_install_plan() -> Result<InstallPlan, String> {
     if !cfg!(target_os = "macos") {
         return Err("The collector runs only on macOS.".into());
     }
@@ -350,8 +337,8 @@ pub async fn activity_collector_install_plan(app: AppHandle) -> Result<InstallPl
         "No collector binary found. Build it first: cargo build --release, in macos/activity-collector.".to_string()
     })?;
     let hash = collector::file_sha256(&built).map_err(|e| e.to_string())?;
-    let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    let stage = data.join("activity").join("install");
+    let data = super::data_dir().ok_or("The activity log is off.")?;
+    let stage = Path::new(data).join("activity").join("install");
     std::fs::create_dir_all(&stage).map_err(|e| e.to_string())?;
     let staged = stage.join(format!("{}.plist", names.label));
     let exe_text = exe.to_string_lossy().to_string();
@@ -368,21 +355,15 @@ pub async fn activity_collector_install_plan(app: AppHandle) -> Result<InstallPl
 
 /// Registers the bundled collector. Runs only on your click in the panel,
 /// after the plan was shown.
-#[tauri::command]
-pub async fn activity_collector_register() -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(collector::register_bundled)
-        .await
-        .map_err(|e| e.to_string())?
+pub fn activity_collector_register() -> Result<String, String> {
+    collector::register_bundled()
 }
 
-#[tauri::command]
-pub async fn activity_collector_unregister() -> Result<Vec<String>, String> {
+pub fn activity_collector_unregister() -> Result<Vec<String>, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let names = collector::Names::current();
     if collector::bundled_plist(&exe, &names).is_some() {
-        tauri::async_runtime::spawn_blocking(collector::unregister_bundled)
-            .await
-            .map_err(|e| e.to_string())??;
+        collector::unregister_bundled()?;
         return Ok(Vec::new());
     }
     Ok(collector::removal_commands(&names))
@@ -394,7 +375,6 @@ pub struct RetentionSettings {
     pub screenshot_floor_bytes: u64,
 }
 
-#[tauri::command]
 pub fn activity_set_retention(settings: RetentionSettings) -> RetentionSettings {
     // A floor of at least 256 MB, so a typo cannot fill the disk.
     let floor = settings.screenshot_floor_bytes.max(256 * 1024 * 1024);
@@ -406,15 +386,12 @@ pub fn activity_set_retention(settings: RetentionSettings) -> RetentionSettings 
 
 /// A screenshot for the panel, as a data URL. Only a `.png` inside the log's
 /// screenshot folder, resolved on disk so a symlink cannot reach outside.
-#[tauri::command]
-pub async fn activity_screenshot(path: String) -> Result<String, String> {
+pub fn activity_screenshot(path: String) -> Result<String, String> {
     let Some(log) = super::log() else {
         return Err("The activity log is off.".into());
     };
     let root = log.dir().join(super::retention::SCREENSHOT_DIR);
-    tauri::async_runtime::spawn_blocking(move || read_screenshot(&root, Path::new(&path)))
-        .await
-        .map_err(|e| e.to_string())?
+    read_screenshot(&root, Path::new(&path))
 }
 
 pub fn read_screenshot(root: &Path, path: &Path) -> Result<String, String> {

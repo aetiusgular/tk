@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd user agent for tk-daemon (macOS). Lane B wrote it; the Mac test
+  installs it once lane K lands. Not run in a build session.
+
+  launchd expands neither ~ nor $HOME in these paths, so replace
+  __TK_DAEMON__ (the absolute path of the built binary) and __HOME__ (your
+  home folder) before installing:
+
+    sed -e "s|__TK_DAEMON__|$HOME/.local/bin/tk-daemon|" -e "s|__HOME__|$HOME|" \
+      io.github.aetiusgular.tk.daemon.plist > ~/Library/LaunchAgents/io.github.aetiusgular.tk.daemon.plist
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/io.github.aetiusgular.tk.daemon.plist
+
+  The socket is ~/Library/Application Support/tk/daemon.sock.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>io.github.aetiusgular.tk.daemon</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__TK_DAEMON__</string>
+		<string>--foreground</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Umask</key>
+	<integer>63</integer>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>StandardErrorPath</key>
+	<string>__HOME__/Library/Logs/tk-daemon.log</string>
+</dict>
+</plist>

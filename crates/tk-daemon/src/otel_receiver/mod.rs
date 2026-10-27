@@ -1,9 +1,13 @@
-//! Harness telemetry (wave 3, lane A): a loopback OTLP receiver.
+//! Harness telemetry: a loopback OTLP receiver. Copied from the fork
+//! (`otel_receiver.rs` at `159ef3e`, wave 3 lane A) and taken out of Tauri
+//! by tk lane B: the sink is the daemon's ingest instead of a window event,
+//! `apply_export` replaces `apply_to_child` for a harness `tk run` starts,
+//! and the daemon's `token.mint` mints chat tokens here.
 //!
-//! Claude Code and Codex export their own OpenTelemetry log events (tool
-//! calls, approvals, model requests) here. Each record becomes an activity
-//! event and goes to the window, where the telemetry feed joins it with
-//! MonoCode's own adapter events and writes it to the activity log.
+//! Claude Code, Codex and Pi (lane A's emitter) export their OpenTelemetry
+//! log events (tool calls, approvals, model requests) here. Each record
+//! becomes an activity event, which the daemon writes to the log and
+//! streams to `tail`.
 //!
 //! - Listens on 127.0.0.1 only, on a free port, started on first use. It
 //!   makes no outbound call of any kind.
@@ -54,16 +58,13 @@ const MAX_CHATS: usize = 5000;
 const RATE_PER_SEC: f64 = 40.0;
 const RATE_BURST: f64 = 200.0;
 
-/// The window event that carries a batch of normalised events.
-pub const EVENTS_CHANNEL: &str = "harness-telemetry://events";
-
 /// What the window set: the switch, the prompt text switch, and which
 /// session ids are chats (helpers and probes are not).
 #[derive(Default)]
-pub(crate) struct Settings {
-    pub(crate) enabled: bool,
-    pub(crate) log_prompts: bool,
-    pub(crate) chats: HashSet<String>,
+pub struct Settings {
+    pub enabled: bool,
+    pub log_prompts: bool,
+    pub chats: HashSet<String>,
 }
 
 #[derive(Clone)]
@@ -72,7 +73,8 @@ struct Holder {
     harness: &'static str,
 }
 
-type Sink = Arc<dyn Fn(Vec<ActivityEvent>) + Send + Sync>;
+/// Where each request's batch of normalized events goes.
+pub type Sink = Arc<dyn Fn(Vec<ActivityEvent>) + Send + Sync>;
 
 /// One receiver: its port, its tokens, its counters.
 pub struct Receiver {
@@ -120,7 +122,7 @@ fn hash(token: &str) -> [u8; 32] {
 
 impl Receiver {
     /// Binds 127.0.0.1 on a free port and serves on its own thread.
-    pub(crate) fn start(settings: Arc<Mutex<Settings>>, sink: Sink) -> Result<Arc<Self>, String> {
+    pub fn start(settings: Arc<Mutex<Settings>>, sink: Sink) -> Result<Arc<Self>, String> {
         let listener = TcpListener::bind(("127.0.0.1", 0))
             .map_err(|e| format!("telemetry receiver could not listen: {e}"))?;
         let port = listener
@@ -186,6 +188,35 @@ impl Receiver {
 
     fn holder(&self, token: &str) -> Option<Holder> {
         self.holders.lock().ok()?.get(&hash(token)).cloned()
+    }
+
+    /// A fresh token for a chat's harness (the daemon's `token.mint`). Unlike
+    /// `token_for` it never hands back an earlier one: each `tk run` gets its
+    /// own. The oldest of the newest `MAX_TOKENS` gives way. `harness` must
+    /// be a known harness id (`harness_env::harness_id`).
+    pub fn mint(&self, chat_id: &str, harness: &'static str) -> Option<String> {
+        let mut tokens = self.tokens.lock().ok()?;
+        let mut holders = self.holders.lock().ok()?;
+        while tokens.len() >= MAX_TOKENS {
+            if let Some((_, old)) = tokens.pop_front() {
+                holders.remove(&hash(&old));
+            }
+        }
+        let token = tk_core::token::mint().ok()?;
+        holders.insert(
+            hash(&token),
+            Holder {
+                chat_id: chat_id.to_string(),
+                harness,
+            },
+        );
+        tokens.push_back(((chat_id.to_string(), harness), token.clone()));
+        Some(token)
+    }
+
+    /// The chat and harness a token was minted for, by its hash.
+    pub fn holder_of(&self, token: &str) -> Option<(String, &'static str)> {
+        self.holder(token).map(|h| (h.chat_id, h.harness))
     }
 
     fn take_rate(&self) -> bool {
@@ -597,19 +628,18 @@ fn read_body(reader: &mut Reader, head: &Head, deadline: Instant) -> Result<Vec<
 
 // ---------------------------------------------------------------- the app
 
-/// The app's receiver, started on first use with a sink that sends each
-/// batch to the window.
-fn receiver(app: &tauri::AppHandle) -> Result<Arc<Receiver>, String> {
+/// Starts the process's receiver once, with the switches set by
+/// `harness_telemetry_configure`, sending each batch to `sink`. A second call
+/// returns the first receiver and ignores its `sink`.
+pub fn start_with_sink(sink: Sink) -> Result<Arc<Receiver>, String> {
     RECEIVER
-        .get_or_init(|| {
-            use tauri::Emitter;
-            let app = app.clone();
-            let sink: Sink = Arc::new(move |events| {
-                let _ = app.emit(EVENTS_CHANNEL, events);
-            });
-            Receiver::start(settings(), sink)
-        })
+        .get_or_init(|| Receiver::start(settings(), sink))
         .clone()
+}
+
+/// The receiver `start_with_sink` started, if it did.
+pub fn receiver() -> Option<Arc<Receiver>> {
+    RECEIVER.get().and_then(|r| r.as_ref().ok()).cloned()
 }
 
 /// The effective `CODEX_HOME` for a spawn: what the command sets, else the
@@ -633,70 +663,98 @@ fn child_var(cmd: &Command, name: &str) -> Option<String> {
     std::env::var(name).ok()
 }
 
-/// Called in `harness_spawn` before the child starts. Points a chat's
-/// Claude Code or Codex at the receiver, or does nothing. Never fails the
-/// spawn: a receiver that cannot start leaves the chat with its adapter
-/// events only (corner case 9).
-pub fn apply_to_child(
-    app: &tauri::AppHandle,
-    session_id: &str,
-    binary_provider: Option<&str>,
-    args: &[String],
-    cmd: &mut Command,
-) {
-    let Some(harness) = harness_env::telemetry_harness(binary_provider, args) else {
-        return;
-    };
-    let (enabled, log_prompts, is_chat) = match settings().lock() {
-        Ok(s) => (s.enabled, s.log_prompts, s.chats.contains(session_id)),
-        Err(_) => return,
-    };
-    if !enabled || !is_chat {
-        return;
+/// What a process that starts a harness passes so the harness exports to
+/// the daemon's receiver (lane D's `tk run`). The token comes from the
+/// daemon's `token.mint`, the endpoint from `otlp.endpoint` beside its
+/// socket.
+pub struct Export<'a> {
+    /// `claude-code` or `codex`. Pi exports through lane A's emitter, which
+    /// reads `TK_OTLP_ENDPOINT` and `TK_CHAT_TOKEN` itself.
+    pub harness: &'a str,
+    pub endpoint: &'a str,
+    pub token: &'a str,
+    pub log_prompts: bool,
+    /// A private folder for this run's `otelHeadersHelper` script. It is
+    /// emptied and made again 0700, so it must be this run's alone, never a
+    /// folder another run uses. `None` puts the token in the header variable.
+    pub helper_dir: Option<&'a std::path::Path>,
+}
+
+/// What `apply_export` did.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Applied {
+    /// Claude Code points here; the helper script's path when one was made.
+    Claude {
+        helper: Option<std::path::PathBuf>,
+    },
+    Codex,
+    /// Nothing changed, and why: the user already exports OTel, the endpoint
+    /// is not loopback, or the harness has no OTel export here.
+    StoodDown(&'static str),
+}
+
+/// True for `http://127.0.0.1:<port>` and nothing else: the receiver binds
+/// only there, and an export anywhere else would leave the machine.
+pub fn loopback_endpoint(endpoint: &str) -> bool {
+    endpoint
+        .strip_prefix("http://127.0.0.1:")
+        .and_then(|port| port.parse::<u16>().ok())
+        .is_some_and(|port| port != 0)
+}
+
+/// Points a Claude Code or Codex child at the receiver, or does nothing.
+/// Never fails the start: whatever cannot be set leaves the harness without
+/// telemetry (corner case 9). The token never goes in an argument. It stands
+/// down when the user already exports OTel (the fork's
+/// `harness_env.rs:40-60`).
+pub fn apply_export(export: &Export, args: &[String], cmd: &mut Command) -> Applied {
+    if !loopback_endpoint(export.endpoint) || !tk_core::token::well_formed(export.token) {
+        return Applied::StoodDown("endpoint or token not usable");
+    }
+    if !matches!(export.harness, "claude-code" | "codex") {
+        return Applied::StoodDown("no OTel export for this harness");
     }
     if harness_env::has_own_env_telemetry(&|name| child_var(cmd, name)) {
-        return;
+        return Applied::StoodDown("the user already exports OTel");
     }
-    let mut codex_config = None;
-    if harness == "codex" {
-        codex_config =
+    if export.harness == "codex" {
+        let codex_config =
             codex_home(cmd).and_then(|home| std::fs::read_to_string(home.join("config.toml")).ok());
         if harness_env::has_own_codex_otel(codex_config.as_deref()) {
-            return;
+            return Applied::StoodDown("the user already exports OTel");
         }
-    }
-    let Ok(receiver) = receiver(app) else { return };
-    let Some(token) = receiver.token_for(session_id, harness) else {
-        return;
-    };
-    let endpoint = receiver.endpoint();
-    if harness == "claude" {
-        let (set, remove) = harness_env::claude_env(&endpoint, log_prompts);
-        for name in remove {
-            cmd.env_remove(name);
-        }
-        for (k, v) in set {
-            cmd.env(k, v);
-        }
-        // The token through `otelHeadersHelper`, as Claude Code's docs ask;
-        // the header variable only where the script cannot be made.
-        let settings = helper_for(app, &token)
-            .and_then(|helper| harness_env::settings_with_helper(args, &helper.to_string_lossy()));
-        match settings {
-            Some(settings) => {
-                cmd.env_remove("OTEL_EXPORTER_OTLP_HEADERS");
-                cmd.args(["--settings", &settings]);
-            }
-            None => {
-                let (k, v) = harness_env::claude_header_var(&token);
-                cmd.env(k, v);
-            }
-        }
-    } else {
-        cmd.args(harness_env::codex_args(&endpoint, log_prompts));
+        cmd.args(harness_env::codex_args(export.endpoint, export.log_prompts));
         cmd.args(harness_env::codex_shell_env_args(codex_config.as_deref()));
-        for (k, v) in harness_env::codex_env(&token) {
+        for (k, v) in harness_env::codex_env(export.token) {
             cmd.env(k, v);
+        }
+        return Applied::Codex;
+    }
+    let (set, remove) = harness_env::claude_env(export.endpoint, export.log_prompts);
+    for name in remove {
+        cmd.env_remove(name);
+    }
+    for (k, v) in set {
+        cmd.env(k, v);
+    }
+    // The token through `otelHeadersHelper`, as Claude Code's docs ask; the
+    // header variable only where the script cannot be made.
+    let helper = export
+        .helper_dir
+        .and_then(|dir| helper_in(dir, export.token));
+    let settings = helper
+        .as_ref()
+        .and_then(|h| harness_env::settings_with_helper(args, &h.to_string_lossy()));
+    match settings {
+        Some(settings) => {
+            cmd.env_remove("OTEL_EXPORTER_OTLP_HEADERS");
+            cmd.args(["--settings", &settings]);
+            Applied::Claude { helper }
+        }
+        None => {
+            let (k, v) = harness_env::claude_header_var(export.token);
+            cmd.env(k, v);
+            Applied::Claude { helper: None }
         }
     }
 }
@@ -712,37 +770,34 @@ struct Helpers {
 
 static HELPERS: OnceLock<Mutex<Helpers>> = OnceLock::new();
 
-/// The chat's `otelHeadersHelper` script, written once per app run.
+/// The chat's `otelHeadersHelper` script in `dir`, written once per
+/// process. The folder is emptied on first use, so a token from an earlier
+/// run is never left on disk past it.
 #[cfg(unix)]
-fn helper_for(app: &tauri::AppHandle, token: &str) -> Option<std::path::PathBuf> {
-    use tauri::Manager;
+fn helper_in(dir: &std::path::Path, token: &str) -> Option<std::path::PathBuf> {
     let helpers = HELPERS.get_or_init(Default::default);
     let mut helpers = helpers.lock().ok()?;
     if let Some(path) = helpers.scripts.get(&hash(token)) {
         return Some(path.clone());
     }
-    let dir = match &helpers.dir {
-        Some(dir) => dir.clone(),
-        None => {
-            let dir = app.path().app_data_dir().ok()?.join("otel-helper");
-            fresh_private_dir(&dir).ok()?;
-            helpers.dir = Some(dir.clone());
-            dir
-        }
-    };
-    let path = write_helper(&dir, token).ok()?;
+    if helpers.dir.as_deref() != Some(dir) {
+        clear_helpers(&mut helpers);
+        fresh_private_dir(dir).ok()?;
+        helpers.dir = Some(dir.to_path_buf());
+    }
+    let path = write_helper(dir, token).ok()?;
     helpers.scripts.insert(hash(token), path.clone());
     Some(path)
 }
 
 #[cfg(not(unix))]
-fn helper_for(_app: &tauri::AppHandle, _token: &str) -> Option<std::path::PathBuf> {
+fn helper_in(_dir: &std::path::Path, _token: &str) -> Option<std::path::PathBuf> {
     None
 }
 
-/// Removes this run's helper folder. Called once at quit (security review
-/// X12): the scripts print the chats' tokens, so none outlives the app run.
-/// The wipe at first use stays for a run that ended without quitting.
+/// Removes this process's helper folder. The caller runs it when its harness
+/// exits (security review X12): the scripts print the chats' tokens, so none
+/// outlives the run. The wipe at first use stays for a run that crashed.
 pub fn remove_helpers() {
     if let Some(helpers) = HELPERS.get() {
         let mut helpers = match helpers.lock() {
@@ -808,10 +863,9 @@ fn write_helper(dir: &std::path::Path, token: &str) -> std::io::Result<std::path
     Ok(path)
 }
 
-/// The switch, the prompt text switch, and which sessions are chats. Takes
-/// effect at a harness's next start; the window restarts it when the
-/// switches change.
-#[tauri::command]
+/// The switch, the prompt text switch, and which sessions are chats. The
+/// daemon turns the receiver on at start; `log_prompts` follows
+/// `TK_LOG_CONTENT=1` in the daemon's environment.
 pub fn harness_telemetry_configure(
     enabled: bool,
     log_prompts: bool,
@@ -841,9 +895,8 @@ pub struct TelemetryStatus {
     dropped_records: u64,
 }
 
-/// For Settings: whether the receiver runs and what it has seen. No port and
-/// no token.
-#[tauri::command]
+/// For `tk status`: whether the receiver runs and what it has seen. No port
+/// and no token.
 pub fn harness_telemetry_status() -> TelemetryStatus {
     match RECEIVER.get() {
         Some(Ok(r)) => TelemetryStatus {

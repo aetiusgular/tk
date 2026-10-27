@@ -753,7 +753,7 @@ mod tests {
         assert!(text.contains("<string>com.monocode.desktop</string>"));
         assert!(!text.contains("dev-peer"));
         let file = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../macos/activity-collector/bundle")
+            .join("../../macos/activity-collector/bundle")
             .join(format!("{LABEL}.plist"));
         assert_eq!(std::fs::read_to_string(file).unwrap(), text);
     }

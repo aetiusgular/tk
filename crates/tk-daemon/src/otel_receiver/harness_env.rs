@@ -9,10 +9,35 @@
 //! in the arguments here is free to read: the port, the switches, the
 //! script's path.
 
-/// The header that carries a chat's token. A plain name with no space in the
+/// The header that carries a chat's token (`x-monocode-token` in the fork;
+/// renamed by tk lane B, `contracts/daemon-protocol.md` section 4). A plain name with no space in the
 /// value, so the `OTEL_EXPORTER_OTLP_HEADERS` form (`key=value`, percent
 /// decoded by some SDKs) cannot mangle it.
-pub const TOKEN_HEADER: &str = "x-monocode-token";
+pub const TOKEN_HEADER: &str = "x-tk-token";
+
+/// Harness ids a chat token may be minted for: the ids of
+/// `contracts/harness-presets.json` (14 rows at session 0's base).
+pub const HARNESS_IDS: &[&str] = &[
+    "claude-code",
+    "codex",
+    "pi",
+    "opencode",
+    "gemini",
+    "cursor",
+    "hermes",
+    "openclaw",
+    "goose",
+    "qwen-code",
+    "copilot-cli",
+    "amp",
+    "crush",
+    "zed",
+];
+
+/// The known harness id `name` names, as a `'static` string, or `None`.
+pub fn harness_id(name: &str) -> Option<&'static str> {
+    HARNESS_IDS.iter().copied().find(|id| *id == name)
+}
 
 /// How often Claude Code flushes its log batch, in milliseconds. Short, so a
 /// tool call reaches the feed while its adapter event still waits to join.
@@ -321,7 +346,7 @@ mod tests {
             claude_header_var("abc"),
             (
                 "OTEL_EXPORTER_OTLP_HEADERS".to_string(),
-                "x-monocode-token=abc".to_string()
+                "x-tk-token=abc".to_string()
             )
         );
     }
@@ -352,7 +377,7 @@ mod tests {
         assert!(codex_args("http://127.0.0.1:1", true)
             .contains(&"otel.log_user_prompt=true".to_string()));
         let env = codex_env("tok");
-        assert!(env.iter().all(|(_, v)| v == "x-monocode-token=tok"));
+        assert!(env.iter().all(|(_, v)| v == "x-tk-token=tok"));
     }
 
     #[test]
@@ -484,7 +509,7 @@ mod tests {
         assert_eq!(get("OTEL_EXPORTER_OTLP_PROTOCOL"), Some("http/json"));
         assert_eq!(
             headers_helper_script("abc"),
-            "#!/bin/sh\nprintf '%s\\n' '{\"x-monocode-token\":\"abc\"}'\n"
+            "#!/bin/sh\nprintf '%s\\n' '{\"x-tk-token\":\"abc\"}'\n"
         );
         let args = s(&[
             "--settings",

@@ -1,40 +1,14 @@
-//! Wave 3 contract: the activity log's records, mirrored from
-//! `src/features/activity/model/activityTypes.ts`. Lane B owns this file.
+//! The activity log's records. Copied from the fork (`activity/types.rs` at
+//! `159ef3e`); the event type now lives in `tk-core`.
 
 use serde::{Deserialize, Serialize};
 
-/// Where an activity event came from.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ActivitySource {
-    Otel,
-    Adapter,
-    Eslogger,
-    Cua,
-    Approval,
-}
-
-/// One entry in the activity log. Field names match the TypeScript type.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ActivityEvent {
-    pub id: String,
-    /// Milliseconds since the Unix epoch.
-    pub at: i64,
-    /// The MonoCode chat, or empty when not attributed.
-    pub chat_id: String,
-    /// The harness id, or empty when not attributed.
-    pub harness: String,
-    pub source: ActivitySource,
-    pub kind: String,
-    pub summary: String,
-    /// The source's fields, kept as data.
-    pub detail: serde_json::Value,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub pid: Option<u32>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub approval_id: Option<String>,
-}
+/// The event and its source are `tk_core::event` (the daemon protocol's
+/// shape, `contracts/daemon-protocol.md` section 3), which is the fork's
+/// `ActivityEvent` with two sources added: `auditd` (lane D's Linux feed) and
+/// `run` (`tk run`'s records). One type, so the socket, the receiver and the
+/// log never convert.
+pub use tk_core::event::{Event as ActivityEvent, Source as ActivitySource};
 
 /// What an approval covered.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

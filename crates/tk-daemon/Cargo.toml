@@ -13,13 +13,10 @@ path = "src/main.rs"
 
 [features]
 default = []
-# The fork's otel_receiver/ and activity/ as copied. They still reference
-# `tauri::` in three files (see NOTICE); lane B replaces those and moves the
-# modules out from behind this flag. `cargo check --features fork-modules`
-# shows what is left.
-fork-modules = []
-# The fork's computer_use/ as copied. Lane K wires it in wave 2.
-computer-use = ["fork-modules"]
+# The fork's computer_use/ as copied. Lane K wires it in wave 2; it still
+# references `tauri::` in computer_use/mod.rs. activity/ and otel_receiver/
+# no longer sit behind a flag (lane B, wave 1).
+computer-use = []
 
 [dependencies]
 tk-core = { path = "../tk-core" }
