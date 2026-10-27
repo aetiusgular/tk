@@ -1,6 +1,6 @@
 # Contract: the daemon's socket and HTTP receiver
 
-Written by tk session 0, 27 Oct 2026. Lane B implements the server (`crates/tk-daemon`). Lane A (the Pi emitter), lane D (`tk run`), lane F (the hooks' `approve`) and, in wave 2, lane J (`tk watch`, the fork's adapter file) are clients. The Rust types are `crates/tk-daemon/src/protocol.rs`; the recorded exchange is `fixtures/daemon/exchange.jsonl`, parsed by that file's test. From wave 2 on, the `tail` line shape is fixed: the fork's React reads it (lane J).
+Written by tk session 0, 27 Oct 2026; brought to what lane B built, and to integration w1's decisions, by integration w1 the same day. Lane B implements the server (`crates/tk-daemon`). Lane A (the Pi emitter), lane D (`tk run`), lane F (the hooks' `approve`) and, in wave 2, lane J (`tk watch`, the fork's adapter file) are clients. The Rust types are `crates/tk-daemon/src/protocol.rs`; the recorded exchange is `fixtures/daemon/exchange.jsonl`, parsed by that file's test. From wave 2 on, the `tail` line shape is fixed: the fork's React reads it (lane J).
 
 ## 1. Where it listens
 
@@ -9,10 +9,12 @@ Written by tk session 0, 27 Oct 2026. Lane B implements the server (`crates/tk-d
 | macOS | `~/Library/Application Support/tk/daemon.sock` |
 | Linux | `$XDG_RUNTIME_DIR/tk/daemon.sock`, else `~/.tk/run/tk/daemon.sock` |
 
-- The socket file is mode 0600 and its folder 0700. A stale socket file is replaced at start.
-- A pid file sits beside it (`daemon.pid`). The daemon refuses to start when the pid in it is alive and is a `tk-daemon` (lane B decides how to check).
+Beside the socket: `daemon.pid`, `daemon.token`, `otlp.endpoint`, each 0600, and on Linux `chats/<chat>.token` while a `tk run --boundary none` chat runs (section 2, rule 4). The activity log is elsewhere on Linux: `$XDG_DATA_HOME/tk/activity`, else `~/.local/share/tk/activity`. On macOS everything is under `~/Library/Application Support/tk/`. `tk-daemon --foreground [--socket PATH] [--data-dir PATH]`; the two flags are for tests.
+
+- The socket file is mode 0600 and its folder 0700, owned by the user; a folder that is a link or another user's is refused. A stale socket file is replaced at start.
+- One daemon per user: `daemon.pid` is held with `flock` for the daemon's life (lane B), so a second start is refused and a killed daemon's successor starts.
 - The daemon makes no outbound connection of any kind (rules, section 5, item 8). It listens on this socket and on the loopback HTTP receiver only.
-- The daemon's own token is 64 lowercase hex characters (`tk_core::token`), written to `daemon.token` beside the socket, mode 0600. A process that can read that file is the user; the socket's mode already admits only the user. The token stops a confused process from another user's session and makes scope explicit.
+- The daemon's own token is 64 lowercase hex characters (`tk_core::token`), written to `daemon.token` beside the socket, mode 0600, new on every start: a long-lived client re-reads it after a restart. A process that can read that file is the user; the socket's mode already admits only the user. The token stops a confused process from another user's session and makes scope explicit. Only `tk run`, `tk watch`, `tk-audit-feed` and the daemon's own tools present it; a hook never does (section 2, rule 4).
 
 ## 2. Lines
 
@@ -22,8 +24,8 @@ UTF-8 JSON, one object per line, `\n`-terminated, at most 1 MiB per line (longer
 |---|---|---|---|---|
 | `hello` | first line | `token`, `client` (free text, for the log) | `scope` (`daemon` or `chat`), `chat` when chat scope, `daemon {version, pid, protocol}` | |
 | `event` | any scope | `event` (section 3) | `id` | |
-| `tail` | daemon scope; chat scope sees only its chat | `since?` (ms), `chat?` | `ok` | `{"event": {...}}` per event, backlog first |
-| `report` | daemon scope | `chat?`, `since`, `until` | `report` (lane B defines the object; lane J renders it) | |
+| `tail` | daemon scope; a chat scope must name its own chat | `since?` (ms), `chat?` | `ok` | `{"event": {...}}` per event, backlog first |
+| `report` | daemon scope | `chat?`, `since`, `until` | `report` (below) | |
 | `approve` | any scope | `request {id, chat, harness, tool, summary, timeoutSeconds}` | `answer` (`yes`/`no`), `by` (`approver`, `timeout`, `none`) | |
 | `approver` | daemon scope | none | `ok` | `{"approve": {...}}` per request |
 | `answer` | an approver connection | `id`, `answer` | `ok` | |
@@ -31,11 +33,17 @@ UTF-8 JSON, one object per line, `\n`-terminated, at most 1 MiB per line (longer
 
 Rules:
 
-1. A first line that is not `hello`, or a `hello` whose token is malformed or unknown, gets one error reply (`hello first`, `bad token`) and the connection closes. The token is compared by its SHA-256 (`tk_core::token::hash`), never logged.
-2. A chat-scope connection can post events only into its own chat: the daemon overwrites `chatId` and `harness` with the token's (as the fork's receiver does: `otel_receiver/normalize.rs:1-7`).
-3. `approve`: the daemon sends the request to every connected approver; the first `answer` wins and the rest are told nothing more. No approver connected: `no` at once, `by: "none"` (case 63). No answer within `timeoutSeconds`: `no`, `by: "timeout"`. Every request and its outcome is recorded as an event with `source: "approval"`.
-4. `token.mint` returns a fresh chat token and stores only its hash. The token goes into a child's environment (`TK_CHAT_TOKEN`) or a header, never into an argument (rules, section 5, item 1).
+1. A first line that is not `hello`, or a `hello` whose token is malformed or unknown, gets one error reply (`hello first`, `bad token`) and the connection closes. The token is compared by its SHA-256 (`tk_core::token::hash`), never logged. A connection has 10 seconds to say `hello`; at most 64 connections at once.
+2. **What a chat token may do.** A chat token sits in the harness's environment and its tools' shells, so it is the agent's too (rules case 66). It posts only `source` `adapter` and `otel` events, only into its own chat: the daemon overwrites `chatId` and `harness` with the token's (as the fork's receiver does: `otel_receiver/normalize.rs:1-7`), and a record replaces an earlier one with the same id only inside one chat. It may `approve` and `tail` its own chat. It may not `mint`, `report`, become an `approver`, post `run`, `auditd`, `eslogger`, `cua` or `approval` records, or name its chat's folders. The daemon scope may post anything but `approval`.
+3. `approve`: the daemon sends the request to every connected approver; the first `answer` wins and the rest are told nothing more. No approver connected: `no` at once, `by: "none"` (case 63). No answer within `timeoutSeconds` (held to 1 to 3600): `no`, `by: "timeout"`. A duplicate waiting id, a 17th waiting request from one chat, or a 257th overall: `no` at once. Every request and its outcome is recorded as an event with `source: "approval"`, one record per request id (`approval-<uuid>`, made by the daemon).
+4. `token.mint` returns a fresh chat token and stores only its hash, in memory: a daemon restart invalidates every chat token (a running harness's posts then fail closed; restart it). A daemon-scope `run.stop` for a chat revokes every token minted for that chat, for new hellos and OTLP posts; a connection already greeted keeps its scope until it closes (integration w1). The token goes into a child's environment (`TK_CHAT_TOKEN`), a 0600 file named by `TK_CHAT_TOKEN_FILE`, or a header, never into an argument (rules, section 5, item 1). A hook presents only that chat token, never `daemon.token` (integration w1; `contracts/policy.md` section 5).
 5. A client that sends a line the daemon cannot parse gets `ok: false` with the parse error and may continue.
+
+The `report` object (lane B): `{since, until, chat, events, flags, bySource, byKind, approvals, chainOk, truncated, dropped, check}`. `events` and `flags` are counts; `approvals` counts `"<answer>:<by>"`; `chainOk` is the log's hash chain over the window; `check` is the fork's `FlagsReport` (the flags, the events they name, the expected rows, the suppressed counts).
+
+`tail`: with `since`, the backlog is the log on disk plus the in-memory ring of the last 4,096 events, the last copy per (chat, id), at most 5,000; without `since`, live events only. A tail more than 4,096 lines behind is dropped; ingest never waits for a reader.
+
+Variables `tk run` sets in the harness (lane D, integration w1), each removed from what the child inherits first: `TK_CHAT_ID`, `TK_HARNESS`, `TK_BOUNDARY`, `TK_CHAT_TOKEN`, `TK_CHAT_TOKEN_FILE` (`--boundary none` only), `TK_OTLP_ENDPOINT`, `TK_GATEWAY_URL`. Readers may also honour `TK_POLICY` and `TK_DAEMON_SOCKET`; a hook refuses either when it points inside the session folder.
 
 ## 3. The event
 
@@ -54,11 +62,15 @@ Rules:
 | `chatId` | `""` when not attributed |
 | `harness` | A harness id from `contracts/harness-presets.json`, or `""` |
 | `source` | `otel`, `adapter`, `eslogger`, `auditd`, `cua`, `approval`, `run` |
-| `kind` | `tool.call`, `approval`, `model.request`, `model.error`, `prompt`, `session.start`, `message`, `run.start`, `run.stop`, `fs.write`, `net.connect`, `exec`, or `otel.<name>` for an unknown OTel event |
+| `kind` | `tool.call`, `approval`, `model.request`, `model.error`, `prompt`, `session.start`, `message`, `run.start`, `run.stop`, `net.connect`, `config.write`, or `otel.<name>` for an unknown OTel event; and for the kernel feeds (`eslogger`, `auditd`) the macOS collector's kinds, which the daemon's check reads: `exec`, `fork`, `exit`, `write`, `create`, `open`, `truncate`, `rename`, `unlink`, `link`. `fs.write` and `exec` as session 0 named them are not what the check reads (lane B, lane D) |
 | `summary` | One line, at most 200 characters |
 | `detail` | Free JSON, at most 16 KiB, never rendered as markup |
 
-`run.start` and `run.stop` (lane D) carry `detail: {boundary, argv, kit?, host}`; `argv` never holds a token.
+`run.start` and `run.stop` (lane D) carry `detail: {boundary, argv, kit, host, cwd, folders, stateDirs, sandboxName, runsAs, dangerousFlags, trust}`, and `run.stop` adds `exitCode`, `signal` and `durationMs`. `argv` never holds a token. `detail.host` is the machine, not a network host. A daemon-scope `run.start` sets the chat's folders from `detail.cwd` and `detail.folders` (absolute paths) for the check's `writeOutsideFolders`; without them every write counts as outside.
+
+Kernel feed records (`auditd` from `tk-audit-feed`, lane D; `eslogger` from the Mac collector, wave 2) carry the collector's detail keys (`path`, `dest`, `exe`, `argv`, `child`, `ppid`, `tier`) and the event's `pid`; `auditd` records also carry `detail.preflags` (`writeOutside`, `sensitive`, `trustedFile`, `newHost`, `denied`), the feed's own marks, which the daemon's check does not rely on. Ids are `auditd-<ms>-<serial>`, so re-reading a log replaces records.
+
+`config.write` (lane C, `tk connect --write`): `source: "adapter"`, `detail: {path, server, action, sha256Before, sha256After, backup, origin}`, posted with the daemon token when the daemon runs, else written to `~/.tk/connect.log`. Seen in the daemon's tail by integration w1's cross-lane run.
 
 ## 4. The HTTP OTLP receiver
 
@@ -68,6 +80,7 @@ The endpoint is published to clients as `TK_OTLP_ENDPOINT` (`http://127.0.0.1:<p
 
 ## 5. Not decided here
 
-- The `report` object's fields (lane B, then lane J).
-- Retention: the fork's 7 days (`activity/retention.rs`) stays unless lane B records a reason.
-- launchd and systemd units (lane B writes them; the box test and the Mac test install them).
+- Retention: the fork's 7 days of logs, 3 of screenshots and a 1 GiB cap stay (`activity/retention.rs`); lane B also runs it hourly.
+- The units are written (`crates/tk-daemon/units/`); the box test and the Mac test install them.
+- Persisting chat-token hashes across a daemon restart (lane B: a small follow-up).
+- An OTLP endpoint for a harness inside sbx: `host.docker.internal` is not loopback, so lane A's emitter refuses it and a Pi chat under sbx has the sbx policy log as its only feed in wave 1 (integration w1 decision; the box test records whether sbx keeps the `Host` header).
