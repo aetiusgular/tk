@@ -33,7 +33,6 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde_json::json;
 use tk_audit_linux::client::{self, Client};
-use tk_audit_linux::libc;
 use tk_core::event::{Event, Source};
 
 use args::Boundary;

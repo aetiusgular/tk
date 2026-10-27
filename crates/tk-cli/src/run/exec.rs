@@ -11,7 +11,6 @@ use std::process::{Child, Command, ExitStatus, Stdio};
 
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::time::Duration;
-use tk_audit_linux::libc;
 
 use super::plan::Plan;
 

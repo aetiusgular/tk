@@ -28,16 +28,16 @@ default = []
 tk-core = { path = "../tk-core" }
 serde.workspace = true
 serde_json.workspace = true
+# Shared by lanes C and D since integration w1 (lane D's request 6).
+libc.workspace = true
 # [lane-C]
 # Format-preserving TOML edits for Codex's config.toml: comments and key
 # order survive a write. Reason and pin in the lane C status doc.
 toml_edit = "=0.25.17"
 sha2.workspace = true
-libc.workspace = true
 # [lane-D]
-# `tk run`: the daemon socket client (lane D's own crate; it also re-exports
-# libc, which lane C lists in its own section: one key twice is a TOML error
-# after the merge), and chat and event ids (uuid, the workspace's exact pin).
+# `tk run`: the daemon socket client (lane D's own crate) and chat and event
+# ids (uuid, the workspace's exact pin).
 tk-audit-linux = { path = "../tk-audit-linux" }
 uuid.workspace = true
 # [lane-J]

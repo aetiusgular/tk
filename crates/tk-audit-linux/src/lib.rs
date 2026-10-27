@@ -32,11 +32,6 @@ pub mod tree;
 
 use tk_core::event::Event;
 
-/// Re-exported for `tk run` (crates/tk-cli/src/run), so the shared tk-cli
-/// manifest names libc once, in lane C's section, after the wave 1 merge.
-#[doc(hidden)]
-pub use libc;
-
 /// Parses a batch of audit text for one known root and returns its events,
 /// as `tk-audit-feed parse` prints them. A convenience over `feed::Feed`.
 pub fn parse_for_root(audit_text: &str, root: tree::Root, home: &str) -> Vec<Event> {
