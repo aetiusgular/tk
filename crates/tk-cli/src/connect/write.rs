@@ -4,8 +4,17 @@
 //!
 //! What it never does: follow a symlink to write (the link's target could be
 //! anywhere, and a rename would replace the link with a file); write into a
-//! managed file (case 65); take "yes" from standard input, where a script or
-//! an agent could pipe it (the answer comes from `/dev/tty` only).
+//! managed file (case 65); take "yes" from standard input, where a script
+//! could pipe it by accident (the answer comes from `/dev/tty` only).
+//!
+//! What the question does not prove (Mac test w1, M4): that a person
+//! answered. Any process that can start a pty has a `/dev/tty`; the box test
+//! answered it through `script -qec`, as an agent with a shell could. The
+//! question guards against a mistake, not against an agent: an agent that
+//! runs as you can write the same file without tk. What stands against an
+//! agent is the gate (each harness's config file is a control path, so a
+//! call naming it asks) and the boundary (srt and sbx keep the file out of
+//! reach); under `--boundary none` with `bash: allow` it has your rights.
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufRead, BufReader, Read, Write};
