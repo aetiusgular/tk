@@ -52,15 +52,38 @@ pub fn fragment(preset: &Preset, spec: &ServerSpec, macos: bool) -> Result<Strin
             out.push('\n');
         }
         // Codex requirements.toml: an allowlisted server is pinned by its
-        // identity, a command or a URL. Sources in contracts/harness-presets.json.
+        // name and identity. A stdio server is pinned by its executable and
+        // every argument (`identity.command` as a matcher table): the string
+        // form "doesn't inspect arguments" (Codex configuration reference,
+        // `mcp_servers.<name>.identity.command`), so `command = "docker"`
+        // let any docker-started server under that name through (Mac test
+        // w1, M5). The table form came with openai/codex#29648, merged
+        // 25 Jun 2026; Codex 0.143.0 (8 Jul) is the first release after it
+        // (npm dates, inferred). Run on 0.161.0 and 0.163.0 with this
+        // fragment in /etc/codex/requirements.toml: the entry with the same
+        // arguments is enabled, the same name with other arguments and an
+        // unlisted server are "disabled: requirements" (integration w1 fix
+        // pass, `codex mcp list`).
         "codex" => {
             out.push_str("# add to requirements.toml (managed); tk does not write it\n");
-            out.push_str(&format!("[mcp_servers.{}.identity]\n", spec.name));
             match &spec.transport {
-                Transport::Stdio { command, .. } => {
-                    out.push_str(&format!("command = {}\n", json::quote(command)));
+                Transport::Stdio { command, args } => {
+                    out.push_str("# needs Codex 0.143.0 or later (argument matchers)\n");
+                    out.push_str(&format!(
+                        "[mcp_servers.{}.identity.command]\nexecutable = {}\nargs = [\n",
+                        spec.name,
+                        json::quote(command)
+                    ));
+                    for a in args {
+                        out.push_str(&format!(
+                            "  {{ match = \"exact\", value = {} }},\n",
+                            json::quote(a)
+                        ));
+                    }
+                    out.push_str("]\n");
                 }
                 Transport::Http { url, .. } => {
+                    out.push_str(&format!("[mcp_servers.{}.identity]\n", spec.name));
                     out.push_str(&format!("url = {}\n", json::quote(url)));
                 }
             }

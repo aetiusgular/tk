@@ -831,3 +831,69 @@ fn removing_an_entry_prints_no_secret_from_its_lines() {
         assert!(!r.out.contains(s), "{s} in {}", r.out);
     }
 }
+
+// Box test w1, BX11: the allowlist for the T0.1 HTTP gateway named the
+// stdio command. C10 ran without `--url`; with the same flags as the write
+// the fragment names the URL the entry uses.
+#[test]
+fn the_allowlist_for_an_http_gateway_names_its_url() {
+    let home = scratch("bx11");
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &[
+            "claude-code",
+            "--allowlist",
+            "--gateway",
+            "docker",
+            "--profile",
+            "tk_box",
+            "--url",
+            "http://127.0.0.1:8811/mcp",
+            "--bearer-env",
+            "TK_GATEWAY_TOKEN",
+        ],
+    );
+    assert_eq!(r.code, 0, "{}", r.err);
+    assert!(r.out.contains("\"serverUrl\": \"http://127.0.0.1:8811/mcp\""), "{}", r.out);
+    assert!(!r.out.contains("serverCommand"), "{}", r.out);
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &["codex", "--allowlist", "--gateway", "docker", "--profile", "tk_box", "--url", "http://127.0.0.1:8811/mcp"],
+    );
+    assert!(r.out.contains("url = \"http://127.0.0.1:8811/mcp\""), "{}", r.out);
+}
+
+// Mac test w1, M5: `identity.command = "docker"` matches any server named
+// `exa` that docker starts (Codex's configuration reference: "The string
+// form doesn't inspect arguments"). The fragment pins the executable and
+// every argument with the matcher table (openai/codex#29648).
+#[test]
+fn the_codex_allowlist_pins_the_arguments_of_a_stdio_server() {
+    let home = scratch("m5");
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &["codex", "--allowlist", "--gateway", "docker", "--profile", "tk_exa"],
+    );
+    assert_eq!(r.code, 0, "{}", r.err);
+    assert!(r.out.contains("[mcp_servers.exa.identity.command]\nexecutable = \"docker\"\n"), "{}", r.out);
+    for a in ["mcp", "gateway", "run", "--profile", "tk_exa"] {
+        assert!(
+            r.out.contains(&format!("  {{ match = \"exact\", value = \"{a}\" }},\n")),
+            "{a}: {}",
+            r.out
+        );
+    }
+    assert!(!r.out.contains("command = \"docker\""), "{}", r.out);
+    // The fragment is TOML a parser takes, with the shape Codex documents.
+    let body: String = r.out.lines().filter(|l| !l.starts_with('#')).collect::<Vec<_>>().join("\n");
+    let v: toml_edit::DocumentMut = body.parse().unwrap();
+    let cmd = &v["mcp_servers"]["exa"]["identity"]["command"];
+    assert_eq!(cmd["executable"].as_str(), Some("docker"));
+    assert_eq!(cmd["args"].as_array().unwrap().len(), 5);
+}
