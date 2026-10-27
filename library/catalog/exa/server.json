@@ -16,9 +16,16 @@
       "headers": [
         {
           "name": "x-api-key",
-          "value": "${EXA_API_KEY}",
+          "value": "{exa_api_key}",
           "isSecret": true,
-          "description": "Exa API key; the gateway holds it, the model never sees it"
+          "description": "Exa API key; the gateway holds it, the model never sees it",
+          "variables": {
+            "exa_api_key": {
+              "description": "Exa API key, read from EXA_API_KEY by tk connect",
+              "isSecret": true,
+              "isRequired": true
+            }
+          }
         }
       ]
     }

@@ -16,7 +16,6 @@
       "headers": [
         {
           "name": "CONTEXT7_API_KEY",
-          "value": "${CONTEXT7_API_KEY}",
           "isSecret": true,
           "isRequired": false,
           "description": "Optional; raises the rate limit (docker/mcp-registry servers/context7/server.yaml)"

@@ -59,6 +59,15 @@ describe("marketplace export (Claude Code and Codex)", () => {
       if (server.command) expect(data.description).toContain("Runs as you");
     }
   });
+  // Integration w1: the catalog holds upstream placeholders; each export
+  // writes the target's reference, named as tk connect names it (C's
+  // env_name_for: upper case, anything else `_`), so a key set once serves both.
+  it("upstream placeholders become ${VAR} references with tk connect's names", () => {
+    const h = (id: string) => (parse(files, `plugins/${id}/.claude-plugin/plugin.json`) as { mcpServers: Record<string, { headers?: Record<string, string> }> }).mcpServers[id]!.headers;
+    expect(h("exa")).toEqual({ "x-api-key": "${EXA_API_KEY}" });
+    expect(h("hugging-face")).toEqual({ Authorization: "Bearer ${HF_TOKEN}" });
+    expect(h("context7")).toEqual({ CONTEXT7_API_KEY: "${CONTEXT7_API_KEY}" });
+  });
   it("the Shopify plugin keeps the telemetry opt-out", () => {
     const shopify = parse(files, "plugins/shopify-dev/.claude-plugin/plugin.json") as { mcpServers: Record<string, { env: Record<string, string> }> };
     expect(shopify.mcpServers["shopify-dev"]!.env).toEqual({ OPT_OUT_INSTRUMENTATION: "true", DO_NOT_TRACK: "1" });

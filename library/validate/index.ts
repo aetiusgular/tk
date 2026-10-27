@@ -39,6 +39,11 @@ export type ValidateOptions = { brands?: Brand[]; catalog?: Catalog };
 
 /** Validate one entry on its own: schema, upstream rules, library rules that
  *  need no other entry. Catalog-wide rules are in `validateCatalog`. */
+/** `$`, `{env:` and `{file:`: forms a harness expands (lane C, spec.rs). */
+const EXPANDS = /\$|\{env:|\{file:/i;
+/** An upstream placeholder value: an optional literal prefix and one `{var}` at the end (what tk connect accepts). */
+const UPSTREAM_REF = /^[^{}$]*\{[A-Za-z_][A-Za-z0-9_]*\}$/;
+
 export function validateEntry(entry: LoadedEntry, opts: ValidateOptions = {}): Finding[] {
   const out: Finding[] = [];
   const { kind, data } = entry;
@@ -83,7 +88,7 @@ export function validateEntry(entry: LoadedEntry, opts: ValidateOptions = {}): F
     const secret = obj["isSecret"] === true || SECRET_LIKE.test(name) || /^(authorization|x-api-key|api-key|cookie)$/i.test(name);
     for (const field of ["value", "default"]) {
       const v = obj[field];
-      if (secret && typeof v === "string" && v !== "" && !isEnvReference(v) && !/^bearer \$\{[A-Za-z_][A-Za-z0-9_]*\}$/i.test(v)) {
+      if (secret && typeof v === "string" && v !== "" && !isEnvReference(v) && !/^bearer \$\{[A-Za-z_][A-Za-z0-9_]*\}$/i.test(v) && !UPSTREAM_REF.test(v)) {
         out.push(finding("lib/literal-secret", "error", `${path}/${field}`, `'${name}' holds a literal value; only a \${VAR} reference may appear in a manifest`));
       }
     }
@@ -94,6 +99,32 @@ export function validateEntry(entry: LoadedEntry, opts: ValidateOptions = {}): F
     }
     if (TOKEN_SHAPES.some((re) => re.test(value))) out.push(finding("lib/literal-secret", "error", path, "a value looks like an access token"));
   });
+
+  // 4b. Placeholders (integration w1). A server entry is upstream server.json:
+  // its placeholders are `{var}` declared in the item's `variables`
+  // (schema InputWithVariables). `$`, `{env:` and `{file:` are what harnesses
+  // expand from your environment or disk (Claude Code, Gemini, Qwen, Crush,
+  // Pi, OpenCode; lane C's recordings), so tk connect refuses them and so does
+  // the library. `_meta` and descriptions are not values and are skipped.
+  if (kind === "server") {
+    walkObjects(data, "", (path, obj) => {
+      if (path.startsWith("/_meta")) return;
+      for (const field of ["value", "default", "url", "identifier"]) {
+        const v = obj[field];
+        if (typeof v === "string" && EXPANDS.test(v)) {
+          out.push(finding("lib/expansion", "error", `${path}/${field}`, `'${field}' holds $, {env: or {file:, which harnesses expand from your environment or disk; use an upstream {variable} declared in variables`));
+        }
+      }
+      for (const field of ["value", "default"]) {
+        const v = obj[field];
+        if (typeof v !== "string") continue;
+        const vars = obj["variables"];
+        for (const m of v.matchAll(/\{([A-Za-z_][A-Za-z0-9_]*)\}/g)) {
+          if (!isRecord(vars) || !Object.hasOwn(vars, m[1]!)) out.push(finding("lib/variables", "error", `${path}/${field}`, `'{${m[1]}}' is not declared in this item's variables (upstream InputWithVariables)`));
+        }
+      }
+    });
+  }
 
   // 5. The tk data object.
   if (meta.runner.kind === "image" && !meta.runner.imageDigest && meta.tier !== "mirrored") {

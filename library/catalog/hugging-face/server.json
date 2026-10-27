@@ -16,10 +16,17 @@
       "headers": [
         {
           "name": "Authorization",
-          "value": "Bearer ${HF_TOKEN}",
+          "value": "Bearer {hf_token}",
           "isSecret": true,
           "isRequired": false,
-          "description": "Optional user token for gated or private repositories"
+          "description": "Optional user token for gated or private repositories",
+          "variables": {
+            "hf_token": {
+              "description": "Hugging Face token, read from HF_TOKEN by tk connect",
+              "isSecret": true,
+              "isRequired": false
+            }
+          }
         }
       ]
     }

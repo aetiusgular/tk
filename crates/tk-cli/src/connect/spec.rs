@@ -180,11 +180,15 @@ pub fn valid_env_name(name: &str) -> bool {
         && b.iter().all(|c| c.is_ascii_alphanumeric() || *c == b'_')
 }
 
-/// `^[A-Za-z0-9-]{1,64}$` (RFC 9110 tokens, narrowed).
+/// `^[A-Za-z0-9_-]{1,64}$`: RFC 9110 tokens (section 5.6.2), narrowed to
+/// letters, digits, `-` and `_`. `_` is in because real servers name headers
+/// with it (Context7's `CONTEXT7_API_KEY`; integration w1).
 fn valid_header_name(name: &str) -> bool {
     !name.is_empty()
         && name.len() <= 64
-        && name.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'-')
+        && name
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || c == b'-' || c == b'_')
 }
 
 /// Header names whose value is a credential, so it must be a reference.
@@ -990,5 +994,26 @@ mod tests {
         };
         assert!(check(&s).is_ok());
         assert_eq!(derive_name("io.github.x/My_Server.v2"), "my-server-v2");
+    }
+
+    /// Integration w1: Context7's header is `CONTEXT7_API_KEY` (lane E's
+    /// catalog, from docker/mcp-registry servers/context7/server.yaml), and
+    /// RFC 9110 section 5.6.2 lists `_` in `tchar`. Space, colon and
+    /// control characters stay refused.
+    #[test]
+    fn header_names_take_underscores_and_nothing_else_new() {
+        assert!(valid_header_name("CONTEXT7_API_KEY"));
+        assert!(valid_header_name("x-api-key"));
+        for bad in ["x api", "x:y", "x\ny", "", "a.b", "x\u{200b}y"] {
+            assert!(!valid_header_name(bad), "{bad:?}");
+        }
+        let e = entry(
+            r#"{"kind": "remote"}"#,
+            r#""remotes": [{"type": "streamable-http", "url": "https://h.example/mcp", "headers": [
+              {"name": "CONTEXT7_API_KEY", "isSecret": true}]}],"#,
+        );
+        let s = from_entry("e.json", e.as_bytes(), Some("h")).unwrap();
+        assert!(check(&s).is_ok());
+        assert_eq!(s.variables(), vec!["CONTEXT7_API_KEY".to_string()]);
     }
 }

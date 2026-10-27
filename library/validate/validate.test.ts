@@ -130,6 +130,24 @@ describe("one bad entry per rule", () => {
     expect(errors(validateEntry(bundle))).toContain("lib/reject");
     rmSync(dir, { recursive: true });
   });
+  // Integration w1: the catalog is upstream server.json, whose placeholders
+  // are `{var}` declared in `variables` (schema InputWithVariables). `$`,
+  // `{env:` and `{file:` are what harnesses expand from your environment or
+  // disk, so tk connect refuses them (lane C) and the library refuses them too.
+  it("lib/expansion: $, {env: and {file: in a server's values are refused", () => {
+    for (const v of ["${EXA_API_KEY}", "Bearer $TOKEN", "{env:EXA_API_KEY}", "{file:~/.ssh/id_rsa}"]) {
+      expect(errors(validateEntry(entry("exa", (e) => { (e.data["remotes"] as { headers: { value: string }[] }[])[0]!.headers[0]!.value = v; }))), v).toContain("lib/expansion");
+    }
+    expect(errors(validateEntry(entry("exa", (e) => { (e.data["remotes"] as { url: string }[])[0]!.url = "https://mcp.exa.ai/mcp?k=$K"; })))).toContain("lib/expansion");
+  });
+
+  it("lib/variables: a {var} in a value must be declared in that item's variables", () => {
+    const undeclared = entry("exa", (e) => { delete (e.data["remotes"] as { headers: { variables?: object }[] }[])[0]!.headers[0]!.variables; });
+    expect(errors(validateEntry(undeclared))).toContain("lib/variables");
+    expect(errors(validateEntry(entry("exa")))).not.toContain("lib/variables");
+    expect(errors(validateEntry(entry("hugging-face")))).not.toContain("lib/variables");
+  });
+
   it("lib/literal-secret: a literal header value, a token shape, a literal secret default", () => {
     expect(errors(validateEntry(entry("exa", (e) => { (e.data["remotes"] as { headers: { value: string }[] }[])[0]!.headers[0]!.value = "abc123"; })))).toContain("lib/literal-secret");
     expect(errors(validateEntry(entry("exa", (e) => { e.data["websiteUrl"] = "https://x/?k=ghp_abcdefghijklmnopqrstuvwxyz1234"; })))).toContain("lib/literal-secret");

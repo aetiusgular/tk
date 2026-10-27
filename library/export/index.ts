@@ -52,11 +52,45 @@ function metaOf(e: LoadedEntry): TkMeta {
   return m;
 }
 
+/**
+ * The environment variable a placeholder or a valueless secret header reads,
+ * named as tk connect names it (crates/tk-cli/src/connect/spec.rs
+ * `env_name_for`): upper case, anything not a letter or digit becomes `_`.
+ */
+export function envNameFor(name: string): string {
+  return name.replace(/[^A-Za-z0-9]/g, "_").toUpperCase();
+}
+
+/**
+ * A header in a harness's reference form (`${VAR}`), from upstream's
+ * placeholder form (integration w1): a value `prefix{var}` becomes
+ * `prefix${VAR}`, a secret header with no value becomes `${NAME}`, a plain
+ * literal stays. Anything else (more than one placeholder, a placeholder
+ * mid-value) is left out, as tk connect refuses it.
+ */
+function headerValue(h: Record<string, unknown>): string | undefined {
+  const name = h["name"] as string;
+  const value = h["value"];
+  if (value === undefined) return h["isSecret"] === true ? `\${${envNameFor(name)}}` : undefined;
+  if (typeof value !== "string") return undefined;
+  const m = /^([^{}$]*)\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(value);
+  if (m) return `${m[1]}\${${envNameFor(m[2]!)}}`;
+  return value.includes("{") || value.includes("$") ? undefined : value;
+}
+
 /** The first remote of a server entry, or undefined. */
 function remoteOf(e: LoadedEntry): { url: string; headers: { name: string; value: string }[] } | undefined {
   const remotes = e.data["remotes"];
   if (!Array.isArray(remotes) || !isRecord(remotes[0]) || typeof remotes[0]["url"] !== "string") return undefined;
-  const headers = Array.isArray(remotes[0]["headers"]) ? (remotes[0]["headers"] as unknown[]).filter(isRecord).filter((h) => typeof h["name"] === "string" && typeof h["value"] === "string").map((h) => ({ name: h["name"] as string, value: h["value"] as string })) : [];
+  const headers = Array.isArray(remotes[0]["headers"])
+    ? (remotes[0]["headers"] as unknown[])
+        .filter(isRecord)
+        .filter((h) => typeof h["name"] === "string")
+        .flatMap((h) => {
+          const value = headerValue(h);
+          return value === undefined ? [] : [{ name: h["name"] as string, value }];
+        })
+    : [];
   return { url: remotes[0]["url"], headers };
 }
 
