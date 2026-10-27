@@ -7,7 +7,18 @@ license.workspace = true
 repository.workspace = true
 description = "The Linux OS feed: auditd records to daemon events (lane D)"
 
+[[bin]]
+name = "tk-audit-feed"
+path = "src/bin/tk-audit-feed.rs"
+
 [dependencies]
 tk-core = { path = "../tk-core" }
 serde.workspace = true
 serde_json.workspace = true
+# geteuid for the daemon token's owner check (the fork's version, as pinned
+# in the workspace).
+libc.workspace = true
+
+[dev-dependencies]
+# Only to hold `client::socket_path` equal to lane B's `socket_path`.
+tk-daemon = { path = "../tk-daemon" }

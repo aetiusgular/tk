@@ -1,0 +1,191 @@
+//! Starting the child and waiting for it, with the terminal's signals left
+//! to the child and `SIGTERM`/`SIGHUP` passed on, so `tk run` lives long
+//! enough to record `run.stop`.
+//!
+//! Handlers, not `SIG_IGN`: an ignored signal stays ignored across `exec`
+//! (POSIX `execve`: "Signals set to be ignored ... shall be set to be
+//! ignored by the new process image"), which would leave the harness deaf to
+//! Ctrl-C; a caught signal is reset to its default in the new image.
+
+use std::process::{Child, Command, ExitStatus, Stdio};
+
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::time::Duration;
+use tk_audit_linux::libc;
+
+use super::plan::Plan;
+
+static PENDING: AtomicI32 = AtomicI32::new(0);
+
+extern "C" fn on_signal(sig: libc::c_int) {
+    // Only an atomic store: async-signal-safe.
+    PENDING.store(sig, Ordering::SeqCst);
+}
+
+/// Catches SIGINT, SIGTERM and SIGHUP in this process.
+pub fn install_handlers() {
+    for sig in [libc::SIGINT, libc::SIGTERM, libc::SIGHUP] {
+        // SAFETY: a zeroed sigaction with a handler that only stores to an
+        // atomic is a valid argument; the previous action is not needed.
+        unsafe {
+            let mut act: libc::sigaction = std::mem::zeroed();
+            act.sa_sigaction = on_signal as *const () as usize;
+            libc::sigemptyset(&mut act.sa_mask);
+            act.sa_flags = libc::SA_RESTART;
+            libc::sigaction(sig, &act, std::ptr::null_mut());
+        }
+    }
+}
+
+pub fn spawn(plan: &Plan, cwd: &str) -> std::io::Result<Child> {
+    let mut cmd = Command::new(&plan.program);
+    cmd.args(&plan.args).current_dir(cwd);
+    for name in &plan.env_remove {
+        cmd.env_remove(name);
+    }
+    for (k, v) in &plan.env_set {
+        cmd.env(k, v);
+    }
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
+    cmd.spawn()
+}
+
+/// Waits for the child. SIGTERM and SIGHUP sent to `tk run` go on to the
+/// child; SIGINT from the terminal already reached it (same process group)
+/// and is not sent twice.
+pub fn wait(child: &mut Child) -> std::io::Result<ExitStatus> {
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(status);
+        }
+        let sig = PENDING.swap(0, Ordering::SeqCst);
+        if sig == libc::SIGTERM || sig == libc::SIGHUP {
+            // SAFETY: kill with the child's pid and a valid signal number.
+            unsafe {
+                libc::kill(child.id() as libc::pid_t, sig);
+            }
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+/// The exit code `tk run` returns: the child's, or 128 + the signal.
+pub fn code(status: &ExitStatus) -> (u8, Option<i32>) {
+    use std::os::unix::process::ExitStatusExt;
+    match (status.code(), status.signal()) {
+        (Some(c), _) => (u8::try_from(c).unwrap_or(1), None),
+        (None, Some(s)) => (u8::try_from(128 + s).unwrap_or(1), Some(s)),
+        _ => (1, None),
+    }
+}
+
+/// Runs a short command to completion with a deadline, returning its
+/// stdout. For `sbx policy log`; never a shell, an argv list.
+pub fn output_with_timeout(program: &str, args: &[String], limit: Duration) -> Option<String> {
+    let mut child = Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .ok()?;
+    let mut out = child.stdout.take()?;
+    let reader = std::thread::spawn(move || {
+        use std::io::Read;
+        let mut buf = Vec::new();
+        let _ = (&mut out).take(4 * 1024 * 1024).read_to_end(&mut buf);
+        buf
+    });
+    let start = std::time::Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let buf = reader.join().ok()?;
+                return status
+                    .success()
+                    .then(|| String::from_utf8_lossy(&buf).into_owned());
+            }
+            Ok(None) if start.elapsed() < limit => std::thread::sleep(Duration::from_millis(50)),
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn plan(program: &str, args: &[&str]) -> Plan {
+        Plan {
+            program: program.into(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+            env_set: vec![("TK_CHAT_ID".into(), "c1".into())],
+            env_remove: vec!["TK_CHAT_TOKEN".into()],
+            kit: None,
+            sandbox_name: None,
+            srt_settings: None,
+            folders: vec![],
+            state_dirs: vec![],
+            notes: vec![],
+        }
+    }
+
+    #[test]
+    fn exit_codes_and_signals_pass_through() {
+        let mut c = spawn(&plan("sh", &["-c", "exit 7"]), "/").unwrap();
+        assert_eq!(code(&wait(&mut c).unwrap()), (7, None));
+        let mut c = spawn(&plan("sh", &["-c", "kill -9 $$"]), "/").unwrap();
+        assert_eq!(code(&wait(&mut c).unwrap()), (137, Some(9)));
+    }
+
+    #[test]
+    fn the_environment_is_set_and_inherited_tokens_cleared() {
+        // A token left by an outer run must not reach the child.
+        std::env::set_var("TK_CHAT_TOKEN", "left-over");
+        let mut c = spawn(
+            &plan(
+                "sh",
+                &[
+                    "-c",
+                    "test \"$TK_CHAT_ID\" = c1 && test -z \"$TK_CHAT_TOKEN\"",
+                ],
+            ),
+            "/",
+        )
+        .unwrap();
+        assert_eq!(code(&wait(&mut c).unwrap()).0, 0);
+        std::env::remove_var("TK_CHAT_TOKEN");
+    }
+
+    #[test]
+    fn arguments_reach_the_child_literally() {
+        let mut c = spawn(
+            &plan(
+                "sh",
+                &[
+                    "-c",
+                    "test \"$1\" = 'a b; $(x)' && test $# = 1",
+                    "sh",
+                    "a b; $(x)",
+                ],
+            ),
+            "/",
+        )
+        .unwrap();
+        assert_eq!(code(&wait(&mut c).unwrap()).0, 0);
+    }
+
+    #[test]
+    fn a_slow_command_is_killed_at_its_deadline() {
+        let t = std::time::Instant::now();
+        assert!(output_with_timeout("sleep", &["10".into()], Duration::from_millis(200)).is_none());
+        assert!(t.elapsed() < Duration::from_secs(3));
+        assert!(output_with_timeout("/nonexistent/sbx", &[], Duration::from_secs(1)).is_none());
+    }
+}
