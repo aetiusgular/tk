@@ -180,6 +180,26 @@ impl Daemon {
             Client::connect(&self.socket, &self.token, "tk run").map_err(|e| e.to_string())?;
         c.post(e).map(|_| ()).map_err(|e| e.to_string())
     }
+
+    /// One post with the token file read again, for a daemon that restarted
+    /// since `tk run` started. The new token must still give daemon scope,
+    /// as at the start.
+    fn post_after_restart(&self, e: &Event) -> Result<(), String> {
+        let dir = self
+            .socket
+            .parent()
+            .ok_or("the socket has no folder")?;
+        let token = client::read_daemon_token(dir).map_err(|e| e.to_string())?;
+        if token == self.token {
+            return Err("the token file has not changed".into());
+        }
+        let (mut c, hello) =
+            Client::connect(&self.socket, &token, "tk run").map_err(|e| e.to_string())?;
+        if hello.scope != "daemon" {
+            return Err("the daemon's token file gave chat scope, not daemon scope".into());
+        }
+        c.post(e).map(|_| ()).map_err(|e| e.to_string())
+    }
 }
 
 /// The argv a run record keeps. tk's own part (the wrapper and its flags,
@@ -451,14 +471,20 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
             a.harness.id,
             a.boundary.name()
         );
-        if let Err(e) = d.post(&event(
-            &chat,
-            a.harness.id,
-            "run.stop",
-            summary,
-            detail,
-            Some(pid),
-        )) {
+        let stop_event = event(&chat, a.harness.id, "run.stop", summary, detail, Some(pid));
+        let posted = match d.post(&stop_event) {
+            // The daemon restarted during the run and its token rotated
+            // (box test w1, BX8): read the token file again, and post once
+            // more under daemon scope, marked so the log says why.
+            Err(e) if e.contains("bad token") => {
+                let mut again = stop_event.clone();
+                again.detail["daemonRestarted"] = json!(true);
+                d.post_after_restart(&again)
+                    .map_err(|e2| format!("{e}; after reading the token again: {e2}"))
+            }
+            other => other,
+        };
+        if let Err(e) = posted {
             eprintln!("tk run: run.stop was not recorded: {e}");
         }
     }
@@ -813,6 +839,45 @@ mod end_to_end {
             !st.fake.dir.join("srt/chat-s.json").exists(),
             "removed after the run"
         );
+    }
+
+    #[test]
+    fn run_stop_is_recorded_after_the_daemon_restarted() {
+        // Box test w1, BX8: `systemctl --user restart tk-daemon` during a
+        // chat rotated the daemon's token, and the chat's `run.stop` was
+        // refused ("bad token"), leaving an unpaired `run.start`. tk run
+        // reads the token file again and posts once more.
+        let mut st = setup("restart");
+        let pi = script(
+            &st.fake.dir,
+            "pi-restart",
+            &format!(
+                "printf '%s\\n' {new} > '{dir}/daemon.token'; : > '{dir}/restarted'; exit 4",
+                new = fake::RESTARTED_TOKEN,
+                dir = st.fake.dir.display()
+            ),
+        );
+        st.env.programs.retain(|(n, _)| n != "pi");
+        st.env.programs.push(("pi".into(), pi));
+        let cwd = st.work.to_string_lossy().into_owned();
+        let code = run(
+            &s(&["pi", "--boundary", "none", "--chat", "chat-r2", "--cwd", &cwd]),
+            &st.env,
+        )
+        .unwrap();
+        assert_eq!(code, 4);
+        let ev = events(&st);
+        let kinds: Vec<&str> = ev.iter().map(|e| e["kind"].as_str().unwrap()).collect();
+        assert_eq!(kinds, vec!["run.start", "run.stop"], "{ev:?}");
+        assert_eq!(ev[1]["detail"]["daemonRestarted"], true);
+        let hellos: Vec<String> = st
+            .fake
+            .lines()
+            .iter()
+            .filter(|l| l["op"] == "hello")
+            .map(|l| l["token"].as_str().unwrap_or("").to_string())
+            .collect();
+        assert_eq!(hellos.last().map(String::as_str), Some(fake::RESTARTED_TOKEN));
     }
 
     #[test]

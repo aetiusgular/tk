@@ -348,6 +348,11 @@ pub mod fake {
     pub const DAEMON_TOKEN: &str =
         "1111111111111111111111111111111111111111111111111111111111111111";
     pub const CHAT_TOKEN: &str = "2222222222222222222222222222222222222222222222222222222222222222";
+    /// The daemon's token after a restart (`Mode::Normal` honours it once a
+    /// file named `restarted` sits in the fake's folder; integration w1 fix
+    /// pass, box test BX8).
+    pub const RESTARTED_TOKEN: &str =
+        "3333333333333333333333333333333333333333333333333333333333333333";
 
     /// What the fake does with each op.
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -382,17 +387,31 @@ pub mod fake {
         let listener = UnixListener::bind(&socket).unwrap();
         let got = Arc::new(Mutex::new(Vec::new()));
         let g = got.clone();
+        let restarted_flag = dir.join("restarted");
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(stream) = stream else { return };
                 let g = g.clone();
-                std::thread::spawn(move || serve(stream, mode, g));
+                let restarted = restarted_flag.clone();
+                std::thread::spawn(move || serve(stream, mode, g, &restarted));
             }
         });
         Fake { dir, socket, got }
     }
 
-    fn serve(stream: std::os::unix::net::UnixStream, mode: Mode, got: Arc<Mutex<Vec<Value>>>) {
+    fn serve(
+        stream: std::os::unix::net::UnixStream,
+        mode: Mode,
+        got: Arc<Mutex<Vec<Value>>>,
+        restarted: &Path,
+    ) {
+        // After a "restart" only the new token has daemon scope, as in the
+        // real daemon, whose token rotates on every start.
+        let daemon_token = if restarted.exists() {
+            RESTARTED_TOKEN
+        } else {
+            DAEMON_TOKEN
+        };
         let mut w = stream.try_clone().unwrap();
         let mut scope = None;
         for line in BufReader::new(stream).lines() {
@@ -407,7 +426,7 @@ pub mod fake {
             let op = v["op"].as_str().unwrap_or("");
             let reply = match (op, scope) {
                 ("hello", None) => match v["token"].as_str() {
-                    Some(DAEMON_TOKEN) => {
+                    Some(t) if t == daemon_token => {
                         scope = Some("daemon");
                         json!({"ok": true, "scope": "daemon", "daemon": {"version": "0.0.0", "pid": 1, "protocol": 1}})
                     }
