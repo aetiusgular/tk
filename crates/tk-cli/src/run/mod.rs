@@ -199,6 +199,17 @@ impl Daemon {
     }
 }
 
+/// `lstat`, not `stat`: a regular file (no link followed), owned by this
+/// user, one hard link, no group or other write bit (fix pass review R1).
+fn regular_private_file(path: &Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    std::fs::symlink_metadata(path).is_ok_and(|m| {
+        // SAFETY: getuid takes no arguments and cannot fail.
+        let uid = unsafe { libc::getuid() };
+        m.file_type().is_file() && m.uid() == uid && m.nlink() == 1 && m.mode() & 0o022 == 0
+    })
+}
+
 /// The argv a run record keeps. tk's own part (the wrapper and its flags,
 /// the harness program) is kept; the harness's own arguments, which every
 /// plan appends last, keep their flag names and lose every other word to its
@@ -320,6 +331,11 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
             .clone()
             .filter(|p| p.starts_with('/'))
             .unwrap_or_else(|| format!("{}/.tk/policy.json", home.trim_end_matches('/'))),
+        policy_regular: false,
+    };
+    let inputs = plan::Inputs {
+        policy_regular: regular_private_file(Path::new(&inputs.policy)),
+        ..inputs
     };
     let p = plan::build(&inputs).map_err(|e| (2, e))?;
     // srt's dependencies and the userns sysctl, before srt fails on them with
@@ -901,6 +917,45 @@ mod end_to_end {
         assert_eq!(
             hellos.last().map(String::as_str),
             Some(fake::RESTARTED_TOKEN)
+        );
+    }
+
+    #[test]
+    fn srt_re_opens_the_policy_only_when_it_is_a_plain_file() {
+        // Fix pass review R1: a link at ~/.tk/policy.json to ~/.tk/backups
+        // was bound read-only into the sandbox, backups and all.
+        let st = setup("srt-link");
+        let tk = st.fake.dir.join(".tk");
+        std::fs::create_dir_all(tk.join("backups")).unwrap();
+        let cwd = st.work.to_string_lossy().into_owned();
+        let allow = |chat: &str| -> serde_json::Value {
+            run(
+                &s(&["pi", "--boundary", "srt", "--chat", chat, "--cwd", &cwd, "--model-url", "http://127.0.0.1:8080"]),
+                &st.env,
+            )
+            .unwrap();
+            let c: serde_json::Value = serde_json::from_str(
+                &std::fs::read_to_string(st.fake.dir.join("settings.copy")).unwrap(),
+            )
+            .unwrap();
+            c["filesystem"]["allowRead"].clone()
+        };
+        std::os::unix::fs::symlink(tk.join("backups"), tk.join("policy.json")).unwrap();
+        assert_eq!(allow("chat-l1"), serde_json::json!([]), "a link");
+        std::fs::remove_file(tk.join("policy.json")).unwrap();
+        std::fs::write(tk.join("backups/a.json"), "{}").unwrap();
+        std::fs::hard_link(tk.join("backups/a.json"), tk.join("policy.json")).unwrap();
+        assert_eq!(allow("chat-l2"), serde_json::json!([]), "a second hard link");
+        std::fs::remove_file(tk.join("policy.json")).unwrap();
+        std::fs::write(tk.join("policy.json"), "{}").unwrap();
+        std::fs::set_permissions(tk.join("policy.json"), std::fs::Permissions::from_mode(0o666)).unwrap();
+        assert_eq!(allow("chat-l3"), serde_json::json!([]), "writable by others");
+        std::fs::set_permissions(tk.join("policy.json"), std::fs::Permissions::from_mode(0o600)).unwrap();
+        let path = tk.join("policy.json").to_string_lossy().into_owned();
+        assert_eq!(
+            allow("chat-l4"),
+            serde_json::json!([{"path": path, "literal": true}]),
+            "a plain private file"
         );
     }
 

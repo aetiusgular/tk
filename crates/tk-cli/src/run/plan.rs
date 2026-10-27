@@ -57,6 +57,11 @@ pub struct Inputs<'a> {
     /// `~/.tk/policy.json`). Under srt it is re-opened read-only inside the
     /// hidden `~/.tk` (box test w1, finding BX2).
     pub policy: String,
+    /// The policy path is a regular file you own, with one link and no
+    /// group or other write bit (`lstat`, done by the caller: this module
+    /// reads no file). Only then is it re-opened (fix pass review R1: a
+    /// link at that name re-opened what it pointed at, `~/.tk/backups`).
+    pub policy_regular: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -288,12 +293,13 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
                 .is_some_and(|d| d == Path::new(&tk_dir))
                 && i.policy.ends_with(".json")
                 && !i.policy.contains("/../")
-                && !i.policy.contains("/./");
+                && !i.policy.contains("/./")
+                && i.policy_regular;
             let allow_read = if policy_ok {
                 vec![json!({"path": i.policy, "literal": true})]
             } else {
                 notes.push(format!(
-                    "tk run: {} is not a .json file directly in {tk_dir}, so srt keeps it hidden and the gate inside finds no policy: every call will ask",
+                    "tk run: {} is not a regular .json file of yours directly in {tk_dir} (no link, one name, not writable by others), so srt keeps it hidden and the gate inside finds no policy: every call will ask",
                     i.policy
                 ));
                 vec![]
@@ -453,6 +459,7 @@ mod tests {
             settings_path: "/run/user/1000/tk/srt/chat-b.json".into(),
             token_file: "/run/user/1000/tk/chats/chat-b.token".into(),
             policy: "/home/u/.tk/policy.json".into(),
+            policy_regular: true,
         }
     }
 
@@ -666,6 +673,14 @@ mod tests {
                 p.notes
             );
         }
+        // A link, a second hard link or a file others can write is not
+        // re-opened: the caller says so after `lstat` (review R1).
+        let mut i = inputs(&args);
+        i.policy_regular = false;
+        let p = build(&i).unwrap();
+        let s: serde_json::Value =
+            serde_json::from_str(p.srt_settings.as_deref().unwrap()).unwrap();
+        assert_eq!(s["filesystem"]["allowRead"], json!([]));
     }
 
     #[test]
