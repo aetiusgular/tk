@@ -1,0 +1,65 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/exa",
+  "title": "Exa",
+  "description": "Web search, page fetch and research agent through Exa's hosted MCP endpoint.",
+  "version": "2026.10.27",
+  "websiteUrl": "https://docs.exa.ai",
+  "repository": {
+    "url": "https://github.com/exa-labs/exa-mcp-server",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "value": "${EXA_API_KEY}",
+          "isSecret": true,
+          "description": "Exa API key; the gateway holds it, the model never sees it"
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "remote"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "unknown"
+          }
+        },
+        "entrySkill": "web-search",
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "mcp.exa.ai"
+              ],
+              "allow_port": [
+                443
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

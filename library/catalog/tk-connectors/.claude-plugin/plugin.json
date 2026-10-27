@@ -1,0 +1,45 @@
+{
+  "name": "tk-connectors",
+  "displayName": "tk connectors",
+  "version": "0.1.0",
+  "description": "Entry skills for the connectors in the tk library: web search, library docs, Hugging Face Hub, meeting notes, deployments.",
+  "author": {
+    "name": "Aetius Gular",
+    "url": "https://github.com/aetiusgular"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/aetiusgular/tk",
+  "keywords": [
+    "tk",
+    "connectors",
+    "skills"
+  ],
+  "skills": [
+    "./skills/"
+  ],
+  "metadata": {
+    "io.github.aetiusgular.tk": {
+      "kind": "bundle",
+      "tier": "own",
+      "status": "active",
+      "runner": {
+        "kind": "host",
+        "note": "runs as you"
+      },
+      "exposure": {
+        "default": "deferred"
+      },
+      "trust": {
+        "namespaceProof": "none",
+        "provenance": {
+          "kind": "none"
+        },
+        "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "scans": [],
+        "liveness": {
+          "state": "not-applicable"
+        }
+      }
+    }
+  }
+}

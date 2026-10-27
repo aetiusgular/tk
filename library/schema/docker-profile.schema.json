@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/library/schema/docker-profile.schema.json",
+  "title": "Docker MCP Gateway profile file (version 1)",
+  "description": "Written 27 Oct 2026 from docker/mcp-gateway at 7e0f34277c91855ad861eeff536b4fdc77420593: pkg/workingset/workingset.go (WorkingSet: version 1, id, name, servers[], secrets{}; Server.type is registry|image|remote with source, image or endpoint required per type; tools, config, secrets, catalog_ref, snapshot optional) and docs/profiles.md (\"Profile File Format\"). `docker mcp profile import` runs this struct's validation and resolves a snapshot for every image server without one by reading the image's io.docker.server.metadata label (workingset.go ResolveSnapshot), so a profile that must import without a pull carries the snapshot. The YAML key for the catalog reference is catalog_ref; the JSON key is catalogRef (struct tags). Lane E.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "id",
+    "name",
+    "servers"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "registry",
+              "image",
+              "remote"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "image": {
+            "type": "string",
+            "minLength": 1
+          },
+          "endpoint": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "config": {
+            "type": "object"
+          },
+          "secrets": {
+            "type": "string"
+          },
+          "catalog_ref": {
+            "type": "string"
+          },
+          "catalogRef": {
+            "type": "string"
+          },
+          "snapshot": {
+            "type": "object",
+            "required": [
+              "server"
+            ],
+            "properties": {
+              "server": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "type"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "registry"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "source"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "image"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "image"
+              ],
+              "properties": {
+                "image": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "remote"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "endpoint"
+              ],
+              "properties": {
+                "endpoint": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "const": "docker-desktop-store"
+          }
+        }
+      }
+    }
+  }
+}

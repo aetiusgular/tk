@@ -5,5 +5,13 @@
   "type": "module",
   "license": "MIT",
   "description": "The tk library: schema, validator, exports, catalog (lane E, T3.1, T3.4)",
-  "engines": { "node": ">=22.19.0" }
+  "engines": { "node": ">=22.19.0" },
+  "scripts": {
+    "validate": "node --no-warnings=ExperimentalWarning cli.ts validate",
+    "export": "node --no-warnings=ExperimentalWarning cli.ts export"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "yaml": "2.9.1"
+  }
 }

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/library/schema/tools.schema.json",
+  "title": "tk catalog tools record (tools.json beside a server.json)",
+  "description": "The tools a server entry advertises, recorded by the library so the catalog-wide name check, the annotation check and the outputSchema check can run without connecting to the server. Each item is the MCP Tool shape (modelcontextprotocol.io/specification/2026-07-28/server/tools: name, title, description, inputSchema, outputSchema, annotations). Docker's catalog keeps the same idea in servers/<name>/tools.json. `source` says how the list was obtained and when; the list is a record, not a promise (plan R7). The contract's _meta object has no tools field (additionalProperties false), so this sibling file holds them; see the lane E status doc, requests for integration. Lane E, 27 Oct 2026.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "recordedAt", "tools"],
+  "properties": {
+    "source": {
+      "description": "Where the names came from: a tools/list answer, the server's docs or source, or observed through a client",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "recordedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "dynamic": {
+      "description": "True when the server adds tools at run time (the computer-use server passes the helper's runtime tools through), so the list is the known static part only",
+      "type": "boolean"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "title": { "type": "string" },
+          "description": { "type": "string", "maxLength": 4096 },
+          "inputSchema": { "type": "object" },
+          "outputSchema": { "type": "object" },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": { "type": "string" },
+              "readOnlyHint": { "type": "boolean" },
+              "destructiveHint": { "type": "boolean" },
+              "idempotentHint": { "type": "boolean" },
+              "openWorldHint": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

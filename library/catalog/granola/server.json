@@ -1,0 +1,58 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/granola",
+  "title": "Granola",
+  "description": "Meeting notes, transcripts and folders from Granola, through its hosted MCP endpoint (OAuth).",
+  "version": "2026.10.27",
+  "websiteUrl": "https://granola.ai",
+  "repository": {
+    "url": "https://github.com/docker/mcp-registry",
+    "source": "github",
+    "subfolder": "servers/granola-remote"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.granola.ai/mcp"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "remote"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "unknown"
+          }
+        },
+        "entrySkill": "meeting-notes",
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "mcp.granola.ai"
+              ],
+              "allow_port": [
+                443
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

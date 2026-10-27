@@ -1,0 +1,53 @@
+{
+  "namespace": "io.github.aetiusgular",
+  "name": "hf-hub",
+  "title": "Hf hub",
+  "description": "Search and inspect Hugging Face Hub models, datasets, Spaces and papers with the Hugging Face connector. Use for model cards, dataset layouts, trending lists and file reads on the Hub.",
+  "version": "0.1.0",
+  "status": "active",
+  "license": "MIT",
+  "allowedTools": [
+    "hugging-face/hub_repo_search",
+    "hugging-face/hub_repo_details",
+    "hugging-face/hf_fs"
+  ],
+  "repository": {
+    "url": "https://github.com/aetiusgular/tk",
+    "type": "git"
+  },
+  "packages": [
+    {
+      "registryType": "git",
+      "url": "https://github.com/aetiusgular/tk",
+      "ref": "main",
+      "subfolder": "library/catalog/tk-connectors/skills/hf-hub"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "skill",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "host",
+          "note": "runs as you"
+        },
+        "exposure": {
+          "default": "direct"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "not-applicable"
+          }
+        }
+      }
+    }
+  }
+}

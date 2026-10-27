@@ -1,0 +1,33 @@
+{
+  "source": "observed 27 Oct 2026 through the claude.ai connector of the same name (tool names as listed to the client); no tools/list was run; the Docker catalog image mcp/exa (docker/mcp-registry servers/exa, commit 9c69a3b of exa-labs/exa-mcp-server) may expose a different list",
+  "recordedAt": "2026-10-27",
+  "tools": [
+    {
+      "name": "web_search_exa",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "web_fetch_exa",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "agent_run",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      }
+    }
+  ]
+}

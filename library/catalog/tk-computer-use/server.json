@@ -1,0 +1,141 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/tk-computer-use",
+  "title": "tk computer use",
+  "description": "Computer use on a Mac through the tk helper: one app per approval, a Stop control, recordings.",
+  "version": "0.0.1",
+  "websiteUrl": "https://github.com/aetiusgular/tk",
+  "repository": {
+    "url": "https://github.com/aetiusgular/tk",
+    "source": "github",
+    "subfolder": "crates/tk-daemon/src/computer_use"
+  },
+  "packages": [
+    {
+      "registryType": "host",
+      "identifier": "tk",
+      "version": "0.0.1",
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "cu",
+          "description": "Until wave 2 lane K lands tk cu, the fork starts it as <MonoCode> computer-use-mcp (T0.4)"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "host",
+          "note": "runs as you"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "not-applicable"
+          }
+        },
+        "annotationsOverride": {
+          "computer_use_status": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "list_apps": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "list_windows": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "get_window_state": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "get_accessibility_tree": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "verify_state": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "parse_visual_regions": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "get_screen_size": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "get_cursor_position": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "zoom": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "get_session": {
+            "readOnlyHint": true,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          },
+          "request_app_access": {
+            "readOnlyHint": false,
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": false
+          }
+        },
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "127.0.0.1"
+              ],
+              "allow_port": []
+            }
+          }
+        }
+      }
+    }
+  }
+}

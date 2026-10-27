@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/hugging-face",
+  "title": "Hugging Face",
+  "description": "Hub search, repository details, file reads and Spaces, through huggingface.co/mcp.",
+  "version": "2026.10.27",
+  "websiteUrl": "https://huggingface.co/mcp",
+  "repository": {
+    "url": "https://github.com/huggingface/hf-mcp-server",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://huggingface.co/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer ${HF_TOKEN}",
+          "isSecret": true,
+          "isRequired": false,
+          "description": "Optional user token for gated or private repositories"
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "remote"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "unknown"
+          }
+        },
+        "entrySkill": "hf-hub",
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "huggingface.co",
+                "hf.co"
+              ],
+              "allow_port": [
+                443
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
