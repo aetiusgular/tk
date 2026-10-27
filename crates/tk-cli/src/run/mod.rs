@@ -238,6 +238,7 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
         .clone()
         .unwrap_or_else(|| PathBuf::from(&home).join(".tk/run/tk"));
     let settings_path = state_root.join("srt").join(format!("{chat}.json"));
+    let token_path = state_root.join("chats").join(format!("{chat}.token"));
     let inputs = plan::Inputs {
         args: &a,
         chat: chat.clone(),
@@ -248,6 +249,7 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
         gateway,
         daemon_dir: dir.as_ref().and_then(|d| d.to_str()).map(str::to_string),
         settings_path: settings_path.to_string_lossy().into_owned(),
+        token_file: token_path.to_string_lossy().into_owned(),
     };
     let p = plan::build(&inputs).map_err(|e| (2, e))?;
     if a.dry_run {
@@ -263,6 +265,11 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
     if let Some(text) = &p.srt_settings {
         write_private(&settings_path, text)
             .map_err(|e| (1, format!("{}: {e}", settings_path.display())))?;
+    }
+    let token_file_named = p.env_set.iter().any(|(k, _)| k == "TK_CHAT_TOKEN_FILE");
+    if let (true, Some(t)) = (token_file_named, &token) {
+        write_private(&token_path, &format!("{t}\n"))
+            .map_err(|e| (1, format!("{}: {e}", token_path.display())))?;
     }
 
     // sbx: what the log holds before the start is not this run's.
@@ -393,6 +400,9 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
     }
     if p.srt_settings.is_some() {
         let _ = std::fs::remove_file(&settings_path);
+    }
+    if token_file_named {
+        let _ = std::fs::remove_file(&token_path);
     }
     Ok(code)
 }

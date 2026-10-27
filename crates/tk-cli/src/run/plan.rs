@@ -25,6 +25,7 @@ use super::harness::{Harness, HARNESSES};
 /// from this run only, so a value left by an outer `tk run` never leaks in.
 pub const OWNED_VARS: &[&str] = &[
     "TK_CHAT_TOKEN",
+    "TK_CHAT_TOKEN_FILE",
     "TK_CHAT_ID",
     "TK_HARNESS",
     "TK_BOUNDARY",
@@ -46,6 +47,10 @@ pub struct Inputs<'a> {
     pub daemon_dir: Option<String>,
     /// Where srt's settings file for this chat goes.
     pub settings_path: String,
+    /// Where the chat token is written for hooks (`TK_CHAT_TOKEN_FILE`),
+    /// beside srt's settings in the daemon's 0700 folder. Named to the child
+    /// only under `--boundary none`.
+    pub token_file: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -195,6 +200,8 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
             // environment (`-e KEY`), which the child gets below.
             let mut names: Vec<&str> = OWNED_VARS.to_vec();
             names.retain(|n| *n != "TK_CHAT_TOKEN" || i.token.is_some());
+            // A host path means nothing inside the sandbox.
+            names.retain(|n| *n != "TK_CHAT_TOKEN_FILE");
             names.retain(|n| *n != "TK_OTLP_ENDPOINT" || otlp.is_some());
             names.retain(|n| *n != "TK_GATEWAY_URL" || gateway.is_some());
             for n in names {
@@ -298,6 +305,9 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
     }
     if let Some(t) = &i.token {
         env.push(("TK_CHAT_TOKEN".into(), t.clone()));
+        if i.args.boundary == Boundary::None {
+            env.push(("TK_CHAT_TOKEN_FILE".into(), i.token_file.clone()));
+        }
     }
     if let Some(o) = &otlp {
         env.push(("TK_OTLP_ENDPOINT".into(), o.clone()));
@@ -413,6 +423,7 @@ mod tests {
             gateway: Some("http://127.0.0.1:8811/mcp".into()),
             daemon_dir: Some("/run/user/1000/tk".into()),
             settings_path: "/run/user/1000/tk/srt/chat-b.json".into(),
+            token_file: "/run/user/1000/tk/chats/chat-b.token".into(),
         }
     }
 
@@ -441,6 +452,31 @@ mod tests {
         for v in OWNED_VARS {
             assert!(p.env_remove.iter().any(|r| r == v), "{v} is cleared first");
         }
+    }
+
+    /// Integration w1: hooks read the chat token from a file when a harness
+    /// strips secret-named variables (rules case 76). Only the bare boundary
+    /// names it: srt hides the daemon's folder and sbx cannot see host paths.
+    #[test]
+    fn the_token_file_is_named_only_for_the_bare_boundary_and_only_with_a_token() {
+        for (b, want) in [("none", true), ("srt", false), ("sbx", false)] {
+            let args = a(&["pi", "--boundary", b]);
+            let p = build(&inputs(&args)).unwrap();
+            assert_eq!(
+                env(&p, "TK_CHAT_TOKEN_FILE"),
+                want.then_some("/run/user/1000/tk/chats/chat-b.token"),
+                "{b}"
+            );
+            assert!(
+                !p.args.iter().any(|x| x.contains("TK_CHAT_TOKEN_FILE")),
+                "{b}"
+            );
+        }
+        let args = a(&["pi", "--boundary", "none"]);
+        let mut i = inputs(&args);
+        i.token = None;
+        assert!(env(&build(&i).unwrap(), "TK_CHAT_TOKEN_FILE").is_none());
+        assert!(OWNED_VARS.contains(&"TK_CHAT_TOKEN_FILE"));
     }
 
     #[test]

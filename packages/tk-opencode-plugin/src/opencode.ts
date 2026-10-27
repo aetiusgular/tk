@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { approve, postEvent } from "./core/daemon.ts";
 import { decideCall, resolveAsk, type GateCall } from "./core/gate.ts";
-import { loadPolicy, policyPath, type LoadedPolicy } from "./core/policy.ts";
+import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
 import { redactText, redactValue } from "./core/redact.ts";
 
 export const HARNESS = "opencode";
@@ -37,7 +37,7 @@ export type Deps = {
 export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
   return {
     env,
-    loadPolicy: () => loadPolicy(policyPath(env)),
+    loadPolicy: () => loadPolicyFrom(env),
     resolveAsk: (answer, call, canAsk) => resolveAsk(answer, call, canAsk, (r) => approve(r, env)),
     postEvent: (e) => postEvent(e, env),
   };

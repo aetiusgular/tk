@@ -3,7 +3,7 @@
 // contracts/fixtures/policy/. Canonical copy: packages/tk-claude-plugin/src/core/.
 
 import { createHash } from "node:crypto";
-import { closeSync, fstatSync, openSync, readSync, statSync } from "node:fs";
+import { closeSync, fstatSync, openSync, readSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { decodeEscapes, fold } from "./fold.ts";
@@ -57,6 +57,44 @@ export function policyPath(env: NodeJS.ProcessEnv = process.env): string {
   const fromEnv = env.TK_POLICY;
   if (fromEnv && fromEnv.trim() !== "") return fromEnv;
   return path.join(homedir(), ".tk", "policy.json");
+}
+
+/** The real path of `p`, following links on every part that exists; a missing tail is appended as written. */
+function realish(p: string): string {
+  const abs = path.resolve(p);
+  let head = abs;
+  const tail: string[] = [];
+  for (;;) {
+    try {
+      return path.join(realpathSync(head), ...tail.reverse());
+    } catch {
+      const parent = path.dirname(head);
+      if (parent === head) return abs;
+      tail.push(path.basename(head));
+      head = parent;
+    }
+  }
+}
+
+/** True when `file` is `folder` or lies under it, after links are followed. */
+export function insideFolder(file: string, folder: string): boolean {
+  const rel = path.relative(realish(folder), realish(file));
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/**
+ * Loads the policy for a hook. A `TK_POLICY` that points inside the session
+ * folder is refused: a project's settings file (Claude Code's
+ * `.claude/settings.json` `env`) or a cloned repository can set it there, and
+ * the file would then be the project's, not yours. The default
+ * `~/.tk/policy.json` is never refused this way (a session may start in HOME).
+ */
+export function loadPolicyFrom(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): LoadedPolicy {
+  const fromEnv = env.TK_POLICY?.trim();
+  if (fromEnv && path.isAbsolute(fromEnv) && insideFolder(fromEnv, cwd)) {
+    return { policy: emptyPolicy(), problem: "TK_POLICY is inside the session folder, which a project can set; not used" };
+  }
+  return loadPolicy(policyPath(env));
 }
 
 const TOOL_PATTERN = /^(\*|[a-z0-9_]+\/(\*|[a-z0-9_]+)|[a-z0-9_]+)$/;

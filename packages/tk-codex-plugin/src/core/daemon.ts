@@ -4,10 +4,11 @@
 // is bounded in time; a daemon that is down never blocks a turn longer than
 // the connect timeout. Canonical copy: packages/tk-claude-plugin/src/core/.
 
-import { lstatSync, readFileSync } from "node:fs";
+import { constants, lstatSync, readFileSync } from "node:fs";
 import net from "node:net";
 import { homedir, platform } from "node:os";
 import path from "node:path";
+import { insideFolder } from "./policy.ts";
 
 export const CONNECT_TIMEOUT_MS = 800;
 const MAX_LINE_BYTES = 1024 * 1024;
@@ -45,12 +46,28 @@ export function socketLooksOwned(sock: string): string | undefined {
 
 const HEX64 = /^[0-9a-f]{64}$/;
 
-/** `TK_CHAT_TOKEN` (chat scope), else the daemon's token file beside the socket. */
-export function daemonToken(sock: string, env: NodeJS.ProcessEnv = process.env): string | undefined {
+export { insideFolder };
+
+/**
+ * The chat token this hook presents: `TK_CHAT_TOKEN`, else the file
+ * `TK_CHAT_TOKEN_FILE` names (`tk run` writes it, for harnesses that strip
+ * secret-named variables from a hook's environment, rules case 76). Never the
+ * daemon's own `daemon.token`: a hook is not the daemon, and the daemon scope
+ * can mint tokens, read every chat and become an approver (integration w1
+ * decision). The file must be absolute, a regular file (not a link), yours,
+ * readable by you alone, small, and outside the session folder.
+ */
+export function chatToken(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): string | undefined {
   const fromEnv = env.TK_CHAT_TOKEN?.trim();
   if (fromEnv && HEX64.test(fromEnv)) return fromEnv;
+  const file = env.TK_CHAT_TOKEN_FILE?.trim();
+  if (!file || !path.isAbsolute(file) || insideFolder(file, cwd)) return undefined;
   try {
-    const t = readFileSync(path.join(path.dirname(sock), "daemon.token"), "utf8").trim();
+    const st = lstatSync(file);
+    if (!st.isFile() || st.size > 256) return undefined;
+    if (typeof process.getuid === "function" && st.uid !== process.getuid()) return undefined;
+    if ((st.mode & 0o077) !== 0) return undefined;
+    const t = readFileSync(file, { encoding: "utf8", flag: constants.O_RDONLY | constants.O_NOFOLLOW }).trim();
     return HEX64.test(t) ? t : undefined;
   } catch {
     return undefined;
@@ -62,14 +79,16 @@ type Reply = Record<string, unknown> & { ok?: boolean; error?: string };
 /** One connection: hello, then each request in order, one reply line each. */
 export async function exchange(
   requests: readonly Record<string, unknown>[],
-  opts: { env?: NodeJS.ProcessEnv; client: string; replyTimeoutMs: number },
+  opts: { env?: NodeJS.ProcessEnv; client: string; replyTimeoutMs: number; cwd?: string },
 ): Promise<{ replies: Reply[] } | { error: string }> {
   const env = opts.env ?? process.env;
+  const cwd = opts.cwd ?? process.cwd();
   const sock = socketPath(env);
+  if (env.TK_DAEMON_SOCKET?.trim() && insideFolder(sock, cwd)) return { error: "TK_DAEMON_SOCKET is inside the session folder, which a project can set; not used" };
+  const token = chatToken(env, cwd);
+  if (!token) return { error: "no chat token (start the harness with tk run)" };
   const notOwned = socketLooksOwned(sock);
   if (notOwned) return { error: notOwned };
-  const token = daemonToken(sock, env);
-  if (!token) return { error: "no daemon token" };
 
   return await new Promise((resolve) => {
     const replies: Reply[] = [];

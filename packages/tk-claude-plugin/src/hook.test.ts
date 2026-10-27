@@ -80,9 +80,18 @@ describe("Claude Code PreToolUse", () => {
   it("no approver connected, or no daemon: Claude Code's own prompt (contract section 5)", async () => {
     daemon.setApprove("none");
     expect(decision((await runHook("pre", pre("mcp__github__create_issue", {}), env())).stdout).permissionDecision).toBe("ask");
-    const r = await runHook("pre", pre("mcp__github__create_issue", {}), { TK_POLICY: policyFile, TK_DAEMON_SOCKET: path.join(root, "absent.sock") });
+    const r = await runHook("pre", pre("mcp__github__create_issue", {}), { TK_POLICY: policyFile, TK_DAEMON_SOCKET: path.join(root, "absent.sock"), TK_CHAT_TOKEN: daemon.chatToken });
     expect(decision(r.stdout)).toMatchObject({ permissionDecision: "ask" });
     expect(decision(r.stdout).permissionDecisionReason).toContain("no daemon socket");
+  });
+
+  it("with no chat token the daemon is not contacted and Claude Code's own prompt answers (integration w1: no daemon-token fallback)", async () => {
+    daemon.setApprove("yes");
+    const before = daemon.lines.length;
+    const r = await runHook("pre", pre("mcp__github__create_issue", {}), { TK_POLICY: policyFile, ...daemon.env(false) });
+    expect(decision(r.stdout)).toMatchObject({ permissionDecision: "ask" });
+    expect(decision(r.stdout).permissionDecisionReason).toContain("no chat token");
+    expect(daemon.lines.length).toBe(before);
   });
 
   it("in bypassPermissions and dontAsk, an unanswered ask is deny (fail safe; prompt not documented there)", async () => {

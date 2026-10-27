@@ -21,7 +21,7 @@ export type FakeDaemon = {
   approvals: () => Record<string, unknown>[];
   events: () => Record<string, unknown>[];
   setApprove: (b: ApproveBehaviour) => void;
-  /** Env for a hook that should reach this daemon. */
+  /** Env for a hook that should reach this daemon. A hook needs a chat token (integration w1: no daemon-token fallback); pass false to leave it out. */
   env: (withChatToken?: boolean) => Record<string, string>;
   close: () => Promise<void>;
 };
@@ -115,7 +115,7 @@ export async function startFakeDaemon(opts: { approve?: ApproveBehaviour; root?:
     setApprove: (b) => {
       behaviour = b;
     },
-    env: (withChatToken = false) => ({ TK_DAEMON_SOCKET: socket, ...(withChatToken ? { TK_CHAT_TOKEN: CHAT_TOKEN } : {}) }),
+    env: (withChatToken = true) => ({ TK_DAEMON_SOCKET: socket, ...(withChatToken ? { TK_CHAT_TOKEN: CHAT_TOKEN } : {}) }),
     close: async () => {
       for (const s of sockets) s.destroy();
       await new Promise<void>((resolve) => server.close(() => resolve()));

@@ -79,6 +79,16 @@ describe("Codex PreToolUse", () => {
     expect(r.stderr).toContain("none is connected");
   });
 
+  it("with no chat token the daemon is not contacted and an ask is a deny (integration w1: no daemon-token fallback)", async () => {
+    daemon.setApprove("yes");
+    const before = daemon.lines.length;
+    const r = await runHook("pre", pre("mcp__github__create_issue", {}), { TK_POLICY: policyFile, ...daemon.env(false) });
+    expect(r.exitCode).toBe(2);
+    expect(r.stderr).toContain("no chat token");
+    expect(daemon.lines.length).toBe(before);
+    daemon.setApprove("none");
+  });
+
   it("rewrites MCP input with redacted values, and denies other tools it cannot rewrite", async () => {
     const r = await runHook("pre", pre("mcp__exa__search", { query: "q", apiKey: "k-123" }), env());
     expect(r.exitCode).toBe(0);
