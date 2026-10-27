@@ -917,7 +917,13 @@ mod end_to_end {
         )
         .unwrap_err();
         assert_eq!(err.0, 1);
-        assert!(err.1.contains("bwrap (package bubblewrap)"), "{}", err.1);
+        // Linux needs bubblewrap, socat and ripgrep; macOS ripgrep only.
+        let first = if cfg!(target_os = "linux") {
+            "bwrap (package bubblewrap)"
+        } else {
+            "rg (package ripgrep)"
+        };
+        assert!(err.1.contains(first), "{}", err.1);
         assert!(seen(&st).is_empty(), "the harness never started");
         assert!(!st.fake.dir.join("srt/chat-d.json").exists());
         assert!(events(&st).is_empty(), "nothing recorded");
