@@ -15,24 +15,79 @@ use std::time::Duration;
 use super::plan::Plan;
 
 static PENDING: AtomicI32 = AtomicI32::new(0);
+/// For the last SIGINT: 1 when a process sent it to `tk` (kill(2)), 0 when
+/// the kernel did (a terminal's Ctrl-C), -1 when the platform cannot say.
+static INT_FROM_PROCESS: AtomicI32 = AtomicI32::new(-1);
 
-extern "C" fn on_signal(sig: libc::c_int) {
-    // Only an atomic store: async-signal-safe.
+extern "C" fn on_signal(sig: libc::c_int, info: *mut libc::siginfo_t, _: *mut libc::c_void) {
+    // Only atomic stores and reads of the siginfo the kernel passed:
+    // async-signal-safe.
+    if sig == libc::SIGINT {
+        INT_FROM_PROCESS.store(from_process(info), Ordering::SeqCst);
+    }
     PENDING.store(sig, Ordering::SeqCst);
+}
+
+/// Linux: a terminal's signal comes from `kill_pgrp(.., priv = 1)`
+/// (`drivers/tty/n_tty.c` `__isig`), which `kernel/signal.c` delivers with
+/// `si_code = SI_KERNEL` and `si_pid = 0`; kill(2) gives `SI_USER` and the
+/// sender's pid (both read at torvalds/linux master, 27 Oct 2026).
+#[cfg(target_os = "linux")]
+fn from_process(info: *const libc::siginfo_t) -> i32 {
+    if info.is_null() {
+        return -1;
+    }
+    // SAFETY: the kernel passed a valid siginfo for this SA_SIGINFO handler.
+    let (code, pid) = unsafe { ((*info).si_code, (*info).si_pid()) };
+    i32::from(code != libc::SI_KERNEL && pid != 0)
+}
+
+/// macOS: kill(2) and a terminal's signal both reach `psignal` in XNU
+/// (`bsd/kern/kern_sig.c`: `kill` and `tty_pgsignal`), so the siginfo is not
+/// read as proof either way (not found); `wait` falls back to the terminal's
+/// foreground group.
+#[cfg(not(target_os = "linux"))]
+fn from_process(_info: *const libc::siginfo_t) -> i32 {
+    -1
 }
 
 /// Catches SIGINT, SIGTERM and SIGHUP in this process.
 pub fn install_handlers() {
     for sig in [libc::SIGINT, libc::SIGTERM, libc::SIGHUP] {
-        // SAFETY: a zeroed sigaction with a handler that only stores to an
-        // atomic is a valid argument; the previous action is not needed.
+        // SAFETY: a zeroed sigaction with an SA_SIGINFO handler that only
+        // stores to atomics is a valid argument; the previous action is not
+        // needed.
         unsafe {
             let mut act: libc::sigaction = std::mem::zeroed();
             act.sa_sigaction = on_signal as *const () as usize;
             libc::sigemptyset(&mut act.sa_mask);
-            act.sa_flags = libc::SA_RESTART;
+            act.sa_flags = libc::SA_RESTART | libc::SA_SIGINFO;
             libc::sigaction(sig, &act, std::ptr::null_mut());
         }
+    }
+}
+
+/// Whether `tk` runs in its terminal's foreground process group. No terminal
+/// on stdin, or a background group, means no Ctrl-C from a terminal can have
+/// reached the child.
+fn in_terminal_foreground() -> bool {
+    // SAFETY: plain calls on fd 0 and this process.
+    unsafe {
+        let fg = libc::tcgetpgrp(libc::STDIN_FILENO);
+        fg != -1 && fg == libc::getpgrp()
+    }
+}
+
+/// Box test w1, finding BX7: a SIGINT a process sends to `tk` alone never
+/// reached the harness. Forward it when a process sent it; when the platform
+/// cannot say, forward only when no terminal can have sent it to the whole
+/// group (a terminal Ctrl-C reaches the child already, and twice would read
+/// as a double Ctrl-C).
+pub fn forward_sigint(from_process: i32, foreground: bool) -> bool {
+    match from_process {
+        1 => true,
+        0 => false,
+        _ => !foreground,
     }
 }
 
@@ -52,15 +107,23 @@ pub fn spawn(plan: &Plan, cwd: &str) -> std::io::Result<Child> {
 }
 
 /// Waits for the child. SIGTERM and SIGHUP sent to `tk run` go on to the
-/// child; SIGINT from the terminal already reached it (same process group)
-/// and is not sent twice.
+/// child; SIGINT goes on when a process sent it (`forward_sigint`), and not
+/// when the terminal did, which already reached the child (same process
+/// group).
 pub fn wait(child: &mut Child) -> std::io::Result<ExitStatus> {
     loop {
         if let Some(status) = child.try_wait()? {
             return Ok(status);
         }
         let sig = PENDING.swap(0, Ordering::SeqCst);
-        if sig == libc::SIGTERM || sig == libc::SIGHUP {
+        let forward = sig == libc::SIGTERM
+            || sig == libc::SIGHUP
+            || (sig == libc::SIGINT
+                && forward_sigint(
+                    INT_FROM_PROCESS.load(Ordering::SeqCst),
+                    in_terminal_foreground(),
+                ));
+        if forward {
             // SAFETY: kill with the child's pid and a valid signal number.
             unsafe {
                 libc::kill(child.id() as libc::pid_t, sig);
@@ -133,6 +196,15 @@ mod tests {
             state_dirs: vec![],
             notes: vec![],
         }
+    }
+
+    #[test]
+    fn sigint_goes_on_only_when_no_terminal_sent_it() {
+        assert!(forward_sigint(1, true), "kill(2) to tk, Linux");
+        assert!(!forward_sigint(0, true), "the terminal's Ctrl-C, Linux");
+        assert!(!forward_sigint(0, false));
+        assert!(forward_sigint(-1, false), "macOS, no terminal: a process");
+        assert!(!forward_sigint(-1, true), "macOS in the foreground: unknown");
     }
 
     #[test]
