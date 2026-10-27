@@ -32,12 +32,40 @@ export type GateAnswer = {
   askTimeoutSeconds: number;
 };
 
-/** The text the reject list and the shell check run over: the command for a shell tool, else the serialized input. */
+/** Every string, number and boolean value under `v`, in order (keys left out). */
+function valuesOf(v: unknown, out: string[], depth: number): void {
+  if (depth > 64) throw new Error("tool input nested too deep to check");
+  if (typeof v === "string") out.push(v);
+  else if (typeof v === "number" || typeof v === "boolean") out.push(String(v));
+  else if (Array.isArray(v)) for (const x of v) valuesOf(x, out, depth + 1);
+  else if (typeof v === "object" && v !== null) for (const x of Object.values(v)) valuesOf(x, out, depth + 1);
+}
+
+/**
+ * The text the reject list and the shell check run over. For a shell tool:
+ * the command, then on their own lines the values of every other field except
+ * the free-text `description`, so a working folder (OpenCode's bash `workdir`)
+ * is checked too (integration w1, security finding S7). Otherwise the
+ * serialized input.
+ */
 export function inputTextFor(normalizedTool: string, toolInput: unknown): string {
-  if (isShellTool(normalizedTool) && typeof toolInput === "object" && toolInput !== null) {
-    const command = (toolInput as Record<string, unknown>).command;
-    if (typeof command === "string") return command;
-    if (Array.isArray(command) && command.every((c) => typeof c === "string")) return command.join(" ");
+  if (isShellTool(normalizedTool) && typeof toolInput === "object" && toolInput !== null && !Array.isArray(toolInput)) {
+    const fields = toolInput as Record<string, unknown>;
+    const command = fields.command;
+    const head =
+      typeof command === "string"
+        ? command
+        : Array.isArray(command) && command.every((c) => typeof c === "string")
+          ? command.join(" ")
+          : undefined;
+    if (head !== undefined) {
+      const rest: string[] = [];
+      for (const [k, v] of Object.entries(fields)) if (k !== "command" && k !== "description") valuesOf(v, rest, 0);
+      // A folder value is also read with a trailing `/`, so `/home/u/.claude`
+      // meets the `.claude/` control marker.
+      for (const v of [...rest]) if (v.includes("/") && !v.endsWith("/")) rest.push(`${v}/`);
+      return rest.length ? `${head}\n${rest.join("\n")}` : head;
+    }
   }
   if (typeof toolInput === "string") return toolInput;
   let serialized = "";

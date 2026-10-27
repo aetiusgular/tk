@@ -220,3 +220,25 @@ describe("loadPolicy (contract section 1; case 46 is the caller's)", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+describe("tied allow rules and pins (integration w1, security finding S10)", () => {
+  // Rust's evaluate asks unless every tied allow holds its pin; the hook core
+  // took the first rule of the tie. One matcher, one answer: the stricter.
+  const tied = parsePolicy({
+    version: 1,
+    servers: ["exa"],
+    rules: [
+      { tool: "exa/search", action: "allow" },
+      { tool: "exa/search", action: "allow", descriptionSha256: "475c1f1fe876e645415d98a2650d6114d89a659a00af81e2741fd6158953a0a0" },
+    ],
+  });
+  if (typeof tied === "string") throw new Error(tied);
+  const base = { tool: "mcp__exa__search", harness: "pi", inputText: "" };
+  it("asks when a tied allow's pin does not hold", () => {
+    expect(evaluate({ policy: tied }, { ...base, description: "changed" }).action).toBe("ask");
+    expect(evaluate({ policy: tied }, base).action).toBe("ask");
+  });
+  it("allows when it holds", () => {
+    expect(evaluate({ policy: tied }, { ...base, description: "Write a file." }).action).toBe("allow");
+  });
+});

@@ -351,16 +351,45 @@ export const CONTROL_PATHS = [
   "opencode.json",
   ".config/opencode/",
   ".cache/opencode/",
+  // Git's own config and hooks name programs git runs later (rules cases 27,
+  // 31; integration w1 security finding S4). The reject list catches dotted
+  // keys such as core.fsmonitor; these catch the INI form and hook scripts.
+  ".git/config",
+  ".git/hooks/",
+  ".gitconfig",
+  ".config/git/",
+  ".gitmodules",
+  // A harness's whole project or home folder: settings, hooks, plugins,
+  // commands and skills it loads (integration w1, finding S7).
+  ".claude/",
+  ".codex/",
+  ".pi/",
 ] as const;
 
-export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\"] as const;
+/**
+ * Shell text the matcher cannot read: expansions, history, braces, tilde,
+ * zsh glob qualifiers, a backslash, and (integration w1, finding S1) the glob
+ * characters `*`, `?` and `[`, which name files the matcher never sees.
+ */
+export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "["] as const;
+
+/**
+ * The text with every quote removed. The shell joins `ANTHROPIC_"BASE_URL"`
+ * and `g''it` into one word, so the reject list and the control files are
+ * also read this way (integration w1, finding S1). Only adds matches.
+ */
+export function unquote(text: string): string {
+  return text.replace(/["']/g, "");
+}
 
 const GIT_WORD = /(?<![a-z0-9_])git(?![a-z0-9_])/g;
 
 /** contracts/policy.md section 3.2: is folded text a git context? */
 export function isGitContext(folded: string): boolean {
   if (GIT_CONTEXT_PATHS.some((p) => folded.includes(p))) return true;
-  for (const line of folded.split(/\r\n|\n|\r/)) {
+  // A line that ends in `\` continues on the next, as the shell reads it
+  // (tk-core's `git_context`; integration w1, finding S10).
+  for (const line of folded.replace(/\\\r?\n/g, " ").split(/\r\n|\n|\r/)) {
     GIT_WORD.lastIndex = 0;
     const m = GIT_WORD.exec(line);
     if (!m) continue;
@@ -373,8 +402,10 @@ export function isGitContext(folded: string): boolean {
 /** The first reject-list key the text holds, or undefined. */
 export function rejectKey(inputText: string): string | undefined {
   const folded = fold(decodeEscapes(inputText));
-  for (const k of ENDPOINT_KEYS) if (folded.includes(k)) return k;
-  if (isGitContext(folded)) for (const k of GIT_CONFIG_KEYS) if (folded.includes(k)) return k;
+  for (const text of [folded, unquote(folded)]) {
+    for (const k of ENDPOINT_KEYS) if (text.includes(k)) return k;
+    if (isGitContext(text)) for (const k of GIT_CONFIG_KEYS) if (text.includes(k)) return k;
+  }
   return undefined;
 }
 
@@ -435,14 +466,23 @@ export function evaluate(loaded: LoadedPolicy, call: Call): Decision {
     if (c > 0 || (c === 0 && SEVERITY[r.action] > SEVERITY[top.action])) top = r;
   }
   const reason = `rule ${top.tool}${top.harness ? ` harness=${top.harness}` : ""}${top.chat ? " chat" : ""}`;
-  if (top.action === "allow" && top.descriptionSha256 !== undefined) {
-    if (call.description === undefined || sha256Hex(call.description) !== top.descriptionSha256) {
-      return { action: "ask", normalizedTool, reason: "description changed" };
+  if (top.action === "allow") {
+    // Every tied allow must hold its pin: one changed description is enough
+    // to ask (case 57; tk-core's rule, integration w1 finding S10).
+    const pins = matches
+      .filter((r) => compareRank(rankOf(r), rankOf(top)) === 0 && r.descriptionSha256 !== undefined)
+      .map((r) => (r.descriptionSha256 as string).toLowerCase());
+    if (pins.length > 0) {
+      const current = call.description === undefined ? undefined : sha256Hex(call.description);
+      if (current === undefined || pins.some((p) => p !== current)) {
+        return { action: "ask", normalizedTool, reason: "description changed" };
+      }
     }
   }
   if (top.action === "allow") {
     const folded = fold(decodeEscapes(call.inputText));
-    const control = CONTROL_PATHS.find((p) => folded.includes(p));
+    const unquoted = unquote(folded);
+    const control = CONTROL_PATHS.find((p) => folded.includes(p) || unquoted.includes(p));
     if (control !== undefined) return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
     // On the folded text, so `＄HOME` asks: stricter than the raw input, the
     // side that fails safe (integration w1; tk-core and tk-pi do the same).

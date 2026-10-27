@@ -399,7 +399,27 @@ pub const CONTROL_PATHS: &[&str] = &[
     "opencode.json",
     ".config/opencode/",
     ".cache/opencode/",
+    // Git's config and hooks name programs git runs later (rules cases 27,
+    // 31; integration w1, security finding S4).
+    ".git/config",
+    ".git/hooks/",
+    ".gitconfig",
+    ".config/git/",
+    ".gitmodules",
+    // A harness's whole project or home folder: settings, hooks, plugins,
+    // commands and skills it loads (integration w1, finding S7).
+    ".claude/",
+    ".codex/",
+    ".pi/",
 ];
+
+/// The text with every quote removed. The shell joins `ANTHROPIC_"BASE_URL"`
+/// and `g''it` into one word, so the reject list and the control files are
+/// also read this way (integration w1, security finding S1). Only adds
+/// matches.
+pub fn unquote(text: &str) -> String {
+    text.chars().filter(|c| *c != '"' && *c != '\'').collect()
+}
 
 /// Decodes the escapes a config parser would decode (`\uXXXX` in JSON and
 /// TOML, `\UXXXXXXXX` in TOML), so `\u0041NTHROPIC_BASE_URL` in a file a tool
@@ -451,9 +471,11 @@ pub fn decode_escapes(text: &str) -> String {
 
 /// Text the shell reads in a way a matcher cannot (case 30). An `allow`
 /// never applies to a shell tool whose input contains one; the call is
-/// `Ask` instead (contract, section 4).
-pub const UNREADABLE_SHELL_TOKENS: &[&str] =
-    &["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\"];
+/// `Ask` instead (contract, section 4). `*`, `?` and `[` are globs that name
+/// files the matcher never sees (integration w1, security finding S1).
+pub const UNREADABLE_SHELL_TOKENS: &[&str] = &[
+    "$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "[",
+];
 
 /// True when folded text is a git context (contract, section 3.2): it names
 /// a git config path, or the word `git` (not inside a longer word) is
@@ -489,14 +511,16 @@ pub fn git_context(folded: &str) -> bool {
 /// or `None`. Endpoint keys apply everywhere; git config keys only in a git
 /// context.
 pub fn reject_hit(folded: &str) -> Option<&'static str> {
-    if let Some(key) = ENDPOINT_KEYS.iter().find(|k| folded.contains(*k)) {
-        return Some(key);
-    }
-    if git_context(folded) {
-        return GIT_CONFIG_KEYS
-            .iter()
-            .find(|k| folded.contains(*k))
-            .copied();
+    let unquoted = unquote(folded);
+    for text in [folded, unquoted.as_str()] {
+        if let Some(key) = ENDPOINT_KEYS.iter().find(|k| text.contains(*k)) {
+            return Some(key);
+        }
+        if git_context(text) {
+            if let Some(key) = GIT_CONFIG_KEYS.iter().find(|k| text.contains(*k)) {
+                return Some(key);
+            }
+        }
     }
     None
 }
@@ -638,7 +662,11 @@ pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
         }
     }
     // Control files before shell text (contract, section 4, step 7).
-    if let Some(control) = CONTROL_PATHS.iter().find(|p| folded.contains(*p)) {
+    let unquoted = unquote(&folded);
+    if let Some(control) = CONTROL_PATHS
+        .iter()
+        .find(|p| folded.contains(*p) || unquoted.contains(*p))
+    {
         return decide(
             Action::Ask,
             format!("input names a control file ({control})"),

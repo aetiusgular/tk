@@ -267,7 +267,20 @@ export const SHELL_TOOLS = new Set([
   "powershell",
 ]);
 
-export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\"] as const;
+/**
+ * Shell text the matcher cannot read; `*`, `?` and `[` are globs that name
+ * files the matcher never sees (integration w1, security finding S1).
+ */
+export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "["] as const;
+
+/**
+ * The text with every quote removed: the shell joins `ANTHROPIC_"BASE_URL"`
+ * and `g''it` into one word, so the reject list and the control files are
+ * also read this way (integration w1, finding S1). Only adds matches.
+ */
+export function unquote(text: string): string {
+  return text.replace(/["']/g, "");
+}
 
 /**
  * Files that control tk or a harness's hooks: an `allow` whose folded input
@@ -294,6 +307,17 @@ export const CONTROL_PATH_MARKERS = [
   "opencode.json",
   ".config/opencode/",
   ".cache/opencode/",
+  // Git's config and hooks name programs git runs later (rules cases 27, 31;
+  // integration w1, finding S4).
+  ".git/config",
+  ".git/hooks/",
+  ".gitconfig",
+  ".config/git/",
+  ".gitmodules",
+  // A harness's whole project or home folder (integration w1, finding S7).
+  ".claude/",
+  ".codex/",
+  ".pi/",
 ] as const;
 
 const GIT_WORD = /(^|[^a-z0-9_])git(?![a-z0-9_])/g;
@@ -301,7 +325,9 @@ const GIT_WORD = /(^|[^a-z0-9_])git(?![a-z0-9_])/g;
 /** True when folded text is a git context (contract, section 3.2). */
 export function isGitContext(folded: string): boolean {
   if (GIT_CONTEXT_PATHS.some((p) => folded.includes(p))) return true;
-  for (const line of folded.split("\n")) {
+  // A line that ends in `\` continues on the next, as the shell reads it
+  // (tk-core's `git_context`; integration w1, finding S10).
+  for (const line of folded.replace(/\\\r?\n/g, " ").split(/\r\n|\n|\r/)) {
     GIT_WORD.lastIndex = 0;
     const m = GIT_WORD.exec(line);
     if (!m) continue;
@@ -317,8 +343,10 @@ export function rejectKey(inputText: string): string | undefined {
 }
 
 function rejectKeyFolded(folded: string): string | undefined {
-  for (const k of ENDPOINT_KEYS) if (folded.includes(k)) return k;
-  if (isGitContext(folded)) for (const k of GIT_CONFIG_KEYS) if (folded.includes(k)) return k;
+  for (const text of [folded, unquote(folded)]) {
+    for (const k of ENDPOINT_KEYS) if (text.includes(k)) return k;
+    if (isGitContext(text)) for (const k of GIT_CONFIG_KEYS) if (text.includes(k)) return k;
+  }
   return undefined;
 }
 
@@ -377,14 +405,19 @@ export function evaluate(policy: PolicyFile, call: Call, problem?: string): Deci
 
   if (winner.action !== "allow") return { action: winner.action, normalizedTool, reason: describeRule(winner) };
 
-  if (winner.descriptionSha256 !== undefined) {
+  // Every tied allow must hold its pin: one changed description is enough to
+  // ask (case 57; tk-core's rule, integration w1 finding S10).
+  const pins = best.rules.filter((r) => r.descriptionSha256 !== undefined).map((r) => (r.descriptionSha256 as string).toLowerCase());
+  if (pins.length > 0) {
     const description = typeof call.description === "function" ? call.description() : call.description;
-    if (description === undefined || sha256Hex(description) !== winner.descriptionSha256) {
+    const current = description === undefined ? undefined : sha256Hex(description);
+    if (current === undefined || pins.some((p) => p !== current)) {
       return { action: "ask", normalizedTool, reason: "description changed since it was approved" };
     }
   }
   // Control files before shell text (section 4, step 7; the hook core's order).
-  const control = CONTROL_PATH_MARKERS.find((m) => folded.includes(m));
+  const unquoted = unquote(folded);
+  const control = CONTROL_PATH_MARKERS.find((m) => folded.includes(m) || unquoted.includes(m));
   if (control !== undefined) {
     return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
   }

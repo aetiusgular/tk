@@ -35,8 +35,8 @@ describe("contract fixture (contracts/fixtures/policy)", () => {
     expect(loaded.policy.askTimeoutSeconds).toBe(30);
   });
 
-  it("has all 33 cases (21 from session 0, 12 from integration w1)", () => {
-    expect(cases).toHaveLength(33);
+  it("has all 45 cases (21 from session 0, 24 from integration w1)", () => {
+    expect(cases).toHaveLength(45);
   });
 
   for (const c of cases) {
@@ -213,7 +213,15 @@ describe("matcher beyond the fixture", () => {
       expect(d.action, text).toBe("ask");
       expect(d.reason).toMatch(/^input names a control file \(/);
     }
+    // A project's .pi/settings.json can list extensions and packages that load
+    // once the project is trusted (Pi 1.4.0 docs/settings.md: "Project settings
+    // override agent-directory settings. Resource lists are combined"), so
+    // integration w1 made the whole `.pi/` folder a control path (finding S7).
+    // Lane A had this one allowed.
     expect(evaluate(base, { tool: "write", harness: "pi", inputText: "/home/u/proj/.pi/settings.json" }).action).toBe(
+      "ask",
+    );
+    expect(evaluate(base, { tool: "write", harness: "pi", inputText: "/home/u/proj/src/settings.json" }).action).toBe(
       "allow",
     );
     expect(CONTROL_PATH_MARKERS.length).toBeGreaterThan(0);
@@ -292,5 +300,25 @@ describe("policy file schema (contracts/policy.schema.json)", () => {
     const r = parsePolicy('{"version":1}');
     expect(r.problem).toBeUndefined();
     expect(r.policy).toEqual({ version: 1, askTimeoutSeconds: 60, servers: [], rules: [] });
+  });
+});
+
+describe("tied allow rules and pins (integration w1, security finding S10)", () => {
+  // tk-core asks unless every tied allow holds its pin; the same here.
+  const tied = parsePolicy(
+    JSON.stringify({
+      version: 1,
+      servers: ["exa"],
+      rules: [
+        { tool: "exa/search", action: "allow" },
+        { tool: "exa/search", action: "allow", descriptionSha256: sha256Hex("Write a file.") },
+      ],
+    }),
+  ).policy;
+  const base = { tool: "mcp__exa__search", harness: "pi", inputText: "" };
+  it("asks when a tied allow's pin does not hold, and allows when it holds", () => {
+    expect(evaluate(tied, { ...base, description: "changed" }).action).toBe("ask");
+    expect(evaluate(tied, base).action).toBe("ask");
+    expect(evaluate(tied, { ...base, description: "Write a file." }).action).toBe("allow");
   });
 });

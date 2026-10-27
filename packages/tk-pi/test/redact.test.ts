@@ -100,8 +100,15 @@ describe("cardText", () => {
 
 describe("inputTextFor", () => {
   it("a shell tool gives its command as it is", () => {
-    expect(inputTextFor("bash", { command: 'echo "a\\b"', timeout: 5 })).toBe('echo "a\\b"');
+    expect(inputTextFor("bash", { command: 'echo "a\\b"' })).toBe('echo "a\\b"');
     expect(inputTextFor("powershell", { command: "Get-Item $x" })).toBe("Get-Item $x");
+  });
+
+  it("a shell tool's other values follow the command, a folder also with a trailing slash (integration w1, finding S7)", () => {
+    expect(inputTextFor("bash", { command: 'echo "a\\b"', timeout: 5 })).toBe('echo "a\\b"\n5');
+    expect(inputTextFor("bash", { command: "cat policy.json", workdir: "/home/u/.tk", description: "a ~ note" })).toBe(
+      "cat policy.json\n/home/u/.tk\n/home/u/.tk/",
+    );
   });
 
   it("another tool gives keys and values, unescaped, one per line", () => {

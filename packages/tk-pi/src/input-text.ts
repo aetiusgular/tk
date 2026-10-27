@@ -13,7 +13,14 @@ const MAX_DEPTH = 64;
 
 export function inputTextFor(normalizedTool: string, input: unknown): string {
   if (SHELL_TOOLS.has(normalizedTool) && isRecord(input) && typeof input.command === "string") {
-    return input.command;
+    // The command, then the values of every other field except the free-text
+    // description, so a working folder is checked too; a folder value is also
+    // read with a trailing `/` (integration w1, security finding S7; the hook
+    // core does the same).
+    const rest: string[] = [];
+    for (const [k, v] of Object.entries(input)) if (k !== "command" && k !== "description") collectValues(v, rest, 0);
+    for (const v of [...rest]) if (v.includes("/") && !v.endsWith("/")) rest.push(`${v}/`);
+    return rest.length ? `${input.command}\n${rest.join("\n")}` : input.command;
   }
   const parts: string[] = [];
   collect(input, parts, 0);
@@ -39,4 +46,12 @@ function collect(value: unknown, parts: string[], depth: number): void {
       collect(v, parts, depth + 1);
     }
   }
+}
+
+function collectValues(value: unknown, parts: string[], depth: number): void {
+  if (depth > MAX_DEPTH) throw new Error("tool input nested too deep to check");
+  if (typeof value === "string") parts.push(value);
+  else if (typeof value === "number" || typeof value === "boolean") parts.push(String(value));
+  else if (Array.isArray(value)) for (const v of value) collectValues(v, parts, depth + 1);
+  else if (isRecord(value)) for (const v of Object.values(value)) collectValues(v, parts, depth + 1);
 }
