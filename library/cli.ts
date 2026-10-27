@@ -2,11 +2,14 @@
 //   node library/cli.ts validate [catalog-dir]
 //   node library/cli.ts export <set|all> <out-dir> [catalog-dir]
 // Runs on Node 22.18+ with type stripping; no build step. Exit 1 on an error
-// finding, 2 on usage. Nothing here touches the network.
+// finding, 2 on usage. Nothing here touches the network or runs a program
+// unless asked: TK_LIBRARY_ONLINE=1 posts each server to the registry's
+// /v0.1/validate, TK_LIBRARY_SKILLS_REF=1 runs skills-ref on each skill
+// (validate only; integration w1 fix pass, box test BX1).
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { CATALOG_DIR, catalogHasErrors, loadBrands, loadCatalog, validateCatalog } from "./validate/index.ts";
+import { CATALOG_DIR, catalogHasErrors, loadBrands, loadCatalog, optInChecks, validateCatalog } from "./validate/index.ts";
 import type { Finding } from "./validate/index.ts";
 import { PLACEHOLDER_SHA, exportSet, type ExportFile } from "./export/index.ts";
 import { REPO_ROOT } from "./validate/schemas.ts";
@@ -25,6 +28,7 @@ if (cmd === "validate") {
   const catalogDir = rest[0] ? resolve(rest[0]) : CATALOG_DIR;
   const catalog = loadCatalog(catalogDir);
   const result = validateCatalog(catalog, loadBrands(catalogDir));
+  for (const [id, extra] of await optInChecks(catalog)) result.byEntry.set(id, [...(result.byEntry.get(id) ?? []), ...extra]);
   let errors = 0;
   let warnings = 0;
   for (const [id, findings] of result.byEntry) {

@@ -11,7 +11,7 @@
 // Nothing here reads the network or runs a program unless an environment
 // variable turns it on (upstream.ts).
 import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import type { Brand } from "./lookalikes.ts";
 import { lookalike } from "./lookalikes.ts";
 import { SERVER_ID, TOOL_NAME_CHARSET, mangle, policyKey } from "./names.ts";
@@ -20,7 +20,7 @@ import { checkTkSchema, checkUpstreamServerSchema } from "./schemas.ts";
 import { allowedToolsOf, parseSkillMd, validateSkillFrontmatter } from "./skill-md.ts";
 import type { Catalog, Finding, Kind, LoadedEntry, TkMeta } from "./types.ts";
 import { finding, getMeta, hasErrors, isRecord } from "./types.ts";
-import { checkUpstreamSemantics } from "./upstream.ts";
+import { checkSkillsRef, checkUpstreamOnline, checkUpstreamSemantics } from "./upstream.ts";
 
 export type { Finding, Kind, LoadedEntry, Catalog } from "./types.ts";
 export { hasErrors } from "./types.ts";
@@ -268,6 +268,27 @@ export function validateCatalog(catalog: Catalog, brands: Brand[]): { byEntry: M
     for (const id of set.entries) if (!ids.has(id)) out.push(finding("lib/set-entry", "error", `sets.json/${setId}`, `set names '${id}', which is not in the catalog`));
   }
   return { byEntry, catalog: out };
+}
+
+/** The two checks that leave the process, each only when its variable is
+ *  set: every server through the registry's `/v0.1/validate`
+ *  (`TK_LIBRARY_ONLINE=1`) and every skill folder holding a SKILL.md
+ *  through `skills-ref validate` (`TK_LIBRARY_SKILLS_REF=1`). The command
+ *  line merges them into `validateCatalog`'s findings; until the box test
+ *  found it (BX1), nothing called them outside their unit tests. */
+export async function optInChecks(
+  catalog: Catalog,
+  deps: { fetchImpl?: typeof fetch; exec?: Parameters<typeof checkSkillsRef>[1] } = {},
+): Promise<Map<string, Finding[]>> {
+  const out = new Map<string, Finding[]>();
+  const add = (id: string, f: Finding[]) => {
+    if (f.length) out.set(id, [...(out.get(id) ?? []), ...f]);
+  };
+  for (const e of catalog.entries) {
+    if (e.kind === "server") add(e.id, await checkUpstreamOnline(e.data, deps.fetchImpl));
+    if (e.kind === "skill" && e.skillMd) add(e.id, await checkSkillsRef(dirname(e.skillMd.path), deps.exec));
+  }
+  return out;
 }
 
 export function catalogHasErrors(result: { byEntry: Map<string, Finding[]>; catalog: Finding[] }): boolean {
