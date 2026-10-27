@@ -10,8 +10,9 @@ pub const REDACTED: &str = "[redacted]";
 
 /// `SECRET_LIKE` from `contracts/docker-args.md` (the fork's
 /// `dockerArgs.ts:38`), plus `api-key`, `authorization` and `credential`.
-/// Not a bare `auth`: it would take `--author`.
-fn secret_like(key: &str) -> bool {
+/// Not a bare `auth`: it would take `--author`. Public for `tk connect`'s
+/// diff redactor (integration w1 fix pass, finding M3).
+pub fn secret_like(key: &str) -> bool {
     let k = key.to_ascii_lowercase();
     [
         "token",
@@ -103,7 +104,9 @@ pub fn text(s: &str) -> String {
     redact_after_bearer(&joined)
 }
 
-fn secret_word(w: &str) -> bool {
+/// Whether one word is a token shape. Public for `tk connect`'s diff
+/// redactor (finding M3).
+pub fn secret_word(w: &str) -> bool {
     let w = w.trim_matches(|c: char| matches!(c, '"' | '\'' | ',' | ';'));
     if TOKEN_PREFIXES
         .iter()

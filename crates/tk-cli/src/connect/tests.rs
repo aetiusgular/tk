@@ -780,3 +780,54 @@ fn an_entry_that_expands_a_variable_into_its_url_is_refused() {
         r.err
     );
 }
+
+// Mac test w1, finding M3: the dry run printed unchanged context lines of
+// `~/.codex/config.toml` verbatim, and two of them were API keys. Every
+// printed line (context, removed, added) goes through the redactor.
+const FAKE_OPENAI: &str = "sk-proj-Q9vT2mX8LkR4nW7pZ3aY6bC1dE5fG0hJ";
+const FAKE_ANTHROPIC: &str = "sk-ant-api03-Zk81mQ2xVb7Nc4LpRt9YwE3sDa6FgHj0";
+const FAKE_OPAQUE: &str = "Zq3vX9mK2pL8rT4wY7nB1cF6hJ0sD5gA";
+
+#[test]
+fn the_dry_run_prints_no_secret_from_the_lines_around_the_change() {
+    let home = scratch("m3-context");
+    fs::create_dir_all(home.join(".codex")).unwrap();
+    fs::write(
+        home.join(".codex/config.toml"),
+        format!(
+            "model = \"gpt-5\"\n\n[shell_environment_policy.set]\nOPENAI_API_KEY = \"{FAKE_OPENAI}\"\nANTHROPIC_API_KEY = \"{FAKE_ANTHROPIC}\"\nSERVICE_SECRET = '{FAKE_OPAQUE}'\n"
+        ),
+    )
+    .unwrap();
+    let r = go(
+        &home,
+        &no_env(),
+        true,
+        &["codex", "--gateway", "docker", "--profile", "tk_exa"],
+    );
+    assert_eq!(r.code, 0, "{}", r.err);
+    assert!(r.out.contains("+[mcp_servers.exa]"), "{}", r.out);
+    for s in [FAKE_OPENAI, FAKE_ANTHROPIC, FAKE_OPAQUE] {
+        assert!(!r.out.contains(s), "{}", r.out);
+    }
+    // The context is still there, with its keys.
+    assert!(r.out.contains(" OPENAI_API_KEY = \"[redacted]\""), "{}", r.out);
+}
+
+#[test]
+fn removing_an_entry_prints_no_secret_from_its_lines() {
+    let home = scratch("m3-remove");
+    fs::write(
+        home.join(".claude.json"),
+        format!(
+            "{{\n  \"mcpServers\": {{\n    \"supabase\": {{\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@supabase/mcp-server-supabase\", \"--access-token\", \"sbp_{FAKE_OPAQUE}\"],\n      \"env\": {{\n        \"SUPABASE_ACCESS_TOKEN\": \"plain-but-named-{FAKE_OPAQUE}\",\n        \"DATABASE_URL\": \"postgresql://postgres:hunter2pass@db.example.supabase.co:5432/postgres\",\n        \"X_CUSTOM\": \"{FAKE_OPAQUE}\"\n      }},\n      \"headers\": {{\"Authorization\": \"Bearer opaqueBearerValue\"}}\n    }}\n  }}\n}}\n"
+        ),
+    )
+    .unwrap();
+    let r = go(&home, &no_env(), true, &["claude-code", "--remove", "supabase"]);
+    assert_eq!(r.code, 0, "{}", r.err);
+    assert!(r.out.contains("-    \"supabase\": {"), "{}", r.out);
+    for s in [FAKE_OPAQUE, "hunter2pass", "opaqueBearerValue"] {
+        assert!(!r.out.contains(s), "{s} in {}", r.out);
+    }
+}

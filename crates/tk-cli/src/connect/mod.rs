@@ -32,6 +32,7 @@ mod diff;
 mod json;
 mod log;
 mod presets;
+mod redact;
 mod render;
 mod spec;
 mod tomlfile;
@@ -641,7 +642,7 @@ fn connect(args: &[String], o: &Opts, preset: &Preset, ctx: &mut Ctx) -> Result<
             format!("sha256 {}", current.sha256)
         }
     ));
-    ctx.out.push_str(&diff::unified(
+    ctx.out.push_str(&diff::unified_redacted(
         &text,
         &new,
         &label,

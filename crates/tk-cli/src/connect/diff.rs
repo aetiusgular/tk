@@ -74,15 +74,33 @@ fn ops(a: &[&str], b: &[&str]) -> Vec<(Op, usize, usize)> {
     out
 }
 
-fn show(line: &str) -> String {
+fn show(line: &str, shown: fn(&str) -> String) -> String {
     match line.strip_suffix('\n') {
-        Some(l) => l.to_string(),
-        None => format!("{line}\n\\ No newline at end of file"),
+        Some(l) => shown(l),
+        None => format!("{}\n\\ No newline at end of file", shown(line)),
     }
 }
 
 /// `diff -u` style output. Empty when the texts are equal.
+#[cfg(test)]
 pub fn unified(old: &str, new: &str, old_label: &str, new_label: &str) -> String {
+    unified_with(old, new, old_label, new_label, str::to_string)
+}
+
+/// As `unified`, with every printed line of either text (context, removed,
+/// added) passed through `redact::line` (Mac test w1, finding M3). This is
+/// the only form `tk connect` prints.
+pub fn unified_redacted(old: &str, new: &str, old_label: &str, new_label: &str) -> String {
+    unified_with(old, new, old_label, new_label, super::redact::line)
+}
+
+fn unified_with(
+    old: &str,
+    new: &str,
+    old_label: &str,
+    new_label: &str,
+    shown: fn(&str) -> String,
+) -> String {
     if old == new {
         return String::new();
     }
@@ -115,9 +133,9 @@ pub fn unified(old: &str, new: &str, old_label: &str, new_label: &str) -> String
         out.push_str(&format!("@@ -{a_from},{a_len} +{b_from},{b_len} @@\n"));
         for (op, i, j) in hunk {
             match op {
-                Op::Keep => out.push_str(&format!(" {}\n", show(a[*i]))),
-                Op::Del => out.push_str(&format!("-{}\n", show(a[*i]))),
-                Op::Add => out.push_str(&format!("+{}\n", show(b[*j]))),
+                Op::Keep => out.push_str(&format!(" {}\n", show(a[*i], shown))),
+                Op::Del => out.push_str(&format!("-{}\n", show(a[*i], shown))),
+                Op::Add => out.push_str(&format!("+{}\n", show(b[*j], shown))),
             }
         }
     }
