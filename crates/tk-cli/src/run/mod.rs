@@ -921,14 +921,19 @@ mod end_to_end {
             .unwrap()
             .iter()
             .any(|d| d == &serde_json::json!(st.fake.dir.to_string_lossy())));
-        // srt gets the copies tk checked, by absolute path (review R3).
-        let deps = std::fs::canonicalize(Path::new(&st.env.path)).unwrap();
-        assert_eq!(
-            copy["ripgrep"]["command"],
-            serde_json::json!(deps.join("rg"))
-        );
-        assert_eq!(copy["bwrapPath"], serde_json::json!(deps.join("bwrap")));
-        assert_eq!(copy["socatPath"], serde_json::json!(deps.join("socat")));
+        // srt gets the copies tk checked, by absolute path (review R3). The
+        // three settings are Linux only (srt 0.0.81 sandbox-config.js).
+        if cfg!(target_os = "linux") {
+            let deps = std::fs::canonicalize(Path::new(&st.env.path)).unwrap();
+            assert_eq!(
+                copy["ripgrep"]["command"],
+                serde_json::json!(deps.join("rg"))
+            );
+            assert_eq!(copy["bwrapPath"], serde_json::json!(deps.join("bwrap")));
+            assert_eq!(copy["socatPath"], serde_json::json!(deps.join("socat")));
+        } else {
+            assert!(copy.get("ripgrep").is_none());
+        }
         assert!(
             !st.fake.dir.join("srt/chat-s.json").exists(),
             "removed after the run"
