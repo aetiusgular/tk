@@ -33,4 +33,4 @@ Then trust the two hooks in Codex (`/hooks` in the TUI). Codex skips an untruste
 
 ## Environment
 
-As the Claude Code plugin: `TK_POLICY`, `TK_DAEMON_SOCKET`, `TK_CHAT_TOKEN`, `TK_CHAT_ID` (else Codex's `session_id`).
+As the Claude Code plugin: `TK_POLICY`, `TK_DAEMON_SOCKET`, `TK_CHAT_TOKEN`, `TK_CHAT_TOKEN_FILE`, `TK_CHAT_ID` (else Codex's `session_id`).

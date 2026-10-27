@@ -16,4 +16,4 @@ Add it to `~/.config/opencode/opencode.json` (`opencode.fragment.json` has the b
 
 ## Environment
 
-As the Claude Code plugin: `TK_POLICY`, `TK_DAEMON_SOCKET`, `TK_CHAT_TOKEN`, `TK_CHAT_ID` (else OpenCode's `sessionID`).
+As the Claude Code plugin: `TK_POLICY`, `TK_DAEMON_SOCKET`, `TK_CHAT_TOKEN`, `TK_CHAT_TOKEN_FILE`, `TK_CHAT_ID` (else OpenCode's `sessionID`).

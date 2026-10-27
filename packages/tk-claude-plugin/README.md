@@ -35,5 +35,6 @@ For an organization, `managed-settings.fragment.json` locks hooks to managed one
 |---|---|
 | `TK_POLICY` | Policy file path instead of `~/.tk/policy.json` |
 | `TK_DAEMON_SOCKET` | Daemon socket path instead of the OS default |
-| `TK_CHAT_TOKEN` | Chat token from `tk run`; else the daemon's token file is read |
+| `TK_CHAT_TOKEN` | Chat token from `tk run`. Never the daemon's token: with no chat token the hook gets no approver, posts no record, and an `ask` falls back to Claude Code's own prompt |
+| `TK_CHAT_TOKEN_FILE` | A file holding the chat token, which `tk run --boundary none` writes (0600) and names; refused when it is named `daemon.token`, sits inside the session folder, or is not yours and private |
 | `TK_CHAT_ID` | Chat id for chat-scoped rules; else Claude Code's `session_id` |
