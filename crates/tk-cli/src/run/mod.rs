@@ -517,7 +517,7 @@ mod end_to_end {
             "srt",
             &format!(
                 "[ \"$1\" = --settings ] || exit 90; f=\"$2\"; [ \"$3\" = -- ] || exit 91; \
-                 [ \"$(stat -c %a \"$f\")\" = 600 ] || exit 92; cp \"$f\" '{}/settings.copy'; \
+                 m=$(stat -c %a \"$f\" 2>/dev/null || stat -f %Lp \"$f\"); [ \"$m\" = 600 ] || exit 92; cp \"$f\" '{}/settings.copy'; \
                  shift 4; exec '{pi}' \"$@\"",
                 fake.dir.display()
             ),
@@ -582,6 +582,12 @@ mod end_to_end {
     fn none_mints_a_token_records_start_and_stop_and_returns_the_code() {
         let st = setup("none");
         let cwd = st.work.to_string_lossy().into_owned();
+        // `tk run` records the folder canonicalized (macOS: /var is a link to
+        // /private/var), so the expected values are too (Mac test M2).
+        let real = std::fs::canonicalize(&st.work)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
         let code = run(
             &s(&[
                 "pi",
@@ -607,7 +613,7 @@ mod end_to_end {
         assert!(out.contains("chat=chat-e"));
         assert!(out.contains("otlp=http://127.0.0.1:4318"));
         assert!(out.contains("boundary=none"));
-        assert!(out.contains(&format!("pwd={cwd}")));
+        assert!(out.contains(&format!("pwd={real}")), "{out}");
         assert!(out.contains("arg=-c\narg=a b\n"));
         let ops: Vec<String> = st
             .fake
@@ -623,7 +629,7 @@ mod end_to_end {
         assert_eq!(ev[0]["kind"], "run.start");
         assert_eq!(ev[0]["source"], "run");
         assert_eq!(ev[0]["detail"]["runsAs"], "you");
-        assert_eq!(ev[0]["detail"]["folders"], serde_json::json!([cwd]));
+        assert_eq!(ev[0]["detail"]["folders"], serde_json::json!([real]));
         assert!(ev[0]["pid"].as_u64().unwrap() > 0);
         assert_eq!(ev[1]["kind"], "run.stop");
         assert_eq!(ev[1]["detail"]["exitCode"], 3);
