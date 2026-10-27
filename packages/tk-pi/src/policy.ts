@@ -422,8 +422,11 @@ export function evaluate(policy: PolicyFile, call: Call, problem?: string): Deci
     return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
   }
   // On the folded text, so `＄HOME` asks (integration w1; the hook core and tk-core do the same).
-  if (SHELL_TOOLS.has(normalizedTool) && UNREADABLE_SHELL_TOKENS.some((t) => folded.includes(t))) {
-    return { action: "ask", normalizedTool, reason: "shell text the matcher cannot read" };
+  const token = SHELL_TOOLS.has(normalizedTool) ? UNREADABLE_SHELL_TOKENS.find((t) => folded.includes(t)) : undefined;
+  if (token !== undefined) {
+    // The token named, a glob called one (Mac test w1, M9; the hook core's text).
+    const glob = token === "*" || token === "?" || token === "[";
+    return { action: "ask", normalizedTool, reason: `shell text the matcher cannot read: \`${token}\`${glob ? " (a glob)" : ""}` };
   }
   return { action: "allow", normalizedTool, reason: describeRule(winner) };
 }

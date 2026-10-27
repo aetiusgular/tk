@@ -189,10 +189,11 @@ describe("matcher beyond the fixture", () => {
   });
 
   it("each unreadable shell token turns a bash allow into ask (case 30)", () => {
-    for (const t of ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\"]) {
+    for (const t of ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "["]) {
       const d = evaluate(base, { tool: "bash", harness: "pi", inputText: `ls ${t}x` });
       expect(d.action, t).toBe("ask");
-      expect(d.reason).toBe("shell text the matcher cannot read");
+      // The reason names the token, and calls a glob one (Mac test w1, M9).
+      expect(d.reason).toBe(`shell text the matcher cannot read: \`${t}\`${["*", "?", "["].includes(t) ? " (a glob)" : ""}`);
     }
     expect(evaluate(base, { tool: "bash", harness: "pi", inputText: "ls -la" }).action).toBe("allow");
   });

@@ -674,13 +674,19 @@ pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
     }
     // On the folded, escape-decoded text: stricter than the raw input
     // (`＄HOME` asks), the side that fails safe (rules section 9, item 7).
-    if SHELL_TOOLS.contains(&normalized.as_str())
-        && UNREADABLE_SHELL_TOKENS.iter().any(|t| folded.contains(t))
-    {
-        return decide(
-            Action::Ask,
-            "shell text the matcher cannot read".to_string(),
-        );
+    if SHELL_TOOLS.contains(&normalized.as_str()) {
+        if let Some(t) = UNREADABLE_SHELL_TOKENS.iter().find(|t| folded.contains(*t)) {
+            // The token named, a glob called one (Mac test w1, M9; the hook
+            // core's and tk-pi's text).
+            let glob = matches!(*t, "*" | "?" | "[");
+            return decide(
+                Action::Ask,
+                format!(
+                    "shell text the matcher cannot read: `{t}`{}",
+                    if glob { " (a glob)" } else { "" }
+                ),
+            );
+        }
     }
     decide(Action::Allow, rule_reason(winner))
 }
@@ -1039,8 +1045,26 @@ mod tests {
         ] {
             let d = evaluate(&p, &call("bash", "claude-code", text));
             assert_eq!(d.action, Action::Ask, "{text:?}");
-            assert_eq!(d.reason, "shell text the matcher cannot read");
+            assert!(
+                d.reason.starts_with("shell text the matcher cannot read: `"),
+                "{}",
+                d.reason
+            );
         }
+        // The reason names the token, and calls a glob one (Mac test w1, M9);
+        // the same text as the hook core and tk-pi.
+        assert_eq!(
+            evaluate(&p, &call("bash", "claude-code", "ls *.md")).reason,
+            "shell text the matcher cannot read: `*` (a glob)"
+        );
+        assert_eq!(
+            evaluate(&p, &call("bash", "claude-code", "ls *(e:x:)")).reason,
+            "shell text the matcher cannot read: `(e:`"
+        );
+        assert_eq!(
+            evaluate(&p, &call("bash", "claude-code", "echo $HOME")).reason,
+            "shell text the matcher cannot read: `$`"
+        );
         // Not a shell tool: the same text is allowed.
         assert_eq!(
             evaluate(&p, &call("Read", "claude-code", "$HOME/x")).action,

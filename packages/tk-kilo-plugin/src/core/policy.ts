@@ -374,6 +374,17 @@ export const CONTROL_PATHS = [
 export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "["] as const;
 
 /**
+ * The reason names the first token found (in the list's order), and calls a
+ * glob one, so a user can tell why `ls *.md` asks (Mac test w1, finding M9).
+ * Starts with the contract's reason, which the fixtures match as a prefix.
+ * tk-pi and tk-core write the same text.
+ */
+export function unreadableReason(token: string): string {
+  const glob = token === "*" || token === "?" || token === "[";
+  return `shell text the matcher cannot read: \`${token}\`${glob ? " (a glob)" : ""}`;
+}
+
+/**
  * The text with every quote removed. The shell joins `ANTHROPIC_"BASE_URL"`
  * and `g''it` into one word, so the reject list and the control files are
  * also read this way (integration w1, finding S1). Only adds matches.
@@ -486,9 +497,8 @@ export function evaluate(loaded: LoadedPolicy, call: Call): Decision {
     if (control !== undefined) return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
     // On the folded text, so `＄HOME` asks: stricter than the raw input, the
     // side that fails safe (integration w1; tk-core and tk-pi do the same).
-    if (isShellTool(normalizedTool) && UNREADABLE_SHELL_TOKENS.some((t) => folded.includes(t))) {
-      return { action: "ask", normalizedTool, reason: "shell text the matcher cannot read" };
-    }
+    const token = isShellTool(normalizedTool) ? UNREADABLE_SHELL_TOKENS.find((t) => folded.includes(t)) : undefined;
+    if (token !== undefined) return { action: "ask", normalizedTool, reason: unreadableReason(token) };
   }
   return { action: top.action, normalizedTool, reason };
 }

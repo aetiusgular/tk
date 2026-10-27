@@ -98,7 +98,8 @@ describe("fold and the reject list (contract section 3, cases 30 and 33)", () =>
     for (const t of UNREADABLE_SHELL_TOKENS) {
       const d = evaluate(loaded, { tool: "Bash", harness: "claude-code", inputText: `ls ${t}x` });
       expect(d.action, t).toBe("ask");
-      expect(d.reason).toBe("shell text the matcher cannot read");
+      // The reason names the token, and calls a glob one (Mac test w1, M9).
+      expect(d.reason).toBe(`shell text the matcher cannot read: \`${t}\`${["*", "?", "["].includes(t) ? " (a glob)" : ""}`);
     }
     // zsh glob qualifier, history, braces, tilde: case 30's forms. A leading
     // `=` is in case 30 but not in the contract's list: a request for integration.
