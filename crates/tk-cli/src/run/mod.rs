@@ -337,12 +337,34 @@ fn run(argv: &[String], env: &RunEnv) -> Result<u8, (u8, String)> {
         policy_regular: regular_private_file(Path::new(&inputs.policy)),
         ..inputs
     };
-    let p = plan::build(&inputs).map_err(|e| (2, e))?;
+    let mut p = plan::build(&inputs).map_err(|e| (2, e))?;
     // srt's dependencies and the userns sysctl, before srt fails on them with
-    // its own errors (box test w1, BX3 and BX4).
+    // its own errors (box test w1, BX3 and BX4); the copies srt would run
+    // outside the sandbox, never from a folder the sandbox can write, and
+    // handed to srt by absolute path (fix pass review R3).
     if a.boundary == Boundary::Srt {
-        match preflight::srt(&env.path, cfg!(target_os = "linux"), env.userns.as_deref()) {
-            Ok(notes) => notes.iter().for_each(|n| eprintln!("{n}")),
+        let mut writable: Vec<String> = p.folders.clone();
+        writable.extend(p.state_dirs.iter().cloned());
+        writable.push("/tmp".into());
+        match preflight::srt(
+            &env.path,
+            cfg!(target_os = "linux"),
+            env.userns.as_deref(),
+            &writable,
+            &cwd,
+        ) {
+            Ok((notes, tools)) => {
+                notes.iter().for_each(|n| eprintln!("{n}"));
+                if let (Some(t), Some(text)) = (tools, p.srt_settings.as_deref()) {
+                    let mut v: serde_json::Value =
+                        serde_json::from_str(text).map_err(|e| (1, e.to_string()))?;
+                    v["bwrapPath"] = json!(t.bwrap);
+                    v["socatPath"] = json!(t.socat);
+                    v["ripgrep"] = json!({ "command": t.rg });
+                    p.srt_settings =
+                        Some(serde_json::to_string_pretty(&v).map_err(|e| (1, e.to_string()))?);
+                }
+            }
             Err(e) if a.dry_run => eprintln!("tk run: {e}"),
             Err(e) => return Err((1, e)),
         }
@@ -623,8 +645,11 @@ mod end_to_end {
                 fake.dir.display()
             ),
         );
-        // srt's own dependencies, for the preflight (BX4).
-        let deps = fake.dir.join("deps");
+        // srt's own dependencies, for the preflight (BX4), outside /tmp:
+        // srt can write /tmp, so a copy there is refused (review R3).
+        let deps = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/tk-test-deps")
+            .join(format!("{name}-{}", std::process::id()));
         std::fs::create_dir_all(&deps).unwrap();
         for b in ["bwrap", "socat", "rg"] {
             script(&deps, b, "exit 0");
@@ -864,6 +889,14 @@ mod end_to_end {
             .unwrap()
             .iter()
             .any(|d| d == &serde_json::json!(st.fake.dir.to_string_lossy())));
+        // srt gets the copies tk checked, by absolute path (review R3).
+        let deps = std::fs::canonicalize(Path::new(&st.env.path)).unwrap();
+        assert_eq!(
+            copy["ripgrep"]["command"],
+            serde_json::json!(deps.join("rg"))
+        );
+        assert_eq!(copy["bwrapPath"], serde_json::json!(deps.join("bwrap")));
+        assert_eq!(copy["socatPath"], serde_json::json!(deps.join("socat")));
         assert!(
             !st.fake.dir.join("srt/chat-s.json").exists(),
             "removed after the run"
@@ -881,7 +914,8 @@ mod end_to_end {
             &st.fake.dir,
             "pi-restart",
             &format!(
-                "printf '%s\\n' {new} > '{dir}/daemon.token'; : > '{dir}/restarted'; exit 4",
+                // After tk run has posted run.start (it posts after the start).
+                "sleep 1; printf '%s\\n' {new} > '{dir}/daemon.token'; : > '{dir}/restarted'; exit 4",
                 new = fake::RESTARTED_TOKEN,
                 dir = st.fake.dir.display()
             ),
@@ -930,7 +964,17 @@ mod end_to_end {
         let cwd = st.work.to_string_lossy().into_owned();
         let allow = |chat: &str| -> serde_json::Value {
             run(
-                &s(&["pi", "--boundary", "srt", "--chat", chat, "--cwd", &cwd, "--model-url", "http://127.0.0.1:8080"]),
+                &s(&[
+                    "pi",
+                    "--boundary",
+                    "srt",
+                    "--chat",
+                    chat,
+                    "--cwd",
+                    &cwd,
+                    "--model-url",
+                    "http://127.0.0.1:8080",
+                ]),
                 &st.env,
             )
             .unwrap();
@@ -945,12 +989,28 @@ mod end_to_end {
         std::fs::remove_file(tk.join("policy.json")).unwrap();
         std::fs::write(tk.join("backups/a.json"), "{}").unwrap();
         std::fs::hard_link(tk.join("backups/a.json"), tk.join("policy.json")).unwrap();
-        assert_eq!(allow("chat-l2"), serde_json::json!([]), "a second hard link");
+        assert_eq!(
+            allow("chat-l2"),
+            serde_json::json!([]),
+            "a second hard link"
+        );
         std::fs::remove_file(tk.join("policy.json")).unwrap();
         std::fs::write(tk.join("policy.json"), "{}").unwrap();
-        std::fs::set_permissions(tk.join("policy.json"), std::fs::Permissions::from_mode(0o666)).unwrap();
-        assert_eq!(allow("chat-l3"), serde_json::json!([]), "writable by others");
-        std::fs::set_permissions(tk.join("policy.json"), std::fs::Permissions::from_mode(0o600)).unwrap();
+        std::fs::set_permissions(
+            tk.join("policy.json"),
+            std::fs::Permissions::from_mode(0o666),
+        )
+        .unwrap();
+        assert_eq!(
+            allow("chat-l3"),
+            serde_json::json!([]),
+            "writable by others"
+        );
+        std::fs::set_permissions(
+            tk.join("policy.json"),
+            std::fs::Permissions::from_mode(0o600),
+        )
+        .unwrap();
         let path = tk.join("policy.json").to_string_lossy().into_owned();
         assert_eq!(
             allow("chat-l4"),

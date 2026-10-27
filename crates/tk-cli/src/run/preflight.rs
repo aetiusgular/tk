@@ -17,14 +17,29 @@
 
 use std::path::Path;
 
-/// A missing dependency stops the run before srt starts; the userns sysctl
-/// only warns, since an AppArmor profile can grant what the sysctl takes
-/// away and tk cannot read profiles.
+/// The tools srt will start outside the sandbox, as absolute paths, for its
+/// settings (`bwrapPath`, `socatPath`, `ripgrep.command`; srt 0.0.81
+/// `dist/sandbox/sandbox-config.js:1025-1048`, all Linux only).
+#[derive(Debug, PartialEq, Eq)]
+pub struct Tools {
+    pub bwrap: String,
+    pub socat: String,
+    pub rg: String,
+}
+
+/// A missing dependency stops the run before srt starts; so does one whose
+/// first copy on PATH, the one srt's `which` finds (`dist/utils/which.js`),
+/// sits in a relative PATH entry or in a folder the sandbox can write (fix
+/// pass review R3: `PATH=.:/usr/bin` gave srt `./rg`, which runs outside the
+/// sandbox). The userns sysctl only warns, since an AppArmor profile can
+/// grant what the sysctl takes away and tk cannot read profiles.
 pub fn srt(
     path_var: &str,
     linux: bool,
     userns_sysctl: Option<&str>,
-) -> Result<Vec<String>, String> {
+    writable: &[String],
+    cwd: &str,
+) -> Result<(Vec<String>, Option<Tools>), String> {
     let needed: &[(&str, &str)] = if linux {
         &[
             ("bwrap", "bubblewrap"),
@@ -34,19 +49,34 @@ pub fn srt(
     } else {
         &[("rg", "ripgrep")]
     };
-    let missing: Vec<&(&str, &str)> = needed
-        .iter()
-        .filter(|(bin, _)| !on_path(path_var, bin))
-        .collect();
+    let mut found = Vec::new();
+    let mut missing = Vec::new();
+    for (bin, pkg) in needed {
+        match first_on_path(path_var, bin, cwd) {
+            None => missing.push(format!("{bin} (package {pkg})")),
+            Some(p) if !p.starts_with('/') => {
+                return Err(format!(
+                    "srt would run `{p}`, the first {bin} on PATH, from a relative PATH entry and outside the sandbox; take the relative entry out of PATH"
+                ))
+            }
+            Some(p) => {
+                let real = std::fs::canonicalize(&p)
+                    .map(|r| r.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| p.clone());
+                if let Some(w) = writable.iter().find(|w| under(&real, w)) {
+                    return Err(format!(
+                        "srt would run {real}, the first {bin} on PATH, outside the sandbox, and it sits in {w}, which the sandbox can write; put a system {bin} first on PATH"
+                    ));
+                }
+                found.push(real);
+            }
+        }
+    }
     if !missing.is_empty() {
-        let names: Vec<String> = missing
-            .iter()
-            .map(|(bin, pkg)| format!("{bin} (package {pkg})"))
-            .collect();
         return Err(format!(
             "srt needs {} on PATH and will not start without it; install it, or use --boundary sbx or none{}",
-            names.join(", "),
-            if missing.iter().any(|(b, _)| *b == "rg") {
+            missing.join(", "),
+            if missing.iter().any(|m| m.starts_with("rg ")) {
                 ". Pi's own rg in ~/.pi/agent/bin is not used: srt runs rg outside the sandbox, and the agent can write that folder"
             } else {
                 ""
@@ -60,18 +90,41 @@ pub fn srt(
                 .to_string(),
         );
     }
-    Ok(notes)
+    let tools = linux.then(|| Tools {
+        bwrap: found[0].clone(),
+        socat: found[1].clone(),
+        rg: found[2].clone(),
+    });
+    Ok((notes, tools))
 }
 
-fn on_path(path_var: &str, bin: &str) -> bool {
+/// The first executable `bin` along PATH, as `which` searches it: every
+/// entry in order, an empty one meaning the current folder, which for srt is
+/// the chat's folder (`tk run` starts it there). A relative entry's match is
+/// returned relative, for the caller to refuse.
+fn first_on_path(path_var: &str, bin: &str, cwd: &str) -> Option<String> {
     use std::os::unix::fs::PermissionsExt;
-    path_var
-        .split(':')
-        .filter(|d| d.starts_with('/'))
-        .map(|d| Path::new(d).join(bin))
-        .any(|p| {
-            std::fs::metadata(&p).is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
-        })
+    path_var.split(':').find_map(|d| {
+        let d = if d.is_empty() { "." } else { d };
+        let p = Path::new(d).join(bin);
+        let at = if d.starts_with('/') {
+            p.clone()
+        } else {
+            Path::new(cwd).join(&p)
+        };
+        std::fs::metadata(&at)
+            .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+            .then(|| p.to_string_lossy().into_owned())
+    })
+}
+
+/// `path` is `dir` or inside it, both compared canonical where they exist.
+fn under(path: &str, dir: &str) -> bool {
+    let dir = std::fs::canonicalize(dir)
+        .map(|d| d.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| dir.to_string());
+    let dir = dir.trim_end_matches('/');
+    path == dir || path.starts_with(&format!("{dir}/"))
 }
 
 #[cfg(test)]
@@ -95,12 +148,12 @@ mod tests {
     fn a_missing_dependency_stops_the_run_and_names_it() {
         // BX4: the box had bwrap and socat, and rg only in ~/.pi/agent/bin.
         let d = dir_with("norg", &["bwrap", "socat"]);
-        let e = srt(&d, true, Some("0")).unwrap_err();
+        let e = srt(&d, true, Some("0"), &[], "/").unwrap_err();
         assert!(e.contains("rg (package ripgrep)"), "{e}");
         assert!(!e.contains("bwrap"), "{e}");
         assert!(e.contains("not used"), "{e}");
         // Relative PATH entries are not searched.
-        let e = srt("bin:.", false, None).unwrap_err();
+        let e = srt("bin:/nonexistent", false, None, &[], "/").unwrap_err();
         assert!(e.contains("rg"), "{e}");
     }
 
@@ -108,23 +161,64 @@ mod tests {
     fn the_userns_sysctl_warns_before_the_start() {
         // BX3.
         let d = dir_with("all", &["bwrap", "socat", "rg"]);
-        let n = srt(&d, true, Some("1\n")).unwrap();
+        let n = srt(&d, true, Some("1\n"), &[], "/").unwrap().0;
         assert_eq!(n.len(), 1);
         assert!(
             n[0].contains("apparmor_restrict_unprivileged_userns"),
             "{n:?}"
         );
-        assert!(srt(&d, true, Some("0")).unwrap().is_empty());
-        assert!(srt(&d, true, None).unwrap().is_empty(), "no such sysctl");
+        assert!(srt(&d, true, Some("0"), &[], "/").unwrap().0.is_empty());
+        assert!(
+            srt(&d, true, None, &[], "/").unwrap().0.is_empty(),
+            "no such sysctl"
+        );
         // macOS needs rg only, and has no such sysctl.
         let d = dir_with("mac", &["rg"]);
-        assert!(srt(&d, false, Some("1")).unwrap().is_empty());
+        assert!(srt(&d, false, Some("1"), &[], "/").unwrap().0.is_empty());
+    }
+
+    #[test]
+    fn the_copy_srt_would_run_must_not_be_relative_or_in_a_writable_folder() {
+        // Fix pass review R3.
+        let sys = dir_with("sys", &["bwrap", "socat", "rg"]);
+        let agent = dir_with("agentbin", &["rg"]);
+        // The agent's folder first: refused, even though a system rg follows.
+        let e = srt(&format!("{agent}:{sys}"), true, None, &[agent.clone()], "/").unwrap_err();
+        assert!(e.contains("which the sandbox can write"), "{e}");
+        // A folder inside a writable one counts too.
+        let parent = Path::new(&agent)
+            .parent()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert!(srt(&format!("{agent}:{sys}"), true, None, &[parent], "/").is_err());
+        // A relative entry that holds rg: refused.
+        let e = srt(&format!(".:{sys}"), true, None, &[], &agent).unwrap_err();
+        assert!(e.contains("relative PATH entry"), "{e}");
+        let e = srt(&format!(":{sys}"), true, None, &[], &agent).unwrap_err();
+        assert!(e.contains("relative PATH entry"), "an empty entry: {e}");
+        // The system copies, as absolute paths for srt's settings.
+        let (_, t) = srt(&format!("{sys}:{agent}"), true, None, &[agent.clone()], "/").unwrap();
+        let t = t.unwrap();
+        let real = std::fs::canonicalize(&sys)
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(t.rg, format!("{real}/rg"));
+        assert_eq!(t.bwrap, format!("{real}/bwrap"));
+        assert!(
+            srt(&format!("{sys}"), false, None, &[], "/")
+                .unwrap()
+                .1
+                .is_none(),
+            "macOS: no paths"
+        );
     }
 
     #[test]
     fn a_file_that_is_not_executable_does_not_count() {
         let d = dir_with("noexec", &["bwrap", "socat"]);
         std::fs::write(Path::new(&d).join("rg"), "x").unwrap();
-        assert!(srt(&d, true, None).is_err());
+        assert!(srt(&d, true, None, &[], "/").is_err());
     }
 }
