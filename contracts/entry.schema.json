@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/contracts/entry.schema.json",
+  "title": "tk library data for one entry",
+  "description": "The object at _meta[\"io.modelcontextprotocol.registry/publisher-provided\"][\"io.github.aetiusgular.tk\"] in a server.json or skill.json, or at metadata[\"io.github.aetiusgular.tk\"] in a plugin.json. One object per entry, not per package (ToolHive keys its data per package identifier; tk keeps one server.json per entry). Contract written by tk session 0 from plans/toolkit_layer_plan.md T3.1 and note AP sections 3 and 8. Lane E owns the library; changes are requests for integration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "tier", "status", "runner", "exposure", "trust"],
+  "properties": {
+    "kind": { "enum": ["server", "skill", "bundle"] },
+    "tier": {
+      "description": "own: Tony's catalog; curated: reviewed into the library; mirrored: copied from the official registry, not reviewed",
+      "enum": ["own", "curated", "mirrored"]
+    },
+    "status": {
+      "description": "Mirrors the official registry's status values",
+      "enum": ["active", "deprecated", "deleted"]
+    },
+    "runner": { "$ref": "#/$defs/runner" },
+    "exposure": {
+      "description": "How each harness should load this entry's tools. Keys are harness ids from contracts/harness-presets.json; `default` applies to any harness not named. Pi's own values (docs/mcp.md at 1.4.0).",
+      "type": "object",
+      "required": ["default"],
+      "properties": { "default": { "enum": ["codemode", "deferred", "direct", "hidden"] } },
+      "propertyNames": { "pattern": "^(default|[a-z0-9][a-z0-9-]{0,63})$" },
+      "additionalProperties": { "enum": ["codemode", "deferred", "direct", "hidden"] }
+    },
+    "entrySkill": {
+      "description": "Name of the skill (agentskills.io, [a-z0-9-]{1,64}) that introduces this entry's tools, so the catalog costs about 100 tokens",
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,64}$"
+    },
+    "annotationsOverride": {
+      "description": "Per tool name: annotations the library asserts in place of the server's own (the spec says clients MUST treat server annotations as untrusted)",
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z0-9_]{1,128}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "readOnlyHint": { "type": "boolean" },
+          "destructiveHint": { "type": "boolean" },
+          "idempotentHint": { "type": "boolean" },
+          "openWorldHint": { "type": "boolean" }
+        }
+      }
+    },
+    "permissions": {
+      "description": "ToolHive's names (stacklok/toolhive-registry README): network.outbound.allow_host and allow_port",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "outbound": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "allow_host": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 253 } },
+                "allow_port": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 65535 } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "trust": { "$ref": "#/$defs/trust" },
+    "harnessPresets": {
+      "description": "Per harness id: overrides to the entry tk connect writes (for example a different server name where a harness splits on underscores). Lane C defines the keys",
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9-]{0,63}$" },
+      "additionalProperties": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "runner": {
+      "description": "How the entry's code runs (roadblock R2: no library entry starts a bare host process from a toggle without saying so)",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "image"],
+          "properties": {
+            "kind": { "const": "image" },
+            "image": { "type": "string", "minLength": 1, "maxLength": 300 },
+            "imageDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "srtProfile"],
+          "properties": {
+            "kind": { "const": "srt" },
+            "srtProfile": { "type": "string", "minLength": 1, "maxLength": 200 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "note"],
+          "properties": {
+            "kind": { "const": "host" },
+            "note": { "const": "runs as you" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": { "kind": { "const": "remote" } }
+        }
+      ]
+    },
+    "trust": {
+      "description": "Records, never a verdict (plan R7). Shown with dates; no field means 'safe'",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentSha256", "scans", "liveness"],
+      "properties": {
+        "namespaceProof": { "enum": ["github-oauth", "github-oidc", "dns", "http-well-known", "none"] },
+        "provenance": {
+          "description": "ToolHive's provenance names plus the kind of attestation",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["npm-provenance", "pypi-attestation", "github-attestation", "sigstore", "docker-built", "none"] },
+            "cert_issuer": { "type": "string" },
+            "repository_uri": { "type": "string" },
+            "runner_environment": { "type": "string" },
+            "signer_identity": { "type": "string" },
+            "sigstore_url": { "type": "string" }
+          }
+        },
+        "contentSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "scans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["scanner", "scannerVersion", "date", "findings"],
+            "properties": {
+              "scanner": { "type": "string", "minLength": 1 },
+              "scannerVersion": { "type": "string", "minLength": 1 },
+              "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+              "findings": { "type": "integer", "minimum": 0 },
+              "sarifSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          }
+        },
+        "liveness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": {
+            "state": { "enum": ["alive", "dead", "unknown", "not-applicable"] },
+            "checkedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" }
+          }
+        },
+        "capabilityDrift": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fromVersion", "toVersion", "changed"],
+          "properties": {
+            "fromVersion": { "type": "string" },
+            "toVersion": { "type": "string" },
+            "changed": {
+              "type": "array",
+              "items": { "enum": ["tools-added", "tools-removed", "description", "input-schema", "endpoint-host", "annotations"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "tk-pi",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "The tk Pi package: a tool_call gate and an OTLP emitter (lane A); a memory extension in wave 2 (lane K)",
+  "keywords": ["pi-package"],
+  "engines": { "node": ">=22.19.0" },
+  "pi": {
+    "extensions": ["./extensions/gate.ts", "./extensions/emitter.ts"]
+  }
+}

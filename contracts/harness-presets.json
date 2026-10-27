@@ -1,0 +1,285 @@
+{
+  "$comment": "Skeleton written by tk session 0, 27 Oct 2026, from research-notes/AP_tool_library_prior_art.md section 4 (each row read in the harness's own docs by a research agent; versions as the pages showed them). Lane C fills every TODO and verifies every row against the harness's docs at the version in use, puts the source URL and version in `sources`, and sets `verified` to the date. `tokens` in paths: ~ is the home folder; <project> the project root. Nothing here was run.",
+  "version": 1,
+  "harnesses": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code",
+      "cli": "claude",
+      "configFiles": {
+        "user": { "macos": "~/.claude.json", "linux": "~/.claude.json" },
+        "project": "<project>/.mcp.json"
+      },
+      "entryShape": "json:mcpServers",
+      "entryExample": { "mcpServers": { "<name>": { "type": "stdio", "command": "<cmd>", "args": [], "env": {} } } },
+      "enableKey": null,
+      "addCommand": ["claude", "mcp", "add-json", "-s", "user", "<name>", "<json>"],
+      "toolNameForm": "mcp__<server>__<tool>",
+      "nameMangling": "plugin servers: mcp__plugin_<plugin>_<server>__<tool>",
+      "managedFiles": {
+        "macos": "/Library/Application Support/ClaudeCode/managed-mcp.json",
+        "linux": "/etc/claude-code/managed-mcp.json"
+      },
+      "inHarnessGate": "PreToolUse hook (lane F)",
+      "listChanged": "interactive sessions refetch; -p and SDK refresh the list only",
+      "sources": ["note AP section 4 (code.claude.com/docs/en/mcp, managed-mcp)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "codex",
+      "name": "Codex CLI",
+      "cli": "codex",
+      "configFiles": {
+        "user": { "macos": "~/.codex/config.toml", "linux": "~/.codex/config.toml" },
+        "project": "<project>/.codex/config.toml"
+      },
+      "entryShape": "toml:mcp_servers",
+      "entryExample": "[mcp_servers.<name>]\ncommand = \"<cmd>\"\nargs = []",
+      "enableKey": "enabled",
+      "addCommand": ["codex", "mcp", "add", "<name>", "--", "<cmd>"],
+      "toolNameForm": "TODO (namespaced per server since openai/codex PR #17404; separator not found; rules case 21)",
+      "nameMangling": "TODO",
+      "managedFiles": {
+        "macos": "TODO (requirements.toml path, secondary source only)",
+        "linux": "/etc/codex/requirements.toml (I)"
+      },
+      "inHarnessGate": "PreToolUse hook, deny only (lane F)",
+      "listChanged": "TODO (PR #12449 open)",
+      "sources": ["note AP section 4 (learn.chatgpt.com/docs/extend/mcp, managed-configuration)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "cli": "pi",
+      "configFiles": {
+        "user": { "macos": "~/.pi/agent/mcp.json", "linux": "~/.pi/agent/mcp.json" },
+        "project": "<project>/.pi/mcp.json"
+      },
+      "entryShape": "json:mcpServers",
+      "entryExample": { "mcpServers": { "<name>": { "command": "<cmd>", "args": [], "exposure": "deferred" } } },
+      "enableKey": "enabled",
+      "addCommand": ["pi", "mcp", "add", "<name>", "--", "<cmd>"],
+      "toolNameForm": "mcp__<server>__<tool>",
+      "nameMangling": "characters outside the allowed set become _",
+      "managedFiles": null,
+      "inHarnessGate": "tool_call extension (lane A)",
+      "listChanged": "TODO",
+      "notes": "Project files are skipped in RPC mode until the project is trusted (Pi docs/security.md; rules case 47). The entry key name (mcpServers) is TODO: read docs/mcp.md at 1.4.0",
+      "sources": ["note AP section 4 (pi.dev/docs/latest/mcp)", "note AI section 1.2"],
+      "verified": "TODO"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode",
+      "cli": "opencode",
+      "configFiles": {
+        "user": { "macos": "~/.config/opencode/opencode.json", "linux": "~/.config/opencode/opencode.json" },
+        "project": "<project>/opencode.json"
+      },
+      "entryShape": "json:mcp",
+      "entryExample": { "mcp": { "<name>": { "type": "local", "command": ["<cmd>"], "enabled": true } } },
+      "enableKey": "enabled",
+      "addCommand": null,
+      "toolNameForm": "<server>_<tool>",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": "tool.execute.before plugin (lane F)",
+      "listChanged": "TODO (PR #5913, merge status not found)",
+      "notes": "The user config path is TODO: AP names opencode.json but not its user location",
+      "sources": ["note AP section 4 (opencode.ai/docs/mcp-servers/, /plugins/)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini CLI",
+      "cli": "gemini",
+      "configFiles": {
+        "user": { "macos": "~/.gemini/settings.json", "linux": "~/.gemini/settings.json" },
+        "project": "<project>/.gemini/settings.json"
+      },
+      "entryShape": "json:mcpServers",
+      "entryExample": { "mcpServers": { "<name>": { "command": "<cmd>", "args": [] } } },
+      "enableKey": null,
+      "addCommand": ["gemini", "mcp", "add", "-s", "user", "<name>", "<cmd>"],
+      "toolNameForm": "mcp_<server>_<tool>",
+      "nameMangling": "the policy parser splits at the first _ after mcp_: no _ in server names",
+      "managedFiles": "TODO",
+      "inHarnessGate": "BeforeTool hook (wave 2 lane I)",
+      "listChanged": "manual /mcp reload only",
+      "sources": ["note AP section 4 (geminicli.com/docs/tools/mcp-server/)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "cli": null,
+      "configFiles": {
+        "user": { "macos": "~/.cursor/mcp.json", "linux": "~/.cursor/mcp.json" },
+        "project": "<project>/.cursor/mcp.json"
+      },
+      "entryShape": "json:mcpServers",
+      "enableKey": null,
+      "addCommand": null,
+      "toolNameForm": "TODO (forum: mcp_<server>_<tool>, I)",
+      "nameMangling": "TODO",
+      "managedFiles": "Team Settings (not a file)",
+      "inHarnessGate": null,
+      "listChanged": "TODO",
+      "sources": ["note AP section 4 (cursor.com/docs/context/mcp)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes Agent",
+      "cli": null,
+      "configFiles": {
+        "user": { "macos": "~/.hermes/config.yaml", "linux": "~/.hermes/config.yaml" },
+        "project": null
+      },
+      "entryShape": "yaml:mcp_servers",
+      "enableKey": "enabled",
+      "addCommand": null,
+      "toolNameForm": "mcp_<server>_<tool>",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": "pre_tool_call (wave 2 lane I)",
+      "listChanged": "TODO",
+      "sources": ["note AP section 4 (hermes-agent.nousresearch.com/docs/user-guide/features/mcp)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "cli": "openclaw",
+      "configFiles": { "user": { "macos": "TODO", "linux": "TODO" }, "project": null },
+      "entryShape": "TODO:mcp.servers",
+      "enableKey": "enabled",
+      "addCommand": ["openclaw", "mcp", "add", "<name>", "--url", "<url>"],
+      "toolNameForm": "<server>__<tool> (claude-cli bridge)",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": "before_tool_call (wave 2 lane I)",
+      "listChanged": "TODO",
+      "sources": ["note AP section 4 (docs.openclaw.ai/tools/mcp)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "goose",
+      "name": "goose",
+      "cli": "goose",
+      "configFiles": {
+        "user": { "macos": "~/.config/goose/config.yaml", "linux": "~/.config/goose/config.yaml" },
+        "project": null
+      },
+      "entryShape": "yaml:extensions",
+      "enableKey": "enabled",
+      "addCommand": null,
+      "toolNameForm": "TODO",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": null,
+      "listChanged": "TODO",
+      "sources": ["note AP section 4 (block.github.io/goose/docs/getting-started/using-extensions/)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "qwen-code",
+      "name": "Qwen Code",
+      "cli": "qwen",
+      "configFiles": {
+        "user": { "macos": "~/.qwen/settings.json", "linux": "~/.qwen/settings.json" },
+        "project": "<project>/.qwen/settings.json"
+      },
+      "entryShape": "json:mcpServers",
+      "enableKey": null,
+      "addCommand": ["qwen", "mcp", "add", "-s", "user", "<name>", "<cmd>"],
+      "toolNameForm": "TODO (Gemini lineage, I)",
+      "nameMangling": "TODO (assume Gemini's: no _ in server names)",
+      "managedFiles": null,
+      "inHarnessGate": null,
+      "listChanged": "TODO",
+      "sources": ["note AP section 4 (qwenlm.github.io/qwen-code-docs/en/users/features/mcp/)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "copilot-cli",
+      "name": "GitHub Copilot CLI",
+      "cli": "copilot",
+      "configFiles": {
+        "user": { "macos": "~/.copilot/mcp-config.json", "linux": "~/.copilot/mcp-config.json" },
+        "project": "<project>/.mcp.json"
+      },
+      "entryShape": "json:mcpServers",
+      "enableKey": null,
+      "addCommand": ["copilot", "mcp", "add", "<name>", "--", "<cmd>"],
+      "toolNameForm": "TODO",
+      "nameMangling": "TODO",
+      "managedFiles": "org registry URL plus allowlist (not a file)",
+      "inHarnessGate": null,
+      "listChanged": "TODO",
+      "notes": "The top-level key of mcp-config.json is TODO",
+      "sources": ["note AP section 4 (docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "amp",
+      "name": "Amp",
+      "cli": "amp",
+      "configFiles": {
+        "user": { "macos": "~/.config/amp/settings.json", "linux": "~/.config/amp/settings.json" },
+        "project": "<project>/.amp/settings.json"
+      },
+      "entryShape": "json:amp.mcpServers",
+      "enableKey": null,
+      "addCommand": ["amp", "mcp", "add", "<name>", "--", "<cmd>"],
+      "toolNameForm": "remote servers are modules for tool_search and code_exec",
+      "nameMangling": "TODO",
+      "managedFiles": "remote definitions on ampcode.com (not a file)",
+      "inHarnessGate": null,
+      "listChanged": "TODO",
+      "notes": "Project settings need `amp mcp approve`",
+      "sources": ["note AP section 4 (ampcode.com/docs/customize/mcp)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "crush",
+      "name": "Crush",
+      "cli": "crush",
+      "configFiles": {
+        "user": { "macos": "~/.config/crush/crushrc", "linux": "~/.config/crush/crushrc" },
+        "project": "<project>/.crushrc"
+      },
+      "entryShape": "TODO",
+      "enableKey": null,
+      "addCommand": null,
+      "toolNameForm": "mcp_<server>_<tool> (I)",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": null,
+      "listChanged": "refreshes on notification (I)",
+      "sources": ["note AP section 4 (github.com/charmbracelet/crush)"],
+      "verified": "TODO"
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "cli": null,
+      "configFiles": {
+        "user": { "macos": "~/.config/zed/settings.json", "linux": "~/.config/zed/settings.json" },
+        "project": "<project>/.zed/settings.json"
+      },
+      "entryShape": "json:context_servers",
+      "enableKey": null,
+      "addCommand": null,
+      "toolNameForm": "TODO",
+      "nameMangling": "TODO",
+      "managedFiles": null,
+      "inHarnessGate": null,
+      "listChanged": "commit #42453 reloads that server's tools",
+      "notes": "settings.json may hold comments (JSONC); the user path is TODO (AP names settings.json only)",
+      "sources": ["note AP section 4 (zed.dev/docs/ai/mcp)"],
+      "verified": "TODO"
+    }
+  ]
+}

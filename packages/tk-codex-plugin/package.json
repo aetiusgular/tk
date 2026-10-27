@@ -1,0 +1,9 @@
+{
+  "name": "tk-codex-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Codex plugin: PreToolUse hook and a requirements.toml fragment (lane F, T2.2)",
+  "engines": { "node": ">=22.19.0" }
+}

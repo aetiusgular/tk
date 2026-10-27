@@ -1,0 +1,29 @@
+{
+  "name": "tk-workspace",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "workspaces": [
+    "packages/tk-pi",
+    "packages/tk-claude-plugin",
+    "packages/tk-codex-plugin",
+    "packages/tk-opencode-plugin",
+    "library"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit && vitest run",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "scope": "node scripts/lane-scope.mjs",
+    "scope:self-test": "node scripts/lane-scope.test.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.0",
+    "ajv": "8.20.0",
+    "typescript": "5.8.3",
+    "vitest": "3.2.7"
+  }
+}

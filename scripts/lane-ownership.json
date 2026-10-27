@@ -1,0 +1,38 @@
+{
+  "$comment": "Folder-level ownership for plans/parallel_build_tk.md, sections 2, 6 and 7. A path is owned by the lane whose `owns` prefix matches it and whose `except` list does not. `shared` names files with per-lane sections marked `# [lane-X]`. `noLane` paths no lane edits during a wave. Written by tk session 0; only integration edits it.",
+  "lanes": {
+    "A": { "wave": 1, "owns": ["packages/tk-pi/"], "except": ["packages/tk-pi/extensions/memory.ts"] },
+    "B": { "wave": 1, "owns": ["crates/tk-daemon/", "crates/tk-core/"], "except": ["crates/tk-daemon/src/computer_use/", "crates/tk-daemon/src/collector/"] },
+    "C": { "wave": 1, "owns": ["crates/tk-cli/src/connect/"], "except": [] },
+    "D": { "wave": 1, "owns": ["crates/tk-cli/src/run/", "crates/tk-audit-linux/"], "except": [] },
+    "E": { "wave": 1, "owns": ["library/"], "except": ["library/mirror/", "library/publish/", "library/trust/", "library/site/"] },
+    "F": { "wave": 1, "owns": ["packages/tk-claude-plugin/", "packages/tk-codex-plugin/", "packages/tk-opencode-plugin/", "tests/cli-contract/"], "except": [] },
+    "G": { "wave": 2, "owns": ["library/mirror/", "library/publish/"], "except": [] },
+    "H": { "wave": 2, "owns": ["library/trust/"], "except": [] },
+    "I": { "wave": 2, "owns": ["packages/tk-gemini-extension/", "packages/tk-hermes-plugin/", "packages/tk-openclaw-plugin/"], "except": [] },
+    "J": { "wave": 2, "owns": ["crates/tk-cli/src/watch/", "library/site/"], "except": [] },
+    "K": { "wave": 2, "owns": ["crates/tk-daemon/src/collector/", "crates/tk-daemon/src/computer_use/", "packages/tk-pi/extensions/memory.ts", "macos/"], "except": [] },
+    "M": { "wave": 2, "owns": ["tests/measure/"], "except": [] }
+  },
+  "shared": {
+    "crates/tk-cli/Cargo.toml": ["C", "D", "J"]
+  },
+  "noLane": [
+    "Cargo.toml",
+    "Cargo.lock",
+    "package.json",
+    "package-lock.json",
+    "rust-toolchain.toml",
+    "tsconfig.json",
+    "vitest.config.ts",
+    ".github/",
+    "scripts/",
+    "contracts/",
+    "tests/fixtures/",
+    "crates/tk-cli/src/main.rs",
+    "NOTICE",
+    "LICENSE",
+    "README.md",
+    ".gitignore"
+  ]
+}

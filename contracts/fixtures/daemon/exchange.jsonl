@@ -1,0 +1,37 @@
+# A recorded exchange, written by hand from daemon-protocol.md (session 0; no daemon ran).
+# "> " is a client line, "< " a daemon line. Tokens are fixture values, not secrets.
+# Connection 1: lane D's tk run, daemon scope.
+> {"op":"hello","token":"1111111111111111111111111111111111111111111111111111111111111111","client":"tk run"}
+< {"ok":true,"scope":"daemon","daemon":{"version":"0.0.0","pid":4100,"protocol":1}}
+> {"op":"token.mint","chat":"chat-b","harness":"pi"}
+< {"ok":true,"token":"2222222222222222222222222222222222222222222222222222222222222222"}
+> {"op":"event","event":{"id":"run-1","at":0,"chatId":"chat-b","harness":"pi","source":"run","kind":"run.start","summary":"pi under sbx","detail":{"boundary":"sbx","argv":["sbx","run","--kit","docker.io/sbx/pi-kit:latest","pi"],"kit":"pi-kit","host":"box"}}}
+< {"ok":true,"id":"run-1"}
+# Connection 2: the Pi emitter, chat scope. chatId and harness are overwritten from the token.
+> {"op":"hello","token":"2222222222222222222222222222222222222222222222222222222222222222","client":"tk-pi"}
+< {"ok":true,"scope":"chat","chat":"chat-b"}
+> {"op":"event","event":{"id":"pi-7","at":0,"chatId":"someone-else","harness":"pi","source":"adapter","kind":"tool.call","summary":"exa/search ok, 120 ms","detail":{"trust":"client","resultSha256":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}}}
+< {"ok":true,"id":"pi-7"}
+> {"op":"approve","request":{"id":"ap-1","chat":"chat-b","harness":"pi","tool":"cu/open_app","summary":"Open Safari","timeoutSeconds":30}}
+< {"ok":true,"id":"ap-1","answer":"no","by":"none"}
+> {"op":"tail"}
+< {"ok":false,"error":"tail needs daemon scope or a chat filter"}
+# Connection 3: tk watch --approve (wave 2), daemon scope, as approver.
+> {"op":"hello","token":"1111111111111111111111111111111111111111111111111111111111111111","client":"tk watch --approve"}
+< {"ok":true,"scope":"daemon","daemon":{"version":"0.0.0","pid":4100,"protocol":1}}
+> {"op":"approver"}
+< {"ok":true}
+< {"approve":{"id":"ap-2","chat":"chat-b","harness":"claude-code","tool":"github/create_issue","summary":"Create issue in aetiusgular/tk","timeoutSeconds":60}}
+> {"op":"answer","id":"ap-2","answer":"yes"}
+< {"ok":true}
+# Connection 4: tk watch tail, daemon scope.
+> {"op":"hello","token":"1111111111111111111111111111111111111111111111111111111111111111","client":"tk watch tail"}
+< {"ok":true,"scope":"daemon","daemon":{"version":"0.0.0","pid":4100,"protocol":1}}
+> {"op":"tail","since":1792204985000,"chat":"chat-b"}
+< {"ok":true}
+< {"event":{"id":"pi-7","at":1792204985350,"chatId":"chat-b","harness":"pi","source":"adapter","kind":"tool.call","summary":"exa/search ok, 120 ms","detail":{"trust":"client","resultSha256":"9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"}}}
+> {"op":"report","since":1792204900000,"until":1792205000000}
+< {"ok":true,"report":{"events":2,"flags":0}}
+# Connection 5: a bad first line.
+> {"op":"tail"}
+< {"ok":false,"error":"hello first"}

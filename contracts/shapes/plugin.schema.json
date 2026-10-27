@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/contracts/shapes/plugin.schema.json",
+  "title": "Claude Code plugin.json, the fields tk writes",
+  "description": "Read 27 Oct 2026 from https://code.claude.com/docs/en/plugins-reference (redirects to the manifest reference). name is the only required key: non-empty, no spaces, @, :, path separators, control or bidi characters; kebab-case. Unknown top-level keys are stripped with a warning. metadata is free-form and Claude Code does not read it (v2.1.222+): tk's library data goes there. Component paths start with ./ and stay inside the plugin root. Claude Code publishes no JSON Schema URL for this file (not found); `claude plugin validate` is the authoritative check and runs in the box test.",
+  "type": "object",
+  "required": ["name"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "displayName": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 }, "email": { "type": "string" }, "url": { "type": "string" } }
+    },
+    "homepage": { "type": "string" },
+    "repository": { "type": "string" },
+    "license": { "type": "string" },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "metadata": {
+      "type": "object",
+      "properties": { "io.github.aetiusgular.tk": { "$ref": "../entry.schema.json" } }
+    },
+    "skills": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "array", "items": { "$ref": "#/$defs/path" } }] },
+    "hooks": {},
+    "mcpServers": {}
+  },
+  "$defs": {
+    "path": { "type": "string", "pattern": "^(\\.|\\./(?!.*\\.\\.).*)$" }
+  }
+}

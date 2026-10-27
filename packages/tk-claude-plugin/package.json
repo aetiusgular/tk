@@ -1,0 +1,9 @@
+{
+  "name": "tk-claude-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Claude Code plugin: PreToolUse and PostToolUse hooks (lane F, T2.1)",
+  "engines": { "node": ">=22.19.0" }
+}

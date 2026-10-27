@@ -1,0 +1,35 @@
+{
+  "namespace": "io.github.aetiusgular",
+  "name": "web-search",
+  "title": "Web search",
+  "description": "Search the web with the Exa connector. Load the Exa tools only when this skill is used.",
+  "version": "0.0.1",
+  "status": "active",
+  "license": "MIT",
+  "allowedTools": ["exa/web_search_exa"],
+  "repository": { "url": "https://github.com/aetiusgular/tk", "type": "git" },
+  "packages": [
+    {
+      "registryType": "git",
+      "url": "https://github.com/aetiusgular/tk",
+      "ref": "main",
+      "subfolder": "contracts/fixtures/entry/skill/skill"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "skill",
+        "tier": "own",
+        "status": "active",
+        "runner": { "kind": "host", "note": "runs as you" },
+        "exposure": { "default": "direct" },
+        "trust": {
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000002",
+          "scans": [],
+          "liveness": { "state": "not-applicable" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "tk-fixture-bundle",
+  "version": "0.0.1",
+  "description": "Fixture bundle for the tk contract tests: one skill.",
+  "author": { "name": "Aetius Gular" },
+  "license": "MIT",
+  "repository": "https://github.com/aetiusgular/tk",
+  "skills": ["./skills/"],
+  "metadata": {
+    "io.github.aetiusgular.tk": {
+      "kind": "bundle",
+      "tier": "own",
+      "status": "active",
+      "runner": { "kind": "host", "note": "runs as you" },
+      "exposure": { "default": "deferred" },
+      "trust": {
+        "contentSha256": "0000000000000000000000000000000000000000000000000000000000000003",
+        "scans": [],
+        "liveness": { "state": "not-applicable" }
+      }
+    }
+  }
+}

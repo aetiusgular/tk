@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+    branches: [main, "lane/**", "integration/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # rust-toolchain.toml pins 1.97.0 with rustfmt and clippy; rustup
+      # installs it on first use.
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+  node:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: node scripts/lane-scope.test.mjs
+      # tests/cli-contract needs the real Claude Code and Codex CLIs; it runs
+      # when they are installed (integration installs them under /tmp/cli).
+      - name: cli contract
+        run: |
+          if command -v claude >/dev/null && command -v codex >/dev/null; then
+            node tests/cli-contract/run.mjs
+          else
+            echo "claude or codex not installed: cli contract not run"
+          fi

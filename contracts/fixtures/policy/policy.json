@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "askTimeoutSeconds": 30,
+  "servers": ["exa", "github", "cu", "fs"],
+  "rules": [
+    { "tool": "exa/*", "action": "allow" },
+    { "tool": "exa/delete_index", "action": "deny" },
+    { "tool": "github/*", "action": "ask" },
+    { "tool": "github/get_issue", "action": "allow" },
+    { "tool": "cu/*", "action": "ask" },
+    { "tool": "bash", "action": "allow" },
+    { "tool": "bash", "harness": "codex", "action": "ask" },
+    { "tool": "read", "action": "allow" },
+    {
+      "tool": "fs/write_file",
+      "chat": "chat-b",
+      "action": "allow",
+      "descriptionSha256": "475c1f1fe876e645415d98a2650d6114d89a659a00af81e2741fd6158953a0a0"
+    },
+    { "tool": "*", "chat": "chat-locked", "action": "deny" }
+  ]
+}

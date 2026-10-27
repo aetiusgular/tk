@@ -1,0 +1,22 @@
+# The computer-use helper (wave 3, lane C): a separate app that holds
+# Accessibility and Screen Recording and embeds Cua Driver. Its own workspace
+# and lock file, so it never touches the app's.
+#
+# Rust, not Swift: embedding Cua Driver needs only a host that spawns
+# `cua-driver serve --embedded` directly (posix_spawn, never open(1)), which
+# Cua's embedding guide allows from any language (read 16 Oct 2026). The two
+# macOS calls it needs (the caller's code signature, the mouse buttons) are
+# plain C APIs, declared in `src/macos.rs`.
+[package]
+name = "monocode-computer-use-helper"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[workspace]
+
+[dependencies]
+# JSON for the socket protocol and the driver's MCP lines. Pinned to the
+# version the app already uses; it pulls in itoa, memchr, ryu and serde.
+serde_json = "=1.0.151"

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/contracts/shapes/marketplace.schema.json",
+  "title": "Claude Code marketplace.json, the fields tk exports",
+  "description": "Read 27 Oct 2026 from https://code.claude.com/docs/en/plugins/marketplace-reference. Location .claude-plugin/marketplace.json. Required: name (letters, digits, ., _, -, starting with a letter or digit, no ..), owner {name}, plugins[]. An entry requires name and source. A source is a ./-relative path or an object whose own source key is github {repo, ref?, sha?}, url {url, ref?, sha?}, git-subdir {url, path, ref?, sha?}, npm {package, version?, registry?}, archive {url, sha256?} or command {command, timeout?, mode?}. Reserved marketplace names are listed on that page; tk's own name must avoid them. sha is a full 40-character lowercase commit; tk exports always pin it (Plugin4Shell, note AP section 5). Codex also reads this file at the legacy .claude-plugin/ path (note AP section 3).",
+  "type": "object",
+  "required": ["name", "owner", "plugins"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "pattern": "^[A-Za-z0-9](?!.*\\.\\.)[A-Za-z0-9._-]*$" },
+    "owner": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 }, "email": { "type": "string" }, "url": { "type": "string" } }
+    },
+    "description": { "type": "string" },
+    "version": { "type": "string" },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+          "description": { "type": "string" },
+          "version": { "type": "string" },
+          "strict": { "type": "boolean" },
+          "category": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "metadata": { "type": "object" },
+          "source": {
+            "oneOf": [
+              { "type": "string", "pattern": "^\\./(?!.*\\.\\.)" },
+              {
+                "type": "object",
+                "required": ["source", "repo", "sha"],
+                "properties": {
+                  "source": { "const": "github" },
+                  "repo": { "type": "string", "pattern": "^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$" },
+                  "ref": { "type": "string" },
+                  "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["source", "url", "path", "sha"],
+                "properties": {
+                  "source": { "const": "git-subdir" },
+                  "url": { "type": "string" },
+                  "path": { "type": "string" },
+                  "ref": { "type": "string" },
+                  "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["source", "url", "sha256"],
+                "properties": {
+                  "source": { "const": "archive" },
+                  "url": { "type": "string", "pattern": "^https://" },
+                  "sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

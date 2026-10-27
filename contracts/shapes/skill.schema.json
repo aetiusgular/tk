@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/contracts/shapes/skill.schema.json",
+  "title": "skill.json, ToolHive's shape plus tk's _meta",
+  "description": "Fields read 27 Oct 2026 from the stacklok/toolhive-registry README: namespace, name (equals the folder), title, description, version, status, license, allowedTools (server/tool names), repository {url, type}, icons [{src, type}], packages [{registryType, url, ref, subfolder}]. SKILL.md sits in a skill/ subfolder beside skill.json; packages[].subfolder points at it. tk adds _meta in the server.json position; that is a tk decision, not ToolHive's. The README lists no required set; this schema requires what the library needs.",
+  "type": "object",
+  "required": ["namespace", "name", "description", "version", "packages", "_meta"],
+  "properties": {
+    "namespace": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "pattern": "^[a-z0-9-]{1,64}$" },
+    "title": { "type": "string" },
+    "description": { "type": "string", "maxLength": 1024 },
+    "version": { "type": "string" },
+    "status": { "type": "string" },
+    "license": { "type": "string" },
+    "allowedTools": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9_]+/[a-z0-9_]+$" } },
+    "repository": {
+      "type": "object",
+      "required": ["url"],
+      "properties": { "url": { "type": "string" }, "type": { "type": "string" } }
+    },
+    "icons": {
+      "type": "array",
+      "items": { "type": "object", "required": ["src"], "properties": { "src": { "type": "string" }, "type": { "type": "string" } } }
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["registryType", "url", "ref", "subfolder"],
+        "properties": {
+          "registryType": { "const": "git" },
+          "url": { "type": "string" },
+          "ref": { "type": "string" },
+          "subfolder": { "type": "string" }
+        }
+      }
+    },
+    "_meta": {
+      "type": "object",
+      "required": ["io.modelcontextprotocol.registry/publisher-provided"],
+      "properties": {
+        "io.modelcontextprotocol.registry/publisher-provided": {
+          "type": "object",
+          "required": ["io.github.aetiusgular.tk"],
+          "properties": { "io.github.aetiusgular.tk": { "$ref": "../entry.schema.json" } }
+        }
+      }
+    }
+  }
+}

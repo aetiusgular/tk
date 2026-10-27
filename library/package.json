@@ -1,0 +1,9 @@
+{
+  "name": "tk-library",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "The tk library: schema, validator, exports, catalog (lane E, T3.1, T3.4)",
+  "engines": { "node": ">=22.19.0" }
+}

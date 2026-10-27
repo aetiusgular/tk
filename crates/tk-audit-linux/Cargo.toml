@@ -1,0 +1,13 @@
+[package]
+name = "tk-audit-linux"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "The Linux OS feed: auditd records to daemon events (lane D)"
+
+[dependencies]
+tk-core = { path = "../tk-core" }
+serde.workspace = true
+serde_json.workspace = true

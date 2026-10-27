@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/tk-core",
+    "crates/tk-daemon",
+    "crates/tk-cli",
+    "crates/tk-audit-linux",
+]
+# The two macos/ crates are their own workspaces (each has [workspace] in its
+# Cargo.toml), as in the fork. `cargo check` at the root never builds them.
+exclude = ["macos/activity-collector", "macos/computer-use-helper"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.97"
+license = "MIT"
+repository = "https://github.com/aetiusgular/tk"
+
+# Versions are exact and match the fork's Cargo.lock at w3/integration 159ef3e,
+# so the copied modules compile against what they were tested with.
+[workspace.dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.151"
+sha2 = "=0.10.9"
+libc = "=0.2.189"
+uuid = { version = "=1.24.0", features = ["v4"] }
+toml = "=0.9.12"
+base64 = "=0.22.1"

@@ -1,0 +1,33 @@
+tk
+Copyright (c) 2026 Aetius Gular. MIT licence (LICENSE).
+
+Parts of this repository were copied from the MonoCode fork
+https://github.com/aetiusgular/monocode, an MIT-licensed project
+(upstream https://github.com/hardbeat920/monocode, "Copyright (c) 2026 Nick").
+Every copied file was written in Aetius Gular's own commits on that fork.
+They arrive as copies, not as git history (plans/parallel_build_tk.md,
+section 13). Copied by tk session 0 on 27 Oct 2026.
+
+Source commit: w3/integration 159ef3e17f9abac6539b3b311576910ef1f513ed
+(read beside harness 25c2d040e24c896d539be124009c89cada9a6b46).
+
+| Here | From the fork | Lines |
+|---|---|---|
+| crates/tk-daemon/src/otel_receiver/mod.rs | src-tauri/src/otel_receiver.rs | 870 |
+| crates/tk-daemon/src/otel_receiver/ (decode, harness_env, normalize, tests, fixtures) | src-tauri/src/otel_receiver/ | 4072 |
+| crates/tk-daemon/src/activity/ | src-tauri/src/activity/ | 6600 |
+| crates/tk-daemon/src/computer_use/mod.rs | src-tauri/src/computer_use.rs | 659 |
+| crates/tk-daemon/src/computer_use/ | src-tauri/src/computer_use/ | 4832 |
+| macos/activity-collector/ | macos/activity-collector/ | 5052 |
+| macos/computer-use-helper/ | macos/computer-use-helper/ | 4356 |
+| macos/README.md | macos/README.md | 11 |
+| crates/tk-cli/src/connect/gateway/docker_mcp.rs | src-tauri/src/docker_mcp.rs | 897 |
+| tests/cli-contract/ | tests/cli-contract/ | 3844 |
+| tests/fixtures/otlp/ | src-tauri/src/otel_receiver/fixtures/ | 1847 |
+
+Changes made while copying: the root module files became mod.rs inside
+their folders, and their #[path] attributes were rewritten to match. Nothing
+else. Line counts exclude Cargo.lock files and build output.
+
+contracts/docker-args.md transcribes the argument patterns of the fork's
+src/features/gateway-connectors/model/dockerArgs.ts (not copied).

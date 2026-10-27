@@ -1,0 +1,43 @@
+# This manifest is shared by lanes C and D in wave 1 and lane J in wave 2.
+# Each lane edits only the lines under its own `# [lane-X]` comment, in any
+# table, and pins every dependency to an exact version
+# (plans/parallel_build_tk.md, section 2, point 5). A section ends at the
+# next marker or the next table header. Everything else is session 0's and
+# changes only through integration. scripts/lane-scope.mjs checks this.
+
+[package]
+name = "tk-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "tk: connect, run, watch"
+
+[[bin]]
+name = "tk"
+path = "src/main.rs"
+
+[features]
+default = []
+# [lane-C]
+# The fork's docker_mcp.rs as copied. It imports `crate::dirs_home` and
+# `crate::harness::{exec_output_with_stdin, gui_search_path}` from the fork's
+# lib.rs and harness.rs, which are not copied. Lane C supplies those (or
+# replaces the calls) and removes this flag.
+fork-docker-mcp = []
+# [lane-D]
+# [lane-J]
+
+[dependencies]
+tk-core = { path = "../tk-core" }
+serde.workspace = true
+serde_json.workspace = true
+# [lane-C]
+# [lane-D]
+# [lane-J]
+
+[dev-dependencies]
+# [lane-C]
+# [lane-D]
+# [lane-J]

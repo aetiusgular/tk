@@ -1,0 +1,27 @@
+# Codex home for codex-mock. Copy this file to ~/codex-mock-home/config.toml.
+# Start the mock first: node tests/cli-contract/codex-mock/serve.mjs
+# Nothing here leaves the Mac: the provider is on loopback and needs no login.
+
+model_provider = "codex_mock"
+model = "codex-mock"
+model_context_window = 16384
+# MonoCode's model picker lists a model only from a catalog. Copy catalog.json
+# beside this file and put its absolute path here (Mac test 8.1), for example:
+# model_catalog_json = "/Users/<you>/codex-mock-home/catalog.json"
+
+[model_providers.codex_mock]
+name = "codex_mock"
+base_url = "http://127.0.0.1:11436/v1"
+wire_api = "responses"
+requires_openai_auth = false
+supports_websockets = false
+stream_idle_timeout_ms = 60000
+request_max_retries = 0
+stream_max_retries = 0
+
+[analytics]
+enabled = false
+
+[otel]
+exporter = "none"
+metrics_exporter = "none"

@@ -1,0 +1,9 @@
+{
+  "name": "tk-opencode-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "OpenCode plugin: tool.execute.before and after (lane F, T2.3)",
+  "engines": { "node": ">=22.19.0" }
+}
