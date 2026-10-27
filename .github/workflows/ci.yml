@@ -18,6 +18,18 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+  # The daemon's macOS-only code (activity/collector.rs `sm`, the collector
+  # paths) compiles nowhere else: the cloud cannot install the Apple target.
+  # Added by integration w1's fix pass after the Mac test found the build
+  # broken there (finding M1). macos-26 is arm64; GitHub retires macos-14 on
+  # 2 Nov 2026 (github.blog changelog, 1 Oct 2026).
+  rust-macos:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
   node:
     runs-on: ubuntu-24.04
     steps:
