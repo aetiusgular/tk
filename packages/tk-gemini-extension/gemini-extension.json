@@ -1,0 +1,5 @@
+{
+  "name": "tk",
+  "version": "0.0.0",
+  "description": "tk policy gate: a BeforeTool hook on tk's shared gate core, an AfterTool record and redactor, and deny rules for tk's and Gemini's control files in the extension's policy tier."
+}
