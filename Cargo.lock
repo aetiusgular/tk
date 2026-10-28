@@ -328,6 +328,7 @@ dependencies = [
  "sha2",
  "tk-audit-linux",
  "tk-core",
+ "tk-daemon",
  "toml_edit",
  "uuid",
 ]

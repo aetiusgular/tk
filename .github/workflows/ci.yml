@@ -64,6 +64,9 @@ jobs:
       # on a Node whose Unicode version differs from the tables').
       - run: node --no-warnings crates/tk-core/gen/gen-fold-tables.mjs --check
       - run: node packages/tk-claude-plugin/scripts/sync-core.mjs --check
+      # The Hermes plugin is Python and calls the shared core through Node
+      # (lane I); its tests run here (integration w2, lane I's request 4).
+      - run: python3 -m unittest discover -s packages/tk-hermes-plugin/tests
       # tests/cli-contract needs the real Claude Code and Codex CLIs; it runs
       # when they are installed (integration installs them under /tmp/cli).
       - name: cli contract

@@ -53,8 +53,12 @@ mod tests {
 
     #[test]
     fn each_subcommand_reaches_its_module() {
-        // The stubs answer 2 ("not implemented"); the point is that none panics.
-        for cmd in ["connect", "run", "watch", "status"] {
+        // With no arguments each answers its usage error (2); the point is
+        // that none panics. `status` is left out: it is a real report since
+        // wave 2 (exit 0) and reads the machine's daemon socket and agent
+        // config files, which a unit test must not (lane J's request 2,
+        // integration w2). `watch::status` has its own tests on fixtures.
+        for cmd in ["connect", "run", "watch"] {
             assert_eq!(dispatch(&s(&[cmd])), 2, "{cmd}");
         }
     }
