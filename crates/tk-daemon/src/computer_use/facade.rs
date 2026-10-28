@@ -190,7 +190,7 @@ impl Facade {
             REQUEST_TOOL => self.request(backend, &arguments),
             STATUS_TOOL => self.status(backend),
             _ if !tool_allowed(name) => tool_error(&format!(
-                "{} is not offered in MonoCode's computer use.",
+                "{} is not offered in tk's computer use.",
                 printable(name, 64)
             )),
             _ => {
@@ -234,7 +234,7 @@ impl Facade {
                 "The user denied access to that app. Do not ask for it again in this turn.",
             ),
             AccessAnswer::Pending => text_result(
-                "The approval card is still open in MonoCode. Call request_app_access again with the same app to keep waiting.",
+                "The approval request is still open with the user. Call request_app_access again with the same app to keep waiting.",
             ),
             AccessAnswer::Refused(message) => tool_error(&message),
         }
@@ -313,14 +313,14 @@ fn initialize_result(params: &Value) -> Value {
         "protocolVersion": version,
         "capabilities": { "tools": { "listChanged": true } },
         "serverInfo": { "name": "monocode-computer-use", "version": env!("CARGO_PKG_VERSION") },
-        "instructions": "Computer use on this Mac, through MonoCode. Each app needs the user's approval for this chat: call request_app_access with the app's bundle id or name first. MonoCode itself is never available. The user can stop computer use at any time."
+        "instructions": "Computer use on this Mac, through tk. Each app needs the user's approval for this chat: call request_app_access with the app's bundle id or name first. tk, its helper and Cua's own app are never available. The user can stop computer use at any time."
     })
 }
 
 fn request_tool() -> Value {
     json!({
         "name": REQUEST_TOOL,
-        "description": "Ask the user to let you control one Mac app in this chat. Give the app's bundle id (for example com.apple.calculator) or its name, and one sentence on why. The user approves or denies on a card in MonoCode. No other computer-use tool works on an app until it is approved.",
+        "description": "Ask the user to let you control one Mac app in this chat. Give the app's bundle id (for example com.apple.calculator) or its name, and one sentence on why. The user approves or denies it through tk. No other computer-use tool works on an app until it is approved.",
         "inputSchema": {
             "type": "object",
             "properties": {

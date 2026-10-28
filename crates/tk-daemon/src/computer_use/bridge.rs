@@ -1,12 +1,14 @@
 //! The loopback endpoint each chat's computer-use server connects to.
 //!
-//! The harness starts `<MonoCode> computer-use-mcp` as a stdio MCP server
-//! (`bridge_cli.rs`). That process reads the endpoint and the chat's token
-//! from the environment MonoCode gave the harness, connects here, sends the
-//! token as its first line, and then relays MCP lines both ways. The token
-//! picks the chat; a wrong token gets one error line and the connection ends.
-//! A chat with a token that is off (a spawn before the user's switch-on,
-//! 4.12) connects and is offered nothing until it is on. Stop keeps the
+//! The harness starts `tk-daemon cu-mcp` as a stdio MCP server
+//! (`bridge_cli.rs`, `relay.rs`). That process reads the endpoint from the
+//! daemon's `cu.endpoint` file and the chat's token from what `tk run` gave
+//! the harness, connects here, sends the token as its first line, and then
+//! relays MCP lines both ways. The token picks the chat; a wrong token gets
+//! one error line and the connection ends. A tk chat token is turned into
+//! the chat's own bridge token here (`start_with`'s resolver, lane K), so
+//! the fork's rules below hold unchanged. A chat with a token that is off
+//! connects and is offered nothing until it is on. Stop keeps the
 //! connection (4.7). Switching off replaces the token, so a connection made
 //! with the old one ends at its next line or poll (security review X2).
 
@@ -33,7 +35,20 @@ const MAX_CONNECTIONS: usize = 32;
 /// How often an idle connection checks whether the tool list changed.
 const POLL: Duration = Duration::from_millis(750);
 
+/// Turns a token the bridge does not know into a chat, or `None`. The
+/// daemon's: a live tk chat token (lane K).
+pub type Resolver = Arc<dyn Fn(&str) -> Option<String> + Send + Sync>;
+
+#[cfg(test)]
 pub fn start(core: Arc<Core>) -> std::io::Result<std::net::SocketAddr> {
+    start_with(core, None)
+}
+
+/// Binds 127.0.0.1 on a free port and serves on a thread of its own.
+pub fn start_with(
+    core: Arc<Core>,
+    resolver: Option<Resolver>,
+) -> std::io::Result<std::net::SocketAddr> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let address = listener.local_addr()?;
     let live = Arc::new(AtomicUsize::new(0));
@@ -53,8 +68,9 @@ pub fn start(core: Arc<Core>) -> std::io::Result<std::net::SocketAddr> {
             }
             let core = core.clone();
             let live = live.clone();
+            let resolver = resolver.clone();
             thread::spawn(move || {
-                serve(&core, stream);
+                serve(&core, resolver.as_ref(), stream);
                 live.fetch_sub(1, Ordering::SeqCst);
             });
         }
@@ -122,7 +138,7 @@ fn write_line(stream: &mut TcpStream, value: &Value) -> bool {
         .is_ok()
 }
 
-fn serve(core: &Arc<Core>, stream: TcpStream) {
+fn serve(core: &Arc<Core>, resolver: Option<&Resolver>, stream: TcpStream) {
     let Ok(mut writer) = stream.try_clone() else {
         return;
     };
@@ -142,7 +158,17 @@ fn serve(core: &Arc<Core>, stream: TcpStream) {
         .ok()
         .and_then(|v| v.get("token").and_then(Value::as_str).map(str::to_string));
     let token = token.unwrap_or_default();
-    let Some(chat) = core.chat_for_token(&token) else {
+    // The chat's own bridge token, or a tk chat token the resolver places;
+    // the connection then runs on the chat's bridge token.
+    let known = core
+        .chat_for_token(&token)
+        .map(|chat| (chat, token.clone()));
+    let placed = || {
+        let chat = resolver?(&token)?;
+        let own = core.mint_token(&chat)?;
+        Some((chat, own))
+    };
+    let Some((chat, token)) = known.or_else(placed) else {
         let _ = write_line(
             &mut writer,
             &json!({"monocode": "refused", "message": "Computer use is not on for this chat."}),

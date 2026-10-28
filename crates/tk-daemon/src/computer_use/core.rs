@@ -429,10 +429,6 @@ impl Core {
     }
 
     /// Every chat, as at quit.
-    #[cfg_attr(
-        not(target_os = "macos"),
-        expect(dead_code, reason = "only the macOS menu bar item calls it")
-    )]
     pub fn stop_all(&self) {
         let chats: Vec<String> = {
             let inner = self.lock();
@@ -463,7 +459,7 @@ impl Core {
             let Some(app) = view.resolved.clone().filter(|_| view.refusal.is_none()) else {
                 return Err(view
                     .refusal
-                    .unwrap_or_else(|| "MonoCode could not find that app.".into()));
+                    .unwrap_or_else(|| "tk could not find that app.".into()));
             };
             let grant = self.grant(
                 &view.chat_id,
@@ -1164,7 +1160,7 @@ impl Backend for Core {
     fn runtime_call(&self, chat: &str, name: &str, arguments: Value) -> Result<Value, String> {
         if !look_only(name) && self.lock().card_open() {
             return Err(
-                "An approval card is open in MonoCode. Input waits until the user answers it."
+                "An approval card is open for the user. Input waits until the user answers it."
                     .into(),
             );
         }
