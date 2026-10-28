@@ -1,0 +1,64 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "~/.local/share/fnm/node-versions/v24.22.1/installation/bin/node",
+      "args": [
+        "~/tkbox/measure/stub-server.mjs",
+        "--server",
+        "context7",
+        "--tools",
+        "~/tkbox/measure/tools/context7.json",
+        "--tasks",
+        "~/tkbox/measure/tasks.json",
+        "--state",
+        "~/tkbox/measure-out/state"
+      ]
+    },
+    "exa": {
+      "type": "stdio",
+      "command": "~/.local/share/fnm/node-versions/v24.22.1/installation/bin/node",
+      "args": [
+        "~/tkbox/measure/stub-server.mjs",
+        "--server",
+        "exa",
+        "--tools",
+        "~/tkbox/measure/tools/exa.json",
+        "--tasks",
+        "~/tkbox/measure/tasks.json",
+        "--state",
+        "~/tkbox/measure-out/state"
+      ]
+    },
+    "hf": {
+      "type": "stdio",
+      "command": "~/.local/share/fnm/node-versions/v24.22.1/installation/bin/node",
+      "args": [
+        "~/tkbox/measure/stub-server.mjs",
+        "--server",
+        "hf",
+        "--tools",
+        "~/tkbox/measure/tools/hugging-face.json",
+        "--tasks",
+        "~/tkbox/measure/tasks.json",
+        "--state",
+        "~/tkbox/measure-out/state"
+      ]
+    },
+    "shopify": {
+      "type": "stdio",
+      "command": "~/.local/share/fnm/node-versions/v24.22.1/installation/bin/node",
+      "args": [
+        "~/tkbox/measure/stub-server.mjs",
+        "--server",
+        "shopify",
+        "--tools",
+        "~/tkbox/measure/tools/shopify-dev.json",
+        "--tasks",
+        "~/tkbox/measure/tasks.json",
+        "--state",
+        "~/tkbox/measure-out/state"
+      ]
+    }
+  }
+}

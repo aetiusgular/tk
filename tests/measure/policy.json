@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "askTimeoutSeconds": 20,
+  "servers": ["context7", "exa", "hf", "shopify"],
+  "rules": [
+    { "tool": "read", "action": "allow" },
+    { "tool": "grep", "action": "allow" },
+    { "tool": "glob", "action": "allow" },
+    { "tool": "find", "action": "allow" },
+    { "tool": "ls", "action": "allow" },
+    { "tool": "edit", "action": "allow" },
+    { "tool": "write", "action": "allow" },
+    { "tool": "bash", "action": "allow" },
+    { "tool": "tool_search", "action": "allow" },
+    { "tool": "toolsearch", "action": "allow" },
+    { "tool": "todowrite", "action": "allow" },
+    { "tool": "context7/*", "action": "allow" },
+    { "tool": "exa/*", "action": "allow" },
+    { "tool": "hf/*", "action": "allow" },
+    { "tool": "shopify/*", "action": "allow" }
+  ]
+}

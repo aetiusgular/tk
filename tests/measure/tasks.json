@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "about": "20 tasks for T3.5. 16 need the library's MCP tools (servers context7, exa, hf, shopify, replayed by stub-server.mjs from tools/*.json); 4 are controls that need only built-in tools. Every entity is made up, so no answer comes from the model's memory. A task passes when every token in `tokens` appears in the final answer (case-insensitive) or, for `checkFile`, in that file; the token is only in the stub's reply to the right call with the right arguments (or in the work folder for controls).",
+  "suffix": "Use the tools available to you; do not guess. End your answer with every reference id (they look like TKM-...) that you found.",
+  "tasks": [
+    {
+      "id": "t01", "kind": "mcp", "servers": ["exa"],
+      "prompt": "Search the web: who won the 2026 Larkspur Cup sailing regatta, and by how many seconds?",
+      "tokens": ["TKM-01-RQ4"],
+      "responses": {
+        "exa.web_search_exa": { "match": { "*": "larkspur" }, "text": "1. Larkspur Cup 2026: results (larkspur-yc.example/2026)\n   The Halden crew led by Mira Sundqvist won the 2026 Larkspur Cup by 14 seconds over Tern. Reference id: TKM-01-RQ4." }
+      }
+    },
+    {
+      "id": "t02", "kind": "mcp", "servers": ["exa"],
+      "prompt": "Fetch https://changelog.tkm.example/builds/14 and tell me the build number and the date it shipped.",
+      "tokens": ["TKM-02-ZB8"],
+      "responses": {
+        "exa.web_fetch_exa": { "match": { "*": "builds/14" }, "text": "# Build 14\nBuild number 14.2.907 shipped on 3 March 2026. Reference id: TKM-02-ZB8." }
+      }
+    },
+    {
+      "id": "t03", "kind": "mcp", "servers": ["hf"],
+      "prompt": "Find the model repositories on the Hugging Face Hub by the author tkm-lab and tell me which one has the most downloads.",
+      "tokens": ["TKM-03-HK2"],
+      "responses": {
+        "hf.hub_repo_search": { "match": { "*": "tkm-lab" }, "text": "Found 3 models by tkm-lab:\n- tkm-lab/zephyr-weave-3b (downloads 48,210) [reference id TKM-03-HK2]\n- tkm-lab/zephyr-weave-1b (downloads 9,114)\n- tkm-lab/tide-tagger (downloads 702)" }
+      }
+    },
+    {
+      "id": "t04", "kind": "mcp", "servers": ["hf"],
+      "prompt": "On the Hugging Face Hub, how many rows does the train split of the dataset tkm-lab/riverbank-audio have?",
+      "tokens": ["TKM-04-PW6"],
+      "responses": {
+        "hf.hub_repo_details": { "match": { "*": "riverbank-audio" }, "text": "Dataset tkm-lab/riverbank-audio\nSplits: train 128,400 rows; test 6,200 rows. Licence cc-by-4.0. Reference id: TKM-04-PW6." },
+        "hf.hf_fs": { "match": { "*": "riverbank-audio" }, "text": "README.md: Riverbank Audio. See the dataset viewer for split sizes." }
+      }
+    },
+    {
+      "id": "t05", "kind": "mcp", "servers": ["hf"],
+      "prompt": "Which Hugging Face account is this session connected as, and what organisations is it in?",
+      "tokens": ["TKM-05-WX1"],
+      "responses": {
+        "hf.hf_whoami": { "text": "You are logged in as tkm-tester (organisations: tkm-lab, river-ml). Reference id: TKM-05-WX1." }
+      }
+    },
+    {
+      "id": "t06", "kind": "mcp", "servers": ["hf"],
+      "prompt": "Read the README of the Hub model tkm-lab/zephyr-weave-3b and tell me its licence.",
+      "tokens": ["TKM-06-LM3"],
+      "responses": {
+        "hf.hf_fs": { "match": { "*": "zephyr-weave-3b" }, "text": "---\nlicense: apache-2.0\n---\n# Zephyr Weave 3B\nReleased under Apache-2.0. Reference id: TKM-06-LM3." },
+        "hf.hub_repo_details": { "match": { "*": "zephyr-weave-3b" }, "text": "Model tkm-lab/zephyr-weave-3b, 3.1B parameters. The licence is stated in the README; read it with the file tools." }
+      }
+    },
+    {
+      "id": "t07", "kind": "mcp", "servers": ["exa"],
+      "prompt": "Search the web for the opening hours of the Brannock Street Library in Tallow, Ohio, on Sundays.",
+      "tokens": ["TKM-07-NC5"],
+      "responses": {
+        "exa.web_search_exa": { "match": { "*": "brannock" }, "text": "1. Brannock Street Library: hours (tallowlibrary.example)\n   Open Sundays 12:00 to 17:00; closed on public holidays. Reference id: TKM-07-NC5." }
+      }
+    },
+    {
+      "id": "t08", "kind": "mcp", "servers": ["shopify"],
+      "prompt": "Check with Shopify's developer tools whether this Admin GraphQL query is valid: query { shop { name primaryDomain { url } } }",
+      "tokens": ["TKM-08-VD9"],
+      "responses": {
+        "shopify.learn_shopify_api": { "match": { "api": "admin" }, "text": "Conversation started. conversationId: conv-tkm-08. Use this conversationId in every later Shopify dev tool call." },
+        "shopify.validate": { "match": { "conversationId": "conv-tkm-08" }, "text": "Validation passed: the query is valid against the Admin GraphQL schema 2026-10. Reference id: TKM-08-VD9." }
+      }
+    },
+    {
+      "id": "t09", "kind": "mcp", "servers": ["context7"],
+      "prompt": "In the JavaScript library quillstream, what is the default highWaterMark for a ReadableQuill, according to its documentation?",
+      "tokens": ["TKM-09-QS4"],
+      "responses": {
+        "context7.resolve-library-id": { "match": { "*": "quillstream" }, "text": "- Title: quillstream\n  Context7-compatible library ID: /tkm/quillstream\n  Description: Backpressure-aware streams for Node.js\n  Code Snippets: 412" },
+        "context7.query-docs": { "match": { "libraryId": "/tkm/quillstream" }, "text": "### ReadableQuill options\nhighWaterMark defaults to 32 KiB (32768 bytes) for byte streams and 24 objects in object mode. Reference id: TKM-09-QS4." }
+      }
+    },
+    {
+      "id": "t10", "kind": "mcp", "servers": ["context7"],
+      "prompt": "How do you turn on soft deletes for a model in the Python ORM ferrum-orm? Check its documentation.",
+      "tokens": ["TKM-10-FO7"],
+      "responses": {
+        "context7.resolve-library-id": { "match": { "*": "ferrum" }, "text": "- Title: ferrum-orm\n  Context7-compatible library ID: /tkm/ferrum-orm\n  Description: An async ORM for Python\n  Code Snippets: 980" },
+        "context7.query-docs": { "match": { "libraryId": "/tkm/ferrum-orm" }, "text": "### Soft deletes\nAdd `class Meta: soft_delete = True` to the model; deleted rows get a `deleted_at` timestamp. Reference id: TKM-10-FO7." }
+      }
+    },
+    {
+      "id": "t11", "kind": "mcp", "servers": ["exa"],
+      "prompt": "Find the official schedule page of the 2026 Gullhaven Folk Festival, read the full schedule on it, and tell me which act plays the main stage at 21:00 on Saturday.",
+      "tokens": ["TKM-11-GF2"],
+      "responses": {
+        "exa.web_search_exa": { "match": { "*": "gullhaven" }, "text": "1. Gullhaven Folk Festival 2026: full schedule\n   URL: https://gullhaven.tkm.example/2026/schedule\n   The schedule page lists every act by stage and time. (Summary only; read the page for times.)" },
+        "exa.web_fetch_exa": { "match": { "*": "gullhaven.tkm.example/2026/schedule" }, "text": "# Schedule\nSaturday, main stage: 19:30 The Lowlands; 21:00 Ida Marrow & the Saltwater Band; 22:30 Hallow. Reference id: TKM-11-GF2." }
+      }
+    },
+    {
+      "id": "t12", "kind": "mcp", "servers": ["hf"],
+      "prompt": "Find the dataset by tkm-lab about tide gauges on the Hugging Face Hub and tell me its licence.",
+      "tokens": ["TKM-12-TG8"],
+      "responses": {
+        "hf.hub_repo_search": { "match": { "*": "tkm-lab" }, "text": "Found 1 dataset:\n- tkm-lab/tide-gauge-nordic (Tide gauge readings from Nordic stations, 2001-2025)" },
+        "hf.hub_repo_details": { "match": { "*": "tide-gauge-nordic" }, "text": "Dataset tkm-lab/tide-gauge-nordic\nLicence: odc-by. 11 stations. Reference id: TKM-12-TG8." },
+        "hf.hf_fs": { "match": { "*": "tide-gauge-nordic" }, "text": "---\nlicense: odc-by\n---\n# Tide Gauge Nordic\nReference id: TKM-12-TG8." }
+      }
+    },
+    {
+      "id": "t13", "kind": "mcp", "servers": ["shopify"],
+      "prompt": "Using Shopify's developer documentation tools, find the rate limit for cart mutations in the Storefront API.",
+      "tokens": ["TKM-13-SF6"],
+      "responses": {
+        "shopify.learn_shopify_api": { "match": { "api": "storefront" }, "text": "Conversation started. conversationId: conv-tkm-13. Use this conversationId in every later Shopify dev tool call." },
+        "shopify.search_docs_chunks": { "match": { "conversationId": "conv-tkm-13" }, "text": "Storefront API rate limits: cart mutations are limited to 60 per minute per buyer IP. Reference id: TKM-13-SF6." }
+      }
+    },
+    {
+      "id": "t14", "kind": "mcp", "servers": ["hf"],
+      "prompt": "List the files in the Hub dataset tkm-lab/riverbank-audio. How many parquet files does it have?",
+      "tokens": ["TKM-14-RB5"],
+      "responses": {
+        "hf.hf_fs": { "match": { "*": "riverbank-audio" }, "text": "datasets/tkm-lab/riverbank-audio:\n  README.md\n  data/train-00000-of-00003.parquet\n  data/train-00001-of-00003.parquet\n  data/train-00002-of-00003.parquet\n  data/test-00000-of-00001.parquet\n(4 parquet files) Reference id: TKM-14-RB5." },
+        "hf.hub_repo_details": { "match": { "*": "riverbank-audio" }, "text": "Dataset tkm-lab/riverbank-audio. To list its files use the file tools." }
+      }
+    },
+    {
+      "id": "t15", "kind": "mcp", "servers": ["context7"],
+      "prompt": "Query the documentation of the library with Context7 id /tkm/ferrum-orm: how do I run migrations from the command line?",
+      "tokens": ["TKM-15-MG3"],
+      "responses": {
+        "context7.query-docs": { "match": { "libraryId": "/tkm/ferrum-orm" }, "text": "### Migrations\nRun `ferrum migrate up` from the project root; `ferrum migrate status` lists pending ones. Reference id: TKM-15-MG3." },
+        "context7.resolve-library-id": { "match": { "*": "ferrum" }, "text": "- Title: ferrum-orm\n  Context7-compatible library ID: /tkm/ferrum-orm" }
+      }
+    },
+    {
+      "id": "t16", "kind": "mcp", "servers": ["hf", "exa"],
+      "prompt": "Two things: read the README of the Hub model tkm-lab/zephyr-weave-3b for its licence, and search the web for the news that announced its release, with the date.",
+      "tokens": ["TKM-16-A1", "TKM-16-B2"],
+      "responses": {
+        "hf.hf_fs": { "match": { "*": "zephyr-weave-3b" }, "text": "---\nlicense: apache-2.0\n---\n# Zephyr Weave 3B\nReference id: TKM-16-A1." },
+        "exa.web_search_exa": { "match": { "*": "zephyr" }, "text": "1. tkm-lab releases Zephyr Weave 3B (ml-news.example, 9 September 2026). Reference id: TKM-16-B2." }
+      }
+    },
+    {
+      "id": "t17", "kind": "control", "servers": [],
+      "prompt": "Read notes.txt in this folder and tell me the name of the person who owns the backup job.",
+      "tokens": ["TKM-17-NT4"],
+      "files": { "notes.txt": "Ops notes\n- deploys: Ravi\n- backup job: owned by Juniper Okafor (reference id TKM-17-NT4)\n- on-call: rota in the wiki\n" }
+    },
+    {
+      "id": "t18", "kind": "control", "servers": [],
+      "prompt": "Which file in the docs folder here mentions the word 'heliotrope'? Give the file name.",
+      "tokens": ["TKM-18-HL7"],
+      "files": {
+        "docs/alpha.md": "Alpha notes. Nothing here.\n",
+        "docs/beta.md": "Beta notes. The colour is mauve.\n",
+        "docs/gamma.md": "Gamma notes. The garden has heliotrope by the gate. Reference id TKM-18-HL7.\n",
+        "docs/delta.md": "Delta notes. The paint is lilac.\n"
+      }
+    },
+    {
+      "id": "t19", "kind": "control", "servers": [],
+      "prompt": "Run compute.py in this folder with python3 and tell me what it prints.",
+      "tokens": ["TKM-19-PY9"],
+      "files": { "compute.py": "parts = ['TKM', '19', 'PY' + str(3 * 3)]\nprint('-'.join(parts))\n" }
+    },
+    {
+      "id": "t20", "kind": "control", "servers": [],
+      "prompt": "Create a file named answer.txt in this folder containing exactly the line: TKM-20-WR2 done",
+      "tokens": ["TKM-20-WR2"],
+      "checkFile": "answer.txt"
+    }
+  ]
+}
