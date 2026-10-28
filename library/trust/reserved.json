@@ -1,0 +1,26 @@
+{
+  "$comment": "Reserved names (toolkit plan T4.3, 'reserved names (yours and the vendors')'; lane H, 28 Oct 2026). An entry may take a reserved name only when it is the owner's by the brand rule (library/trust/names.ts ownedBy: its namespace is listed, or it points only at the owner's hosts, images or packages). `prefix: true` also warns on ids that start with the name; it is set on vendor marks only. Sources per row in `source`. Owner namespaces follow the official registry's forms (io.github.<owner> by GitHub OAuth or OIDC, the reversed domain by DNS or .well-known; note AP section 3, V); which GitHub organisation and domain each vendor publishes from is an inference (I) unless marked V. Brands with the same name in library/catalog/brands.json (lane E) stay there; this file adds the vendors' product names and Claude Code's reserved marketplace names.",
+  "reserved": [
+    { "name": "tk", "namespaces": ["io.github.aetiusgular"], "packages": ["tk"], "reason": "this toolkit's own name (plan section 11, call 1)", "prefix": true, "source": "plan T4.3" },
+    { "name": "aetiusgular", "namespaces": ["io.github.aetiusgular"], "reason": "the toolkit owner's namespace", "prefix": true, "source": "plan T4.3" },
+    { "name": "anthropic", "namespaces": ["io.github.anthropics", "com.anthropic"], "hosts": ["anthropic.com", "claude.ai", "claude.com"], "reason": "Anthropic's name", "prefix": true, "source": "I" },
+    { "name": "claude", "namespaces": ["io.github.anthropics", "com.anthropic"], "hosts": ["anthropic.com", "claude.ai", "claude.com"], "reason": "Anthropic's product name", "prefix": true, "source": "I" },
+    { "name": "claude-code", "namespaces": ["io.github.anthropics", "com.anthropic"], "reason": "Anthropic's product name", "prefix": true, "source": "I" },
+    { "name": "openai", "namespaces": ["io.github.openai", "com.openai"], "hosts": ["openai.com", "chatgpt.com"], "reason": "OpenAI's name", "prefix": true, "source": "I" },
+    { "name": "codex", "namespaces": ["io.github.openai", "com.openai"], "reason": "OpenAI's product name", "prefix": true, "source": "I" },
+    { "name": "chatgpt", "namespaces": ["io.github.openai", "com.openai"], "hosts": ["chatgpt.com", "openai.com"], "reason": "OpenAI's product name", "prefix": true, "source": "I" },
+    { "name": "google", "namespaces": ["io.github.google", "io.github.googleapis", "com.google"], "reason": "Google's name", "prefix": true, "source": "I" },
+    { "name": "gemini", "namespaces": ["io.github.google-gemini", "io.github.google", "com.google"], "reason": "Google's product name", "prefix": true, "source": "I" },
+    { "name": "copilot", "namespaces": ["io.github.github", "com.github", "io.github.microsoft", "com.microsoft"], "reason": "GitHub's and Microsoft's product name", "prefix": true, "source": "I" },
+    { "name": "microsoft", "namespaces": ["io.github.microsoft", "com.microsoft"], "reason": "Microsoft's name", "prefix": true, "source": "I" },
+    { "name": "cursor", "namespaces": ["io.github.cursor", "com.cursor"], "reason": "Anysphere's product name", "prefix": true, "source": "I" },
+    { "name": "modelcontextprotocol", "namespaces": ["io.github.modelcontextprotocol", "io.modelcontextprotocol"], "reason": "the protocol's own organisation", "prefix": true, "source": "I" },
+    { "name": "official", "namespaces": [], "reason": "a word Claude Code reserves for marketplaces from github.com/anthropics (marketplace reference, read by lane E on 27 Oct 2026, V); an entry calling itself official claims what no record shows", "source": "code.claude.com/docs/en/plugins/marketplace-reference via plans/parallel/tk_lane_E.md, Research" },
+    { "name": "community", "namespaces": [], "reason": "a name Claude Code reserves for marketplaces from github.com/anthropics (marketplace reference, V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" },
+    { "name": "npm", "namespaces": ["io.github.npm"], "reason": "a package registry's name, reserved by Claude Code's marketplace reference (V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" },
+    { "name": "pip", "namespaces": ["io.github.pypa"], "reason": "a package installer's name, reserved by Claude Code's marketplace reference (V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" },
+    { "name": "uv", "namespaces": ["io.github.astral-sh"], "reason": "a package installer's name, reserved by Claude Code's marketplace reference (V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" },
+    { "name": "cargo", "namespaces": ["io.github.rust-lang"], "reason": "a package manager's name, reserved by Claude Code's marketplace reference (V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" },
+    { "name": "gh", "namespaces": ["io.github.cli", "io.github.github"], "reason": "GitHub's CLI name, reserved by Claude Code's marketplace reference (V)", "source": "code.claude.com/docs/en/plugins/marketplace-reference via tk_lane_E.md" }
+  ]
+}
