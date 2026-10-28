@@ -160,6 +160,25 @@ describe("pins (case 57) in the real matchers", () => {
     expect(p.skipped.map((s) => s.tool)).toEqual(["agent_run", "web_fetch_exa", "web_search_exa"]);
   });
 
+  it("pins the description as Pi shows it: trimmed, else the title, else Pi's own text", () => {
+    // Pi 1.4.0 extensions/mcp/tools.ts:324-330 at 4a08025.
+    const m = manifestOf(server("1.0.0"), { source: "x", recordedAt: "2026-10-28", tools: [
+      { name: "padded", description: "  Search models.\n" },
+      { name: "titled", description: "   ", title: "Titled tool" },
+      { name: "bare", description: "" },
+    ] });
+    const p = pinsFor(m, "hugging-face", "pi");
+    expect(Object.fromEntries(p.rules.map((r) => [r.tool, r.descriptionSha256]))).toEqual({
+      "hugging_face/bare": sha256Hex("MCP tool bare from server hugging-face"),
+      "hugging_face/padded": sha256Hex("Search models."),
+      "hugging_face/titled": sha256Hex("Titled tool"),
+    });
+    // The raw description's hash would never match what Pi's gate hashes.
+    expect(m.tools.find((t) => t.name === "padded")!.descriptionSha256).not.toBe(sha256Hex("Search models."));
+    const loaded = pi.parsePolicy(JSON.stringify({ version: 1, servers: ["hugging-face"], rules: p.rules }));
+    expect(pi.evaluate(loaded.policy, { tool: "mcp__hugging_face__padded", harness: "pi", inputText: "", description: "Search models." }).action).toBe("allow");
+  });
+
   it("pins only the tools the user approved", () => {
     expect(pinsFor(v1, "hugging-face", "pi", ["search_models", "nope"])).toEqual({
       rules: [{ tool: "hugging_face/search_models", harness: "pi", action: "allow", descriptionSha256: sha256Hex("Search models on the Hub.") }],

@@ -10,6 +10,7 @@
 // about every version ever published.
 
 import type { SarifLog } from "./sarif.ts";
+import { SARIF_SCHEMA } from "./sarif.ts";
 import { isoSeconds } from "./scanners.ts";
 import { isRecord } from "../validate/types.ts";
 
@@ -73,7 +74,7 @@ export async function lookupEntries(entries: { id: string; version: string; data
 /** One SARIF result per (package, vulnerability id), so OSV's answer is stored like a scanner's. */
 export function osvToSarif(r: OsvEntryResult): SarifLog {
   return {
-    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    $schema: SARIF_SCHEMA,
     version: "2.1.0",
     runs: [
       {
@@ -83,7 +84,7 @@ export function osvToSarif(r: OsvEntryResult): SarifLog {
           return { ruleId: v.id, level: "warning", message: { text: `${q.package.ecosystem} ${q.package.name}@${q.version}: ${v.id} (https://osv.dev/vulnerability/${v.id})` }, properties: { ecosystem: q.package.ecosystem, package: q.package.name, version: q.version, ...(v.modified ? { modified: v.modified } : {}) } };
         }),
         invocations: [{ executionSuccessful: true, toolExecutionNotifications: r.skipped.map((s) => ({ level: "note", message: { text: `not looked up: ${s}` } })) }],
-        properties: { source: "OSV data, CC-BY 4.0" },
+        properties: { source: "OSV.dev; each record keeps its own source's licence (osv.dev docs/data.md)" },
       },
     ],
   };

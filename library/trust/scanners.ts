@@ -35,6 +35,7 @@ import { isRecord } from "../validate/types.ts";
 import { TRUST_DIR } from "./identity.ts";
 import { MAX_SARIF_BYTES } from "./records.ts";
 import type { SarifLog } from "./sarif.ts";
+import { SARIF_SCHEMA } from "./sarif.ts";
 import { countFindings, parseSarif } from "./sarif.ts";
 
 export type ScannerId = "skillspector" | "cisco-mcp-scanner";
@@ -244,7 +245,7 @@ export function ciscoToSarif(stdout: string, version: string): SarifLog | string
     }
   }
   return {
-    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    $schema: SARIF_SCHEMA,
     version: "2.1.0",
     runs: [
       {

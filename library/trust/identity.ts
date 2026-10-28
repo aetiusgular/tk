@@ -82,6 +82,8 @@ export function mergeBrands(...lists: Brand[][]): Brand[] {
         continue;
       }
       const merged: Brand = { name: prev.name, namespaces: join(prev.namespaces, b.namespaces), hosts: join(prev.hosts, b.hosts), images: join(prev.images, b.images), packages: join(prev.packages, b.packages) };
+      // One curated record keeps the name fuzzy; generated ones alone do not.
+      if (prev.fuzzy === false && b.fuzzy === false) merged.fuzzy = false;
       const source = [prev.source, b.source].filter((s) => s !== undefined).join("; ");
       if (source !== "") merged.source = source;
       byName.set(key, merged);

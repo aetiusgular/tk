@@ -40,6 +40,8 @@ export function canonicalJson(value: unknown): string {
 
 export type ManifestTool = {
   name: string;
+  /** `title`, or `annotations.title`: Pi's fallback when a description is empty. */
+  title?: string;
   /** The description as the server sent it, verbatim; absent when not recorded. */
   description?: string;
   descriptionSha256?: string;
@@ -85,6 +87,8 @@ export function manifestOf(server: Record<string, unknown>, tools: ToolsRecord |
   }
   const list: ManifestTool[] = (tools?.tools ?? []).map((t) => {
     const out: ManifestTool = { name: t.name };
+    const title = t.title ?? t.annotations?.title;
+    if (typeof title === "string") out.title = title;
     if (typeof t.description === "string") {
       out.description = t.description;
       out.descriptionSha256 = sha256Hex(t.description);
@@ -200,6 +204,22 @@ export function policyTool(toolName: string): string {
   return toolName.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
 
+/**
+ * The description a harness's gate will hash, from what the server sent.
+ * Pi 1.4.0 registers an MCP tool with
+ * `tool.description?.trim() || title || \`MCP tool ${tool.name} from server ${server}\``,
+ * `title` being `tool.title ?? tool.annotations?.title`
+ * (packages/coding-agent/src/extensions/mcp/tools.ts:324-330 at 4a08025), and
+ * `getAllTools()` returns it unchanged (core/agent-session.ts:1514-1517). So a
+ * description with a trailing newline is pinned trimmed. Undefined when the
+ * description was not recorded: an absent record is not an empty description.
+ */
+export function shownDescription(harness: string, server: string, tool: ManifestTool): string | undefined {
+  if (tool.description === undefined) return undefined;
+  if (harness === "pi") return tool.description.trim() || tool.title || `MCP tool ${tool.name} from server ${server}`;
+  return undefined;
+}
+
 export type PinRule = { tool: string; harness: string; action: "allow"; descriptionSha256: string };
 
 export type Pins = { rules: PinRule[]; skipped: { tool: string; reason: string }[] };
@@ -224,11 +244,12 @@ export function pinsFor(manifest: Manifest, serverId: string, harness: string, a
       out.skipped.push({ tool: name, reason: "not in the manifest" });
       continue;
     }
-    if (t.descriptionSha256 === undefined) {
+    const shown = shownDescription(harness, serverId, t);
+    if (shown === undefined) {
       out.skipped.push({ tool: name, reason: "no description recorded for this version (lane G's mirror records tools/list)" });
       continue;
     }
-    out.rules.push({ tool: `${server}/${policyTool(t.name)}`, harness, action: "allow", descriptionSha256: t.descriptionSha256 });
+    out.rules.push({ tool: `${server}/${policyTool(t.name)}`, harness, action: "allow", descriptionSha256: sha256Hex(shown) });
   }
   return out;
 }

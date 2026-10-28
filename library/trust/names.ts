@@ -26,6 +26,10 @@ export type Brand = {
   images?: string[];
   packages?: string[];
   source?: string;
+  /** Whether a one-letter edit also counts (the default). Generated seeds set
+   *  false: they hold dictionary words (`close`, `port`), and an edit of one
+   *  of those is another word, not a squat. */
+  fuzzy?: boolean;
 };
 
 /** A name no entry may take unless it is its owner's (same rule as a brand).
@@ -101,12 +105,12 @@ export type Likeness = { kind: "equal" | "distance" | "affix"; distance: number 
 
 /** How a name's skeleton relates to a brand's. Distance 1 only for brands of
  *  five or more characters (lane E's floor: short names collide by chance). */
-export function likeness(name: string, brand: string): Likeness | undefined {
+export function likeness(name: string, brand: string, fuzzy = true): Likeness | undefined {
   const s = skeleton(name);
   const b = skeleton(brand);
   if (s.length === 0 || b.length === 0) return undefined;
   if (s === b) return { kind: "equal", distance: 0 };
-  if (b.length >= 5 && editDistance(s, b, 1) <= 1) return { kind: "distance", distance: 1 };
+  if (fuzzy && b.length >= 5 && editDistance(s, b, 1) <= 1) return { kind: "distance", distance: 1 };
   const at = s.indexOf(b);
   if (at >= 0 && SQUAT_PREFIX.test(s.slice(0, at)) && SQUAT_SUFFIX.test(s.slice(at + b.length))) {
     return { kind: "affix", distance: s.length - b.length };
@@ -173,7 +177,7 @@ export function checkName(input: NameInput, opts: NameOptions): Finding[] {
   for (const brand of opts.brands) {
     if (ownedBy(input.identity, brand)) continue;
     for (const { path, value } of named) {
-      const like = likeness(value, brand.name);
+      const like = likeness(value, brand.name, brand.fuzzy !== false);
       if (!like) continue;
       out.push(
         finding(

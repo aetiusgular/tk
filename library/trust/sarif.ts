@@ -4,12 +4,25 @@
 // `findings`, for the card. The count is of results that report a problem and
 // are not suppressed. `kind` defaults to `fail`; only `fail` is a problem
 // (`pass`, `notApplicable`, `informational`, `review` and `open` are not).
-// A result is suppressed when it carries a suppression whose `status` is
-// absent or `accepted` (`underReview` and `rejected` are not suppressions in
-// force). Levels are counted apart so a card can say "2 errors, 5 notes".
-// Section numbers and the defaults: see the status doc's Research.
+// A result is suppressed when its `suppressions` array is non-empty and every
+// suppression's `status` is absent or `accepted`. SARIF 2.1.0 says a consumer
+// "SHALL examine the status properties" (section 3.27.23) and defines
+// `accepted`, `underReview` and `rejected` (section 3.35.3), but not what an
+// absent status means; tk reads it as accepted (SkillSpector writes baseline
+// suppressions with `kind: external` and no status), and a list holding any
+// `underReview` or `rejected` as not suppressed, so a mixed list is counted:
+// the side that fails safe (rules section 9, item 7). Levels are counted apart
+// so a card can say "2 errors, 5 notes".
+// `kind` defaults to `fail` (section 3.27.9); `level` defaults to `warning`
+// for a failure with no rule configuration (section 3.27.10).
+// Source: oasis-tcs/sarif-spec at 1742a25, sarif-2.1 committee specification.
+
 
 import { isRecord } from "../validate/types.ts";
+
+/** The schema URI of SARIF 2.1.0 with errata 01, as the schema's own `id` gives it. */
+export const SARIF_SCHEMA = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json";
+
 
 export type SarifResult = {
   ruleId?: string;
@@ -49,7 +62,7 @@ export function parseSarif(text: string): SarifLog | string {
 }
 
 export function isSuppressed(r: SarifResult): boolean {
-  return Array.isArray(r.suppressions) && r.suppressions.some((s) => s.status === undefined || s.status === "accepted");
+  return Array.isArray(r.suppressions) && r.suppressions.length > 0 && r.suppressions.every((s) => s.status === undefined || s.status === "accepted");
 }
 
 export function isProblem(r: SarifResult): boolean {

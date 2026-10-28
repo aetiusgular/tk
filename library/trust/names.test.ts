@@ -130,6 +130,30 @@ describe("lookalikes (plan T4.3; UpGuard, note AP section 5)", () => {
   });
 });
 
+describe("the generated seeds (Anthropic's directory, Docker's catalog)", () => {
+  const dir = JSON.parse(readFileSync(join(TRUST_DIR, "brands.directory.json"), "utf8"));
+  const docker = JSON.parse(readFileSync(join(TRUST_DIR, "brands.docker.json"), "utf8"));
+
+  it("were generated at a recorded commit and say what they skipped", () => {
+    expect(docker.$comment).toMatch(/98a203ca6e58c67031b8aaed037a26a07ec73ce3/);
+    expect(dir.generated.kept + dir.generated.skipped).toBeGreaterThanOrEqual(327);
+    expect(docker.generated.skippedNames).toContain("atlassian");
+  });
+
+  it("hold a company's name exactly, not every one-letter edit of a dictionary word", () => {
+    expect(rules(checkName({ id: "close", identity: stranger }, { brands, reserved: [] }))).toEqual(["trust/lookalike:error"]);
+    expect(checkName({ id: "clone", identity: stranger }, { brands, reserved: [] })).toEqual([]);
+    expect(rules(checkName({ id: "linear-mcp", identity: stranger }, { brands, reserved: [] }))).toEqual(["trust/lookalike:error"]);
+  });
+
+  it("refuse a community server under a company's name, as UpGuard found (note AP section 5)", () => {
+    const community: Identity = { namespace: "io.github.sooperset", hosts: [], images: ["mcp/atlassian"], packages: [] };
+    expect(rules(checkName({ id: "atlassian", identity: community }, { brands, reserved: [] }))).toEqual(["trust/lookalike:error"]);
+    const official: Identity = { namespace: "io.github.someone", hosts: ["mcp.atlassian.com"], images: [], packages: [] };
+    expect(checkName({ id: "atlassian", identity: official }, { brands, reserved: [] })).toEqual([]);
+  });
+});
+
 describe("reserved names", () => {
   it("refuses a vendor's product name and its official forms", () => {
     for (const id of ["claude", "claude-official", "codex", "openai-mcp", "official", "gh"]) {

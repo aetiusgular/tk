@@ -70,6 +70,12 @@ describe("SARIF counting", () => {
     expect(countFindings(log)).toBe(3);
   });
 
+  it("counts a result whose suppressions disagree (fails safe where SARIF is silent)", () => {
+    const log = parseSarif(JSON.stringify({ version: "2.1.0", runs: [{ tool: { driver: { name: "x" } }, results: [{ suppressions: [{ kind: "external" }, { kind: "inSource", status: "rejected" }] }, { suppressions: [] }, { suppressions: [{ kind: "external" }] }] }] }));
+    if (typeof log === "string") throw new Error(log);
+    expect(countFindings(log)).toBe(2);
+  });
+
   it("refuses what is not a 2.1.0 log", () => {
     expect(parseSarif("nope")).toBe("not JSON");
     expect(parseSarif('{"version":"2.0.0","runs":[]}')).toMatch(/not 2.1.0/);

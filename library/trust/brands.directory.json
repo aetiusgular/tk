@@ -1,0 +1,4247 @@
+{
+  "$comment": "Brands from Anthropic's connector directory (plan T4.3). Generated; do not edit by hand. A record is kept when its namespace's owner label and its title belong together; see gen-brands.mjs.",
+  "generated": {
+    "by": "library/trust/gen/gen-brands.mjs",
+    "kept": 389,
+    "skipped": 46,
+    "skippedNames": [
+      "ai.deepsense.mcp/biorxiv (bioRxiv)",
+      "ai.deepsense.mcp/chembl (ChEMBL)",
+      "ai.deepsense.mcp/clinical-trials (Clinical Trials)",
+      "ai.deepsense.mcp/cms-coverage (CMS Coverage)",
+      "ai.deepsense.mcp/icd-10-codes (ICD-10 Codes)",
+      "ai.deepsense.mcp/npi-registry (NPI Registry)",
+      "co.techgc/lloyd (Lloyd by The L Suite)",
+      "co.techgc/topcounsel (TopCounsel by The L Suite)",
+      "com.adobeaemcloud.mcp/aem (Adobe Experience Manager)",
+      "com.blueskyapi.vast-mcp/mt-newswires (MT Newswires)",
+      "com.claude.mcp.microsoft365/microsoft-365 (Microsoft 365)",
+      "com.claude.mcp.pubmed/pubmed (PubMed)",
+      "com.cloudimanage/imanage-work (iManage Work)",
+      "com.consilio/aurora (Aurora)",
+      "com.dnb/risk-analytics (D&B Risk Analytics)",
+      "com.feverup/fever-event-discovery (Fever Event Discovery)",
+      "com.financialmodelingprep/fmp (FMP)",
+      "com.g2/mcp (G2)",
+      "com.googleapis.calendarmcp/google-calendar (Google Calendar)",
+      "com.googleapis.drivemcp/google-drive (Google Drive)",
+      "com.googleapis.gmailmcp/gmail (Gmail)",
+      "com.ironcladapp/ironclad-contracts (Ironclad Contracts)",
+      "com.kakao.playmcp/playmcp (PlayMCP)",
+      "com.kensho.kfinance/s-p-global (S&P Global)",
+      "com.motionapp/motion (Motion Creative Analytics)",
+      "com.ravenpack.bigdata/bigdata (Bigdata.com)",
+      "com.springernature/adisinsight (AdisInsight)",
+      "com.squareup.connect/cash-app (Order by Cash App)",
+      "com.thomsonreuters/cocounsel-legal (CoCounsel Legal)",
+      "com.tigerdata/pg-aiguide (pg-aiguide)",
+      "com.turkishtechlab/turkish-airlines (Turkish Airlines)",
+      "dev.govcon/mcp (Tango)",
+      "dev.pscale.mcp/planetscale (PlanetScale)",
+      "do.craft/craft (Craft)",
+      "food.alma/alma (Alma)",
+      "gov.mospi/mospi (MoSPI)",
+      "io.apollographql.mcp/graphos-tools (GraphOS MCP Tools)",
+      "io.github.antonpk1/excalidraw-mcp-app (Excalidraw)",
+      "io.modelcontextprotocol/server-pdf (PDF Viewer)",
+      "io.modelcontextprotocol/server-sheet-music (Play Sheet Music)",
+      "io.modelcontextprotocol/server-threejs (Three.js 3D Viewer)",
+      "law.trellis/trellis (Trellis)",
+      "one.relativity/relativity (Relativity)",
+      "online.boardwise/boardwise (BoardWise)",
+      "pe.chronograph.ai/chronograph (Chronograph)",
+      "st.process/mcp (Process Street)"
+    ]
+  },
+  "brands": [
+    {
+      "name": "ticket-tailor",
+      "namespaces": [
+        "ai.tickettailor"
+      ],
+      "hosts": [
+        "mcp.tickettailor.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tickettailor",
+      "namespaces": [
+        "ai.tickettailor"
+      ],
+      "hosts": [
+        "mcp.tickettailor.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "linear",
+      "namespaces": [
+        "app.linear"
+      ],
+      "hosts": [
+        "mcp.linear.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "hugging-face",
+      "namespaces": [
+        "co.huggingface"
+      ],
+      "hosts": [
+        "huggingface.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "huggingface",
+      "namespaces": [
+        "co.huggingface"
+      ],
+      "hosts": [
+        "huggingface.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "amplitude",
+      "namespaces": [
+        "com.amplitude"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "atlassian-rovo",
+      "namespaces": [
+        "com.atlassian"
+      ],
+      "hosts": [
+        "mcp.atlassian.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "atlassian",
+      "namespaces": [
+        "com.atlassian"
+      ],
+      "hosts": [
+        "mcp.atlassian.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "blockscout",
+      "namespaces": [
+        "com.blockscout"
+      ],
+      "hosts": [
+        "mcp.blockscout.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "close",
+      "namespaces": [
+        "com.close"
+      ],
+      "hosts": [
+        "mcp.close.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cloudflare-developer-platform",
+      "namespaces": [
+        "com.cloudflare.mcp"
+      ],
+      "hosts": [
+        "bindings.mcp.cloudflare.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cloudflare",
+      "namespaces": [
+        "com.cloudflare.mcp"
+      ],
+      "hosts": [
+        "bindings.mcp.cloudflare.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "egnyte",
+      "namespaces": [
+        "com.egnyte"
+      ],
+      "hosts": [
+        "mcp-server.egnyte.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "figma",
+      "namespaces": [
+        "com.figma.mcp"
+      ],
+      "hosts": [
+        "mcp.figma.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "guru",
+      "namespaces": [
+        "com.getguru"
+      ],
+      "hosts": [
+        "mcp.api.getguru.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "getguru",
+      "namespaces": [
+        "com.getguru"
+      ],
+      "hosts": [
+        "mcp.api.getguru.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "jotform",
+      "namespaces": [
+        "com.jotform"
+      ],
+      "hosts": [
+        "mcp.jotform.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mermaid-chart",
+      "namespaces": [
+        "com.mermaidchart"
+      ],
+      "hosts": [
+        "chatgpt.mermaid.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mermaidchart",
+      "namespaces": [
+        "com.mermaidchart"
+      ],
+      "hosts": [
+        "chatgpt.mermaid.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "monday-com",
+      "namespaces": [
+        "com.monday"
+      ],
+      "hosts": [
+        "mcp.monday.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "monday",
+      "namespaces": [
+        "com.monday"
+      ],
+      "hosts": [
+        "mcp.monday.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "notion",
+      "namespaces": [
+        "com.notion"
+      ],
+      "hosts": [
+        "mcp.notion.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "paypal",
+      "namespaces": [
+        "com.paypal.mcp"
+      ],
+      "hosts": [
+        "mcp.paypal.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "stripe",
+      "namespaces": [
+        "com.stripe"
+      ],
+      "hosts": [
+        "mcp.stripe.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "supabase",
+      "namespaces": [
+        "com.supabase"
+      ],
+      "hosts": [
+        "mcp.supabase.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "vercel",
+      "namespaces": [
+        "com.vercel"
+      ],
+      "hosts": [
+        "mcp.vercel.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wix",
+      "namespaces": [
+        "com.wix"
+      ],
+      "hosts": [
+        "mcp.wix.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "coupler-io",
+      "namespaces": [
+        "io.coupler"
+      ],
+      "hosts": [
+        "mcp.coupler.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "coupler",
+      "namespaces": [
+        "io.coupler"
+      ],
+      "hosts": [
+        "mcp.coupler.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "dice",
+      "namespaces": [
+        "io.github.DiceHoldingsInc"
+      ],
+      "hosts": [
+        "mcp.dice.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "diceholdingsinc",
+      "namespaces": [
+        "io.github.DiceHoldingsInc"
+      ],
+      "hosts": [
+        "mcp.dice.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "miro",
+      "namespaces": [
+        "io.github.miroapp"
+      ],
+      "hosts": [
+        "mcp.miro.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "miroapp",
+      "namespaces": [
+        "io.github.miroapp"
+      ],
+      "hosts": [
+        "mcp.miro.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "port-io",
+      "namespaces": [
+        "io.port"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "port",
+      "namespaces": [
+        "io.port"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aiwyn-tax-formerly-column-tax",
+      "namespaces": [
+        "ai.aiwyn"
+      ],
+      "hosts": [
+        "mcp.columnapi.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aiwyn",
+      "namespaces": [
+        "ai.aiwyn"
+      ],
+      "hosts": [
+        "mcp.columnapi.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "circleback",
+      "namespaces": [
+        "ai.circleback.app"
+      ],
+      "hosts": [
+        "app.circleback.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clarify",
+      "namespaces": [
+        "ai.clarify"
+      ],
+      "hosts": [
+        "api.clarify.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clarity-ai",
+      "namespaces": [
+        "ai.clarity"
+      ],
+      "hosts": [
+        "clarity-sfdr20-mcp.pro.clarity.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clarity",
+      "namespaces": [
+        "ai.clarity"
+      ],
+      "hosts": [
+        "clarity-sfdr20-mcp.pro.clarity.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "day-ai",
+      "namespaces": [
+        "ai.day"
+      ],
+      "hosts": [
+        "day.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "day",
+      "namespaces": [
+        "ai.day"
+      ],
+      "hosts": [
+        "day.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "devrev",
+      "namespaces": [
+        "ai.devrev.api"
+      ],
+      "hosts": [
+        "api.devrev.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "directbooker",
+      "namespaces": [
+        "ai.directbooker"
+      ],
+      "hosts": [
+        "www.directbooker.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "exa",
+      "namespaces": [
+        "ai.exa"
+      ],
+      "hosts": [
+        "mcp.exa.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fathom",
+      "namespaces": [
+        "ai.fathom"
+      ],
+      "hosts": [
+        "api.fathom.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fireflies",
+      "namespaces": [
+        "ai.fireflies.api"
+      ],
+      "hosts": [
+        "api.fireflies.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fiscal-ai",
+      "namespaces": [
+        "ai.fiscal"
+      ],
+      "hosts": [
+        "api.fiscal.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fiscal",
+      "namespaces": [
+        "ai.fiscal"
+      ],
+      "hosts": [
+        "api.fiscal.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "granola",
+      "namespaces": [
+        "ai.granola.mcp"
+      ],
+      "hosts": [
+        "mcp.granola.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "harmonic",
+      "namespaces": [
+        "ai.harmonic.mcp.api"
+      ],
+      "hosts": [
+        "mcp.api.harmonic.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "harvey",
+      "namespaces": [
+        "ai.harvey"
+      ],
+      "hosts": [
+        "api.harvey.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "klarity",
+      "namespaces": [
+        "ai.klarity"
+      ],
+      "hosts": [
+        "architect-v2-api.klarity.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "krisp",
+      "namespaces": [
+        "ai.krisp"
+      ],
+      "hosts": [
+        "mcp.krisp.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lawve-ai",
+      "namespaces": [
+        "ai.lawve"
+      ],
+      "hosts": [
+        "mcp.lawve.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lawve",
+      "namespaces": [
+        "ai.lawve"
+      ],
+      "hosts": [
+        "mcp.lawve.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lorikeet",
+      "namespaces": [
+        "ai.lorikeetcx"
+      ],
+      "hosts": [
+        "mcp.lorikeetcx.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lorikeetcx",
+      "namespaces": [
+        "ai.lorikeetcx"
+      ],
+      "hosts": [
+        "mcp.lorikeetcx.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lunarcrush",
+      "namespaces": [
+        "ai.lunarcrush"
+      ],
+      "hosts": [
+        "lunarcrush.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mem",
+      "namespaces": [
+        "ai.mem"
+      ],
+      "hosts": [
+        "mcp.mem.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "metaview",
+      "namespaces": [
+        "ai.metaview"
+      ],
+      "hosts": [
+        "mcp.metaview.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "midpage-legal-research",
+      "namespaces": [
+        "ai.midpage"
+      ],
+      "hosts": [
+        "app.midpage.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "midpage",
+      "namespaces": [
+        "ai.midpage"
+      ],
+      "hosts": [
+        "app.midpage.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "otter-ai",
+      "namespaces": [
+        "ai.otter"
+      ],
+      "hosts": [
+        "mcp.otter.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "otter",
+      "namespaces": [
+        "ai.otter"
+      ],
+      "hosts": [
+        "mcp.otter.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "peec-ai",
+      "namespaces": [
+        "ai.peec"
+      ],
+      "hosts": [
+        "api.peec.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "peec",
+      "namespaces": [
+        "ai.peec"
+      ],
+      "hosts": [
+        "api.peec.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "read-ai",
+      "namespaces": [
+        "ai.read"
+      ],
+      "hosts": [
+        "api.read.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "read",
+      "namespaces": [
+        "ai.read"
+      ],
+      "hosts": [
+        "api.read.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "scholar-gateway",
+      "namespaces": [
+        "ai.scholargateway.connector"
+      ],
+      "hosts": [
+        "connector.scholargateway.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "scholargateway",
+      "namespaces": [
+        "ai.scholargateway.connector"
+      ],
+      "hosts": [
+        "connector.scholargateway.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "scite",
+      "namespaces": [
+        "ai.scite"
+      ],
+      "hosts": [
+        "api.scite.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sprouts-data-intelligence",
+      "namespaces": [
+        "ai.sprouts"
+      ],
+      "hosts": [
+        "sprouts-mcp-server.kartikay-dhar.workers.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sprouts",
+      "namespaces": [
+        "ai.sprouts"
+      ],
+      "hosts": [
+        "sprouts-mcp-server.kartikay-dhar.workers.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "gainsight-staircase-ai",
+      "namespaces": [
+        "ai.staircase"
+      ],
+      "hosts": [
+        "mcp.staircase.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "staircase",
+      "namespaces": [
+        "ai.staircase"
+      ],
+      "hosts": [
+        "mcp.staircase.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sybill",
+      "namespaces": [
+        "ai.sybill"
+      ],
+      "hosts": [
+        "mcp.sybill.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tray-ai",
+      "namespaces": [
+        "ai.tray"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tray",
+      "namespaces": [
+        "ai.tray"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "vibe-prospecting",
+      "namespaces": [
+        "ai.vibeprospecting"
+      ],
+      "hosts": [
+        "vibeprospecting.explorium.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "vibeprospecting",
+      "namespaces": [
+        "ai.vibeprospecting"
+      ],
+      "hosts": [
+        "vibeprospecting.explorium.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "windsor-ai",
+      "namespaces": [
+        "ai.windsor.mcp"
+      ],
+      "hosts": [
+        "mcp.windsor.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "windsor",
+      "namespaces": [
+        "ai.windsor.mcp"
+      ],
+      "hosts": [
+        "mcp.windsor.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "era-context",
+      "namespaces": [
+        "app.era"
+      ],
+      "hosts": [
+        "context.era.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "era",
+      "namespaces": [
+        "app.era"
+      ],
+      "hosts": [
+        "context.era.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fellow-ai",
+      "namespaces": [
+        "app.fellow"
+      ],
+      "hosts": [
+        "fellow.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "fellow",
+      "namespaces": [
+        "app.fellow"
+      ],
+      "hosts": [
+        "fellow.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "gamma",
+      "namespaces": [
+        "app.gamma.mcp"
+      ],
+      "hosts": [
+        "mcp.gamma.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lucid",
+      "namespaces": [
+        "app.lucid.mcp"
+      ],
+      "hosts": [
+        "mcp.lucid.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "natoma",
+      "namespaces": [
+        "app.natoma"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "netdocuments",
+      "namespaces": [
+        "app.netdocuments"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "netlify",
+      "namespaces": [
+        "app.netlify.netlify-mcp"
+      ],
+      "hosts": [
+        "netlify-mcp.netlify.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "thoughtspot-spotter",
+      "namespaces": [
+        "app.thoughtspot"
+      ],
+      "hosts": [
+        "agent.thoughtspot.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "thoughtspot",
+      "namespaces": [
+        "app.thoughtspot"
+      ],
+      "hosts": [
+        "agent.thoughtspot.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aws-marketplace",
+      "namespaces": [
+        "aws.api.us-east-1.marketplace-mcp"
+      ],
+      "hosts": [
+        "marketplace-mcp.us-east-1.api.aws"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aws",
+      "namespaces": [
+        "aws.api.us-east-1.marketplace-mcp"
+      ],
+      "hosts": [
+        "marketplace-mcp.us-east-1.api.aws"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "synthesize-bio",
+      "namespaces": [
+        "bio.synthesize"
+      ],
+      "hosts": [
+        "app.synthesize.bio"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "bio",
+      "namespaces": [
+        "bio.synthesize"
+      ],
+      "hosts": [
+        "app.synthesize.bio"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "kindora-funder-discovery",
+      "namespaces": [
+        "co.kindora"
+      ],
+      "hosts": [
+        "kindora-mcp.azurewebsites.net"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "kindora",
+      "namespaces": [
+        "co.kindora"
+      ],
+      "hosts": [
+        "kindora-mcp.azurewebsites.net"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "omni-analytics",
+      "namespaces": [
+        "co.omni"
+      ],
+      "hosts": [
+        "callbacks.omniapp.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "omni",
+      "namespaces": [
+        "co.omni"
+      ],
+      "hosts": [
+        "callbacks.omniapp.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "send",
+      "namespaces": [
+        "co.send"
+      ],
+      "hosts": [
+        "www.send.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "shapes",
+      "namespaces": [
+        "co.shapes"
+      ],
+      "hosts": [
+        "mcp.shapes.co"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "activecampaign",
+      "namespaces": [
+        "com.activecampaign"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ahrefs",
+      "namespaces": [
+        "com.ahrefs.api"
+      ],
+      "hosts": [
+        "api.ahrefs.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aiera",
+      "namespaces": [
+        "com.aiera.mcp-pub"
+      ],
+      "hosts": [
+        "mcp-pub.aiera.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "airops",
+      "namespaces": [
+        "com.airops.app"
+      ],
+      "hosts": [
+        "app.airops.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "airtable",
+      "namespaces": [
+        "com.airtable"
+      ],
+      "hosts": [
+        "mcp.airtable.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "airwallex-developer",
+      "namespaces": [
+        "com.airwallex"
+      ],
+      "hosts": [
+        "mcp-demo.airwallex.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "airwallex",
+      "namespaces": [
+        "com.airwallex"
+      ],
+      "hosts": [
+        "mcp-demo.airwallex.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "alltrails",
+      "namespaces": [
+        "com.alltrails"
+      ],
+      "hosts": [
+        "www.alltrails.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "asana",
+      "namespaces": [
+        "com.asana.mcp"
+      ],
+      "hosts": [
+        "mcp.asana.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "attio",
+      "namespaces": [
+        "com.attio"
+      ],
+      "hosts": [
+        "mcp.attio.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "audible",
+      "namespaces": [
+        "com.audible"
+      ],
+      "hosts": [
+        "mcp.audible.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "aura",
+      "namespaces": [
+        "com.auraintelligence.mcp"
+      ],
+      "hosts": [
+        "mcp.auraintelligence.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "auraintelligence",
+      "namespaces": [
+        "com.auraintelligence.mcp"
+      ],
+      "hosts": [
+        "mcp.auraintelligence.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "autodesk-product-help",
+      "namespaces": [
+        "com.autodesk.api.developer"
+      ],
+      "hosts": [
+        "developer.api.autodesk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "autodesk",
+      "namespaces": [
+        "com.autodesk.api.developer"
+      ],
+      "hosts": [
+        "developer.api.autodesk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "base44",
+      "namespaces": [
+        "com.base44"
+      ],
+      "hosts": [
+        "app.base44.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "benchling",
+      "namespaces": [
+        "com.benchling"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "biorender",
+      "namespaces": [
+        "com.biorender.services.mcp"
+      ],
+      "hosts": [
+        "mcp.services.biorender.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "bitly",
+      "namespaces": [
+        "com.bitly.api-ssl"
+      ],
+      "hosts": [
+        "api-ssl.bitly.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "booking-com",
+      "namespaces": [
+        "com.booking"
+      ],
+      "hosts": [
+        "demandapi-mcp.booking.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "booking",
+      "namespaces": [
+        "com.booking"
+      ],
+      "hosts": [
+        "demandapi-mcp.booking.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "box",
+      "namespaces": [
+        "com.box.mcp"
+      ],
+      "hosts": [
+        "mcp.box.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "brex",
+      "namespaces": [
+        "com.brex"
+      ],
+      "hosts": [
+        "api.brex.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "orion-by-gravity",
+      "namespaces": [
+        "com.bygravity"
+      ],
+      "hosts": [
+        "g.runorion.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "bygravity",
+      "namespaces": [
+        "com.bygravity"
+      ],
+      "hosts": [
+        "g.runorion.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "calendly",
+      "namespaces": [
+        "com.calendly"
+      ],
+      "hosts": [
+        "mcp.calendly.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "canva",
+      "namespaces": [
+        "com.canva.mcp"
+      ],
+      "hosts": [
+        "mcp.canva.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "carta",
+      "namespaces": [
+        "com.carta"
+      ],
+      "hosts": [
+        "mcp.app.carta.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cb-insights",
+      "namespaces": [
+        "com.cbinsights"
+      ],
+      "hosts": [
+        "mcp.cbinsights.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cbinsights",
+      "namespaces": [
+        "com.cbinsights"
+      ],
+      "hosts": [
+        "mcp.cbinsights.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cdata-connect-ai",
+      "namespaces": [
+        "com.cdata.cloud.mcp"
+      ],
+      "hosts": [
+        "mcp.cloud.cdata.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cdata",
+      "namespaces": [
+        "com.cdata.cloud.mcp"
+      ],
+      "hosts": [
+        "mcp.cloud.cdata.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clay",
+      "namespaces": [
+        "com.clay.api"
+      ],
+      "hosts": [
+        "api.clay.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clerk",
+      "namespaces": [
+        "com.clerk"
+      ],
+      "hosts": [
+        "mcp.clerk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "clickup",
+      "namespaces": [
+        "com.clickup.mcp"
+      ],
+      "hosts": [
+        "mcp.clickup.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "cloudinary",
+      "namespaces": [
+        "com.cloudinary.mcp.asset-management"
+      ],
+      "hosts": [
+        "asset-management.mcp.cloudinary.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "coindesk",
+      "namespaces": [
+        "com.coindesk"
+      ],
+      "hosts": [
+        "mcp.coindesk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "consensus",
+      "namespaces": [
+        "com.consensus.app"
+      ],
+      "hosts": [
+        "mcp.consensus.app"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "contentsquare",
+      "namespaces": [
+        "com.contentsquare"
+      ],
+      "hosts": [
+        "api.contentsquare.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "context7",
+      "namespaces": [
+        "com.context7"
+      ],
+      "hosts": [
+        "mcp.context7.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "courtlistener",
+      "namespaces": [
+        "com.courtlistener"
+      ],
+      "hosts": [
+        "mcp.courtlistener.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "courtroom5",
+      "namespaces": [
+        "com.courtroom5"
+      ],
+      "hosts": [
+        "mcp.courtroom5.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit-credit-karma",
+      "namespaces": [
+        "com.creditkarma"
+      ],
+      "hosts": [
+        "anthropic.mcp.creditkarma.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "creditkarma",
+      "namespaces": [
+        "com.creditkarma"
+      ],
+      "hosts": [
+        "anthropic.mcp.creditkarma.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "crossbeam",
+      "namespaces": [
+        "com.crossbeam.mcp"
+      ],
+      "hosts": [
+        "mcp.crossbeam.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "crypto-com",
+      "namespaces": [
+        "com.crypto.mcp"
+      ],
+      "hosts": [
+        "mcp.crypto.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "crypto",
+      "namespaces": [
+        "com.crypto.mcp"
+      ],
+      "hosts": [
+        "mcp.crypto.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "daloopa",
+      "namespaces": [
+        "com.daloopa.mcp"
+      ],
+      "hosts": [
+        "mcp.daloopa.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "databricks",
+      "namespaces": [
+        "com.databricks.www"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "datadog",
+      "namespaces": [
+        "com.datadoghq"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "datadoghq",
+      "namespaces": [
+        "com.datadoghq"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "datagrail",
+      "namespaces": [
+        "com.datagrail"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "datasite",
+      "namespaces": [
+        "com.datasite"
+      ],
+      "hosts": [
+        "mcp.global.datasite.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "definely",
+      "namespaces": [
+        "com.definely"
+      ],
+      "hosts": [
+        "mcp.app.definely.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "descript",
+      "namespaces": [
+        "com.descript"
+      ],
+      "hosts": [
+        "api.descript.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "descrybe-legal-engine",
+      "namespaces": [
+        "com.descrybe"
+      ],
+      "hosts": [
+        "mcp.descrybe.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "descrybe",
+      "namespaces": [
+        "com.descrybe"
+      ],
+      "hosts": [
+        "mcp.descrybe.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "digits",
+      "namespaces": [
+        "com.digits"
+      ],
+      "hosts": [
+        "api.digits.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "docuseal",
+      "namespaces": [
+        "com.docuseal"
+      ],
+      "hosts": [
+        "docuseal.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "docusign",
+      "namespaces": [
+        "com.docusign"
+      ],
+      "hosts": [
+        "mcp.docusign.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "dovetail",
+      "namespaces": [
+        "com.dovetail"
+      ],
+      "hosts": [
+        "dovetail.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "dremio-cloud",
+      "namespaces": [
+        "com.dremio.cloud"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "dremio",
+      "namespaces": [
+        "com.dremio.cloud"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "enterpret",
+      "namespaces": [
+        "com.enterpret"
+      ],
+      "hosts": [
+        "wisdom-api.enterpret.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "euler",
+      "namespaces": [
+        "com.eulerapp"
+      ],
+      "hosts": [
+        "mcp.eulerapp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "eulerapp",
+      "namespaces": [
+        "com.eulerapp"
+      ],
+      "hosts": [
+        "mcp.eulerapp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "everlaw",
+      "namespaces": [
+        "com.everlaw"
+      ],
+      "hosts": [
+        "api.everlaw.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "expedia",
+      "namespaces": [
+        "com.expedia"
+      ],
+      "hosts": [
+        "www.expedia.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "factset-ai-ready-data",
+      "namespaces": [
+        "com.factset"
+      ],
+      "hosts": [
+        "mcp.factset.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "factset",
+      "namespaces": [
+        "com.factset"
+      ],
+      "hosts": [
+        "mcp.factset.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "monte-carlo",
+      "namespaces": [
+        "com.getmontecarlo"
+      ],
+      "hosts": [
+        "mcp.getmontecarlo.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "getmontecarlo",
+      "namespaces": [
+        "com.getmontecarlo"
+      ],
+      "hosts": [
+        "mcp.getmontecarlo.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "glean",
+      "namespaces": [
+        "com.glean"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "glovo",
+      "namespaces": [
+        "com.glovoapp"
+      ],
+      "hosts": [
+        "api.glovoapp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "glovoapp",
+      "namespaces": [
+        "com.glovoapp"
+      ],
+      "hosts": [
+        "api.glovoapp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "gocardless",
+      "namespaces": [
+        "com.gocardless"
+      ],
+      "hosts": [
+        "mcp.gocardless.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "godaddy",
+      "namespaces": [
+        "com.godaddy.api"
+      ],
+      "hosts": [
+        "api.godaddy.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "goodnotes",
+      "namespaces": [
+        "com.goodnotes"
+      ],
+      "hosts": [
+        "claude-mcp-api.ml.goodnotes.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "google-cloud-bigquery",
+      "namespaces": [
+        "com.google.cloud"
+      ],
+      "hosts": [
+        "bigquery.googleapis.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "google",
+      "namespaces": [
+        "com.google.cloud"
+      ],
+      "hosts": [
+        "bigquery.googleapis.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "google-compute-engine",
+      "namespaces": [
+        "com.google.cloud"
+      ],
+      "hosts": [
+        "compute.googleapis.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "google",
+      "namespaces": [
+        "com.google.cloud"
+      ],
+      "hosts": [
+        "compute.googleapis.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "govtribe",
+      "namespaces": [
+        "com.govtribe"
+      ],
+      "hosts": [
+        "govtribe.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "grain",
+      "namespaces": [
+        "com.grain"
+      ],
+      "hosts": [
+        "api.grain.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "granted",
+      "namespaces": [
+        "com.grantedai"
+      ],
+      "hosts": [
+        "grantedai.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "grantedai",
+      "namespaces": [
+        "com.grantedai"
+      ],
+      "hosts": [
+        "grantedai.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "guidepoint",
+      "namespaces": [
+        "com.guidepoint"
+      ],
+      "hosts": [
+        "clapi.guidepoint.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "gusto",
+      "namespaces": [
+        "com.gusto"
+      ],
+      "hosts": [
+        "mcp.api.gusto.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "phoenix-by-hg-insights",
+      "namespaces": [
+        "com.hginsights"
+      ],
+      "hosts": [
+        "phoenix.hginsights.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "hginsights",
+      "namespaces": [
+        "com.hginsights"
+      ],
+      "hosts": [
+        "phoenix.hginsights.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "hubspot",
+      "namespaces": [
+        "com.hubspot.mcp"
+      ],
+      "hosts": [
+        "mcp.hubspot.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ibisworld",
+      "namespaces": [
+        "com.ibisworld"
+      ],
+      "hosts": [
+        "mcp.ibisworld.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "interactive-brokers-ibkr",
+      "namespaces": [
+        "com.ibkr"
+      ],
+      "hosts": [
+        "api.ibkr.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ibkr",
+      "namespaces": [
+        "com.ibkr"
+      ],
+      "hosts": [
+        "api.ibkr.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ice-data-services",
+      "namespaces": [
+        "com.ice"
+      ],
+      "hosts": [
+        "fids-mcp.ice.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ice",
+      "namespaces": [
+        "com.ice"
+      ],
+      "hosts": [
+        "fids-mcp.ice.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ifttt",
+      "namespaces": [
+        "com.ifttt"
+      ],
+      "hosts": [
+        "ifttt.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "medidata",
+      "namespaces": [
+        "com.imedidata.mcp"
+      ],
+      "hosts": [
+        "mcp.imedidata.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "imedidata",
+      "namespaces": [
+        "com.imedidata.mcp"
+      ],
+      "hosts": [
+        "mcp.imedidata.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "indeed",
+      "namespaces": [
+        "com.indeed.mcp"
+      ],
+      "hosts": [
+        "mcp.indeed.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "instacart",
+      "namespaces": [
+        "com.instacart"
+      ],
+      "hosts": [
+        "fig-mcp.instacart.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intapp-celeste",
+      "namespaces": [
+        "com.intapp.my"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intapp",
+      "namespaces": [
+        "com.intapp.my"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intercom",
+      "namespaces": [
+        "com.intercom.mcp"
+      ],
+      "hosts": [
+        "mcp.intercom.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit-mailchimp",
+      "namespaces": [
+        "com.intuit.mailchimp"
+      ],
+      "hosts": [
+        "ai-inc.mailchimp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit",
+      "namespaces": [
+        "com.intuit.mailchimp"
+      ],
+      "hosts": [
+        "ai-inc.mailchimp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit-quickbooks",
+      "namespaces": [
+        "com.intuit.quickbooks"
+      ],
+      "hosts": [
+        "ai-inc.quickbooks.intuit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit",
+      "namespaces": [
+        "com.intuit.quickbooks"
+      ],
+      "hosts": [
+        "ai-inc.quickbooks.intuit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit-turbotax",
+      "namespaces": [
+        "com.intuit.turbotax"
+      ],
+      "hosts": [
+        "ai-inc.turbotax.intuit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "intuit",
+      "namespaces": [
+        "com.intuit.turbotax"
+      ],
+      "hosts": [
+        "ai-inc.turbotax.intuit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "jentic",
+      "namespaces": [
+        "com.jentic"
+      ],
+      "hosts": [
+        "api.jentic.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ketryx",
+      "namespaces": [
+        "com.ketryx"
+      ],
+      "hosts": [
+        "app.ketryx.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "kiwi-com",
+      "namespaces": [
+        "com.kiwi.mcp"
+      ],
+      "hosts": [
+        "mcp.kiwi.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "kiwi",
+      "namespaces": [
+        "com.kiwi.mcp"
+      ],
+      "hosts": [
+        "mcp.kiwi.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "klaviyo",
+      "namespaces": [
+        "com.klaviyo.mcp"
+      ],
+      "hosts": [
+        "mcp.klaviyo.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lastminute-com",
+      "namespaces": [
+        "com.lastminute.mcp"
+      ],
+      "hosts": [
+        "mcp.lastminute.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lastminute",
+      "namespaces": [
+        "com.lastminute.mcp"
+      ],
+      "hosts": [
+        "mcp.lastminute.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "legal-data-hunter",
+      "namespaces": [
+        "com.legaldatahunter"
+      ],
+      "hosts": [
+        "legaldatahunter.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "legaldatahunter",
+      "namespaces": [
+        "com.legaldatahunter"
+      ],
+      "hosts": [
+        "legaldatahunter.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "legalzoom",
+      "namespaces": [
+        "com.legalzoom"
+      ],
+      "hosts": [
+        "www.legalzoom.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lilt",
+      "namespaces": [
+        "com.lilt"
+      ],
+      "hosts": [
+        "mcp.lilt.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "local-falcon",
+      "namespaces": [
+        "com.localfalcon"
+      ],
+      "hosts": [
+        "mcp.localfalcon.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "localfalcon",
+      "namespaces": [
+        "com.localfalcon"
+      ],
+      "hosts": [
+        "mcp.localfalcon.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lseg",
+      "namespaces": [
+        "com.lseg.analytics.api"
+      ],
+      "hosts": [
+        "api.analytics.lseg.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lumin",
+      "namespaces": [
+        "com.luminpdf"
+      ],
+      "hosts": [
+        "mcp.luminpdf.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "luminpdf",
+      "namespaces": [
+        "com.luminpdf"
+      ],
+      "hosts": [
+        "mcp.luminpdf.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "lusha",
+      "namespaces": [
+        "com.lusha.mcp"
+      ],
+      "hosts": [
+        "mcp.lusha.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "magic-patterns",
+      "namespaces": [
+        "com.magicpatterns.mcp"
+      ],
+      "hosts": [
+        "mcp.magicpatterns.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "magicpatterns",
+      "namespaces": [
+        "com.magicpatterns.mcp"
+      ],
+      "hosts": [
+        "mcp.magicpatterns.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mailerlite",
+      "namespaces": [
+        "com.mailerlite"
+      ],
+      "hosts": [
+        "mcp.mailerlite.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "make",
+      "namespaces": [
+        "com.make"
+      ],
+      "hosts": [
+        "mcp.make.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "malwarebytes",
+      "namespaces": [
+        "com.malwarebytes"
+      ],
+      "hosts": [
+        "scamguard.malwarebytes.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "campfire",
+      "namespaces": [
+        "com.meetcampfire.api"
+      ],
+      "hosts": [
+        "api.meetcampfire.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "meetcampfire",
+      "namespaces": [
+        "com.meetcampfire.api"
+      ],
+      "hosts": [
+        "api.meetcampfire.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "melon",
+      "namespaces": [
+        "com.melon.mcp"
+      ],
+      "hosts": [
+        "mcp.melon.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mercury",
+      "namespaces": [
+        "com.mercury.mcp"
+      ],
+      "hosts": [
+        "mcp.mercury.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "metabase",
+      "namespaces": [
+        "com.metabase"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "microsoft-learn",
+      "namespaces": [
+        "com.microsoft"
+      ],
+      "hosts": [
+        "learn.microsoft.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "microsoft",
+      "namespaces": [
+        "com.microsoft"
+      ],
+      "hosts": [
+        "learn.microsoft.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mintlify",
+      "namespaces": [
+        "com.mintlify"
+      ],
+      "hosts": [
+        "mcp.mintlify.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "mixpanel",
+      "namespaces": [
+        "com.mixpanel"
+      ],
+      "hosts": [
+        "mcp.mixpanel.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "moody-s",
+      "namespaces": [
+        "com.moodys.api"
+      ],
+      "hosts": [
+        "api.moodys.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "moodys",
+      "namespaces": [
+        "com.moodys.api"
+      ],
+      "hosts": [
+        "api.moodys.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "morningstar",
+      "namespaces": [
+        "com.morningstar.mcp"
+      ],
+      "hosts": [
+        "mcp.morningstar.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "motherduck",
+      "namespaces": [
+        "com.motherduck.api"
+      ],
+      "hosts": [
+        "api.motherduck.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "msci",
+      "namespaces": [
+        "com.msci"
+      ],
+      "hosts": [
+        "mcp.msci.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "netsuite",
+      "namespaces": [
+        "com.netsuite.www"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "owkin",
+      "namespaces": [
+        "com.owkin.k.mcp"
+      ],
+      "hosts": [
+        "mcp.k.owkin.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pagerduty",
+      "namespaces": [
+        "com.pagerduty"
+      ],
+      "hosts": [
+        "mcp.pagerduty.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pandadoc",
+      "namespaces": [
+        "com.pandadoc"
+      ],
+      "hosts": [
+        "mcp.pandadoc.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pigment",
+      "namespaces": [
+        "com.pigment.app"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pitchbook-premium",
+      "namespaces": [
+        "com.pitchbook.mcp.premium"
+      ],
+      "hosts": [
+        "premium.mcp.pitchbook.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pitchbook",
+      "namespaces": [
+        "com.pitchbook.mcp.premium"
+      ],
+      "hosts": [
+        "premium.mcp.pitchbook.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "plaid-developer-tools",
+      "namespaces": [
+        "com.plaid.dashboard.api"
+      ],
+      "hosts": [
+        "api.dashboard.plaid.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "plaid",
+      "namespaces": [
+        "com.plaid.dashboard.api"
+      ],
+      "hosts": [
+        "api.dashboard.plaid.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "polar-analytics",
+      "namespaces": [
+        "com.polaranalytics"
+      ],
+      "hosts": [
+        "api.polaranalytics.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "polaranalytics",
+      "namespaces": [
+        "com.polaranalytics"
+      ],
+      "hosts": [
+        "api.polaranalytics.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "postman",
+      "namespaces": [
+        "com.postman"
+      ],
+      "hosts": [
+        "mcp.postman.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "privacy-com",
+      "namespaces": [
+        "com.privacy"
+      ],
+      "hosts": [
+        "mcp.privacy.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "privacy",
+      "namespaces": [
+        "com.privacy"
+      ],
+      "hosts": [
+        "mcp.privacy.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "quartr",
+      "namespaces": [
+        "com.quartr"
+      ],
+      "hosts": [
+        "mcp.quartr.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "quo",
+      "namespaces": [
+        "com.quo.mcp"
+      ],
+      "hosts": [
+        "mcp.quo.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ramp",
+      "namespaces": [
+        "com.ramp.ramp-mcp-remote"
+      ],
+      "hosts": [
+        "ramp-mcp-remote.ramp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ramp-data",
+      "namespaces": [
+        "com.ramp"
+      ],
+      "hosts": [
+        "mcp.ramp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ramp",
+      "namespaces": [
+        "com.ramp"
+      ],
+      "hosts": [
+        "mcp.ramp.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "razorpay",
+      "namespaces": [
+        "com.razorpay"
+      ],
+      "hosts": [
+        "mcp.razorpay.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "resy",
+      "namespaces": [
+        "com.resy"
+      ],
+      "hosts": [
+        "apigw.americanexpress.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "retool",
+      "namespaces": [
+        "com.retool"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "rillet",
+      "namespaces": [
+        "com.rillet.api"
+      ],
+      "hosts": [
+        "api.rillet.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sandboxaq",
+      "namespaces": [
+        "com.sandboxaq"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "semrush",
+      "namespaces": [
+        "com.semrush"
+      ],
+      "hosts": [
+        "mcp.semrush.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "shopify",
+      "namespaces": [
+        "com.shopify.setup"
+      ],
+      "hosts": [
+        "setup.shopify.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sigma",
+      "namespaces": [
+        "com.sigmacomputing"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sigmacomputing",
+      "namespaces": [
+        "com.sigmacomputing"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "signnow",
+      "namespaces": [
+        "com.signnow"
+      ],
+      "hosts": [
+        "mcp-server.signnow.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "similarweb",
+      "namespaces": [
+        "com.similarweb.mcp"
+      ],
+      "hosts": [
+        "mcp.similarweb.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "trimble-sketchup",
+      "namespaces": [
+        "com.sketchup.api"
+      ],
+      "hosts": [
+        "api.sketchup.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sketchup",
+      "namespaces": [
+        "com.sketchup.api"
+      ],
+      "hosts": [
+        "api.sketchup.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "slack",
+      "namespaces": [
+        "com.slack.mcp"
+      ],
+      "hosts": [
+        "mcp.slack.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "smartsheet",
+      "namespaces": [
+        "com.smartsheet"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "snowflake",
+      "namespaces": [
+        "com.snowflake"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "solve-intelligence",
+      "namespaces": [
+        "com.solveintelligence"
+      ],
+      "hosts": [
+        "api.solveintelligence.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "solveintelligence",
+      "namespaces": [
+        "com.solveintelligence"
+      ],
+      "hosts": [
+        "api.solveintelligence.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sourcegraph",
+      "namespaces": [
+        "com.sourcegraph"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "splice",
+      "namespaces": [
+        "com.splice.mcp"
+      ],
+      "hosts": [
+        "mcp.splice.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "spotify",
+      "namespaces": [
+        "com.spotify"
+      ],
+      "hosts": [
+        "mcp-gateway-external-pilot.spotify.net"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "square",
+      "namespaces": [
+        "com.squareup.mcp"
+      ],
+      "hosts": [
+        "mcp.squareup.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "squareup",
+      "namespaces": [
+        "com.squareup.mcp"
+      ],
+      "hosts": [
+        "mcp.squareup.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "stubhub",
+      "namespaces": [
+        "com.stubhub"
+      ],
+      "hosts": [
+        "open-ai-app.stubhub.net"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "superhuman-mail",
+      "namespaces": [
+        "com.superhuman.mcp.mail"
+      ],
+      "hosts": [
+        "mcp.mail.superhuman.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "superhuman",
+      "namespaces": [
+        "com.superhuman.mcp.mail"
+      ],
+      "hosts": [
+        "mcp.mail.superhuman.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "supermetrics-marketing-analytics",
+      "namespaces": [
+        "com.supermetrics"
+      ],
+      "hosts": [
+        "mcp.supermetrics.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "supermetrics",
+      "namespaces": [
+        "com.supermetrics"
+      ],
+      "hosts": [
+        "mcp.supermetrics.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "surveymonkey",
+      "namespaces": [
+        "com.surveymonkey"
+      ],
+      "hosts": [
+        "mcp.surveymonkey.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "taskrabbit-booking-assistance",
+      "namespaces": [
+        "com.taskrabbit.mcp"
+      ],
+      "hosts": [
+        "mcp.taskrabbit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "taskrabbit",
+      "namespaces": [
+        "com.taskrabbit.mcp"
+      ],
+      "hosts": [
+        "mcp.taskrabbit.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tavily",
+      "namespaces": [
+        "com.tavily"
+      ],
+      "hosts": [
+        "mcp.tavily.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "third-bridge",
+      "namespaces": [
+        "com.thirdbridge"
+      ],
+      "hosts": [
+        "ai.thirdbridge.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "thirdbridge",
+      "namespaces": [
+        "com.thirdbridge"
+      ],
+      "hosts": [
+        "ai.thirdbridge.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "thumbtack",
+      "namespaces": [
+        "com.thumbtack"
+      ],
+      "hosts": [
+        "mcp.thumbtack.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tines",
+      "namespaces": [
+        "com.tines"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tldraw",
+      "namespaces": [
+        "com.tldraw"
+      ],
+      "hosts": [
+        "tldraw-mcp-app.tldraw.workers.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tripadvisor",
+      "namespaces": [
+        "com.tripadvisor"
+      ],
+      "hosts": [
+        "production.ai-mcp-extensibility-prd.tamg.cloud"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "trivago",
+      "namespaces": [
+        "com.trivago.mcp"
+      ],
+      "hosts": [
+        "mcp.trivago.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "twilio",
+      "namespaces": [
+        "com.twilio"
+      ],
+      "hosts": [
+        "mcp.twilio.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "uber",
+      "namespaces": [
+        "com.uber"
+      ],
+      "hosts": [
+        "mcp.uber.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "uber-eats",
+      "namespaces": [
+        "com.ubereats"
+      ],
+      "hosts": [
+        "mcp.ubereats.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ubereats",
+      "namespaces": [
+        "com.ubereats"
+      ],
+      "hosts": [
+        "mcp.ubereats.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "udemy-business",
+      "namespaces": [
+        "com.udemy.api"
+      ],
+      "hosts": [
+        "api.udemy.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "udemy",
+      "namespaces": [
+        "com.udemy.api"
+      ],
+      "hosts": [
+        "api.udemy.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pylon",
+      "namespaces": [
+        "com.usepylon"
+      ],
+      "hosts": [
+        "mcp.usepylon.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "usepylon",
+      "namespaces": [
+        "com.usepylon"
+      ],
+      "hosts": [
+        "mcp.usepylon.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "verisk-underwriting-intelligence",
+      "namespaces": [
+        "com.verisk"
+      ],
+      "hosts": [
+        "gatewaymcp.verisk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "verisk",
+      "namespaces": [
+        "com.verisk"
+      ],
+      "hosts": [
+        "gatewaymcp.verisk.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "verisk-xactrestore",
+      "namespaces": [
+        "com.verisk"
+      ],
+      "hosts": [
+        "xactrestore-xactremodelserver-usw2-prod.propsol.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "verisk",
+      "namespaces": [
+        "com.verisk"
+      ],
+      "hosts": [
+        "xactrestore-xactremodelserver-usw2-prod.propsol.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "viator",
+      "namespaces": [
+        "com.viator"
+      ],
+      "hosts": [
+        "exp-app-mcp.prod.ep.viator.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "visier",
+      "namespaces": [
+        "com.visier.www"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "webflow",
+      "namespaces": [
+        "com.webflow"
+      ],
+      "hosts": [
+        "mcp.webflow.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wolfram",
+      "namespaces": [
+        "com.wolfram"
+      ],
+      "hosts": [
+        "agenttools.wolfram.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wordpress-com",
+      "namespaces": [
+        "com.wordpress.public-api"
+      ],
+      "hosts": [
+        "public-api.wordpress.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wordpress",
+      "namespaces": [
+        "com.wordpress.public-api"
+      ],
+      "hosts": [
+        "public-api.wordpress.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "workable",
+      "namespaces": [
+        "com.workable"
+      ],
+      "hosts": [
+        "mcp.workable.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "workato",
+      "namespaces": [
+        "com.workato.www"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wyndham-hotels-and-resorts",
+      "namespaces": [
+        "com.wyndhamhotels"
+      ],
+      "hosts": [
+        "mcp.wyndhamhotels.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "wyndhamhotels",
+      "namespaces": [
+        "com.wyndhamhotels"
+      ],
+      "hosts": [
+        "mcp.wyndhamhotels.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "xero",
+      "namespaces": [
+        "com.xero.mcp"
+      ],
+      "hosts": [
+        "mcp.xero.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "yardi-virtuoso",
+      "namespaces": [
+        "com.yardi"
+      ],
+      "hosts": [
+        "mcp.virtuoso.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "yardi",
+      "namespaces": [
+        "com.yardi"
+      ],
+      "hosts": [
+        "mcp.virtuoso.ai"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zapier",
+      "namespaces": [
+        "com.zapier"
+      ],
+      "hosts": [
+        "mcp.zapier.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "ziprecruiter",
+      "namespaces": [
+        "com.ziprecruiter"
+      ],
+      "hosts": [
+        "api.ziprecruiter.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho-books",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho-crm",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho-desk",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho-projects",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoho",
+      "namespaces": [
+        "com.zoho"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoominfo",
+      "namespaces": [
+        "com.zoominfo.mcp"
+      ],
+      "hosts": [
+        "mcp.zoominfo.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "jam",
+      "namespaces": [
+        "dev.jam.mcp"
+      ],
+      "hosts": [
+        "mcp.jam.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sentry",
+      "namespaces": [
+        "dev.sentry.mcp"
+      ],
+      "hosts": [
+        "mcp.sentry.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "stytch",
+      "namespaces": [
+        "dev.stytch.mcp"
+      ],
+      "hosts": [
+        "mcp.stytch.dev"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe-for-creativity",
+      "namespaces": [
+        "io.adobe.adobe-creativity"
+      ],
+      "hosts": [
+        "adobe-creativity.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe",
+      "namespaces": [
+        "io.adobe.adobe-creativity"
+      ],
+      "hosts": [
+        "adobe-creativity.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe-journey-optimizer",
+      "namespaces": [
+        "io.adobe.ajo-mcp"
+      ],
+      "hosts": [
+        "ajo-mcp.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe",
+      "namespaces": [
+        "io.adobe.ajo-mcp"
+      ],
+      "hosts": [
+        "ajo-mcp.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe-marketing-agent",
+      "namespaces": [
+        "io.adobe"
+      ],
+      "hosts": [
+        "aep-ai-ama.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "adobe",
+      "namespaces": [
+        "io.adobe"
+      ],
+      "hosts": [
+        "aep-ai-ama.adobe.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "apollo-io",
+      "namespaces": [
+        "io.apollo"
+      ],
+      "hosts": [
+        "mcp.apollo.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "apollo",
+      "namespaces": [
+        "io.apollo"
+      ],
+      "hosts": [
+        "mcp.apollo.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "common-room",
+      "namespaces": [
+        "io.commonroom"
+      ],
+      "hosts": [
+        "mcp.commonroom.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "commonroom",
+      "namespaces": [
+        "io.commonroom"
+      ],
+      "hosts": [
+        "mcp.commonroom.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "customer-io",
+      "namespaces": [
+        "io.customer"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "customer",
+      "namespaces": [
+        "io.customer"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "eraser",
+      "namespaces": [
+        "io.eraser"
+      ],
+      "hosts": [
+        "app.eraser.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "posthog",
+      "namespaces": [
+        "io.github.PostHog"
+      ],
+      "hosts": [
+        "mcp.posthog.com"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "harness-io",
+      "namespaces": [
+        "io.harness"
+      ],
+      "hosts": [
+        "mcp.harness.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "harness",
+      "namespaces": [
+        "io.harness"
+      ],
+      "hosts": [
+        "mcp.harness.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "honeycomb",
+      "namespaces": [
+        "io.honeycomb.mcp"
+      ],
+      "hosts": [
+        "mcp.honeycomb.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "incident-io",
+      "namespaces": [
+        "io.incident"
+      ],
+      "hosts": [
+        "mcp.incident.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "incident",
+      "namespaces": [
+        "io.incident"
+      ],
+      "hosts": [
+        "mcp.incident.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "n8n",
+      "namespaces": [
+        "io.n8n"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "outreach",
+      "namespaces": [
+        "io.outreach"
+      ],
+      "hosts": [
+        "api.outreach.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "pendo",
+      "namespaces": [
+        "io.pendo.www"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "sanity",
+      "namespaces": [
+        "io.sanity.www"
+      ],
+      "hosts": [
+        "mcp.sanity.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "starburst",
+      "namespaces": [
+        "io.starburst"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tldv",
+      "namespaces": [
+        "io.tldv"
+      ],
+      "hosts": [
+        "mcp.tldv.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tropic",
+      "namespaces": [
+        "io.tropicapp"
+      ],
+      "hosts": [
+        "app.tropicapp.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "tropicapp",
+      "namespaces": [
+        "io.tropicapp"
+      ],
+      "hosts": [
+        "app.tropicapp.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "unthread",
+      "namespaces": [
+        "io.unthread"
+      ],
+      "hosts": [
+        "app.unthread.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zocks",
+      "namespaces": [
+        "io.zocks"
+      ],
+      "hosts": [
+        "mcp.zocks.io"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "todoist",
+      "namespaces": [
+        "net.todoist"
+      ],
+      "hosts": [
+        "ai.todoist.net"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "benevity",
+      "namespaces": [
+        "org.benevity.mcp"
+      ],
+      "hosts": [
+        "mcp.benevity.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "candid",
+      "namespaces": [
+        "org.candid.mcp"
+      ],
+      "hosts": [
+        "mcp.candid.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "learning-commons-knowledge-graph",
+      "namespaces": [
+        "org.learningcommons.mcp.kg"
+      ],
+      "hosts": [
+        "kg.mcp.learningcommons.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "learningcommons",
+      "namespaces": [
+        "org.learningcommons.mcp.kg"
+      ],
+      "hosts": [
+        "kg.mcp.learningcommons.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "open-targets",
+      "namespaces": [
+        "org.opentargets.platform.mcp"
+      ],
+      "hosts": [
+        "mcp.platform.opentargets.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "opentargets",
+      "namespaces": [
+        "org.opentargets.platform.mcp"
+      ],
+      "hosts": [
+        "mcp.platform.opentargets.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "synapse-org",
+      "namespaces": [
+        "org.synapse.mcp"
+      ],
+      "hosts": [
+        "mcp.synapse.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "synapse",
+      "namespaces": [
+        "org.synapse.mcp"
+      ],
+      "hosts": [
+        "mcp.synapse.org"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "hex",
+      "namespaces": [
+        "tech.hex"
+      ],
+      "hosts": [],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoom-for-claude",
+      "namespaces": [
+        "us.zoom"
+      ],
+      "hosts": [
+        "mcp.zoom.us"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    },
+    {
+      "name": "zoom",
+      "namespaces": [
+        "us.zoom"
+      ],
+      "hosts": [
+        "mcp.zoom.us"
+      ],
+      "source": "Anthropic connector directory registry, api.anthropic.com/mcp-registry/v0/servers?visibility=commercial, read 28 Oct 2026",
+      "fuzzy": false
+    }
+  ]
+}

@@ -1,0 +1,1796 @@
+{
+  "$comment": "Brands from Docker's MCP catalog, docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3 (plan T4.3). Generated; do not edit by hand. Docker's catalog marks no owner: a record is kept when its source project's GitHub owner and its name belong together, or its remote host carries the name; see gen-brands.mjs.",
+  "generated": {
+    "by": "library/trust/gen/gen-brands.mjs",
+    "kept": 156,
+    "skipped": 172,
+    "skippedNames": [
+      "SQLite",
+      "airtable-mcp-server",
+      "aks",
+      "amazon-bedrock-agentcore",
+      "amazon-kendra-index",
+      "amazon-neptune",
+      "amazon-qbusiness-anonymous",
+      "apollo-mcp-server",
+      "arxiv-mcp-server",
+      "ast-grep",
+      "astra-db",
+      "astro-docs",
+      "atlas-docs",
+      "atlassian",
+      "audiense-insights",
+      "aws-api",
+      "aws-appsync",
+      "aws-bedrock-custom-model-import",
+      "aws-bedrock-data-automation",
+      "aws-cdk-mcp-server",
+      "aws-core-mcp-server",
+      "aws-dataprocessing",
+      "aws-diagram",
+      "aws-documentation",
+      "aws-healthomics",
+      "aws-iot-sitewise",
+      "aws-kb-retrieval-server",
+      "aws-location",
+      "aws-msk",
+      "aws-pricing",
+      "aws-terraform",
+      "azure",
+      "box",
+      "camunda",
+      "cdata-connectcloud",
+      "cloud-run-mcp",
+      "cloudflare-ai-gateway",
+      "cloudflare-audit-logs",
+      "cloudflare-autorag",
+      "cloudflare-browser-rendering",
+      "cloudflare-container",
+      "cloudflare-digital-experience-monitoring",
+      "cloudflare-dns-analytics",
+      "cloudflare-docs",
+      "cloudflare-graphql",
+      "cloudflare-logpush",
+      "cloudflare-observability",
+      "cloudflare-one-casb",
+      "cloudflare-radar",
+      "cloudflare-workers-bindings",
+      "cloudflare-workers-builds",
+      "cockroachdb",
+      "curl",
+      "database-server",
+      "desktop-commander",
+      "docker",
+      "docker-docs",
+      "dotnet-types-explorer",
+      "dreamfactory-mcp",
+      "duckduckgo",
+      "dynatrace-mcp-server",
+      "effect-mcp",
+      "everart",
+      "fetch",
+      "ffmpeg",
+      "filesystem",
+      "firecrawl",
+      "firefly",
+      "firewalla-mcp-server",
+      "gemini-api-docs",
+      "git",
+      "github",
+      "github-chat",
+      "gitlab",
+      "gmail-mcp",
+      "google-flights",
+      "google-maps",
+      "google-maps-comprehensive",
+      "gyazo",
+      "hdx",
+      "hoverfly-mcp-server",
+      "husqvarna-automower",
+      "jetbrains",
+      "kafka-schema-reg-mcp",
+      "kgrag-mcp-server",
+      "kubectl-mcp-server",
+      "kubernetes",
+      "lara",
+      "linkedin-mcp-server",
+      "maestro-mcp-server",
+      "markdownify",
+      "markitdown",
+      "maven-tools-mcp",
+      "mcp-api-gateway",
+      "mcp-code-interpreter",
+      "mcp-discord",
+      "mcp-github-pr-issue-analyser",
+      "mcp-hackernews",
+      "mcp-python-refactoring",
+      "mcp-reddit",
+      "memory",
+      "metabase",
+      "microsoft-learn",
+      "minecraft-wiki",
+      "morningstar-mcp-server",
+      "n8n",
+      "nasdaq-data-link",
+      "needle-mcp",
+      "neo4j-cloud-aura-api",
+      "neo4j-cypher",
+      "neo4j-data-modeling",
+      "neo4j-memory",
+      "next-devtools-mcp",
+      "node-code-sandbox",
+      "npm-sentinel",
+      "obsidian",
+      "okta-mcp-fctr",
+      "omi",
+      "openapi",
+      "openapi-schema",
+      "openbnb-airbnb",
+      "openweather",
+      "openzeppelin-cairo",
+      "openzeppelin-solidity",
+      "openzeppelin-stellar",
+      "openzeppelin-stylus",
+      "opik",
+      "opine-mcp-server",
+      "oracle",
+      "osp_marketing_tools",
+      "paper-search",
+      "perplexity-ask",
+      "pia",
+      "playwright",
+      "playwright-mcp-server",
+      "pluggedin-mcp-proxy",
+      "pomodash",
+      "pref-editor",
+      "prisma-postgres",
+      "prometheus",
+      "proxmox",
+      "puppeteer",
+      "ramparts",
+      "resend",
+      "ros2",
+      "rust-mcp-filesystem",
+      "securenote-link-mcp-server",
+      "sentry",
+      "sequentialthinking",
+      "simplechecklist",
+      "slack",
+      "sonarqube",
+      "sqlite-mcp-server",
+      "suzieq",
+      "task-orchestrator",
+      "temporal",
+      "terraform",
+      "testkube",
+      "text-to-graphql",
+      "time",
+      "unreal-engine-mcp-server",
+      "vectra-ai-rux-mcp-server",
+      "victorialogs",
+      "victoriatraces",
+      "vizro",
+      "vuln-nist-mcp-server",
+      "webflow",
+      "wikipedia-mcp",
+      "wolfram-alpha",
+      "youtube_transcript",
+      "zen",
+      "zerodha-kite"
+    ]
+  },
+  "brands": [
+    {
+      "name": "ais-fleet",
+      "namespaces": [],
+      "hosts": [
+        "mcp.aisfleet.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/ais-fleet/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "alfresco",
+      "namespaces": [
+        "io.github.alfrescolabs"
+      ],
+      "images": [
+        "angelborroy/alfresco-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/alfresco/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "apify",
+      "namespaces": [],
+      "hosts": [
+        "mcp.apify.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/apify/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "apify-mcp-server",
+      "namespaces": [
+        "io.github.apify"
+      ],
+      "images": [
+        "mcp/apify-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/apify-mcp-server/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "arm-mcp",
+      "namespaces": [
+        "io.github.arm"
+      ],
+      "images": [
+        "armlimited/arm-mcp:2.4.0"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/arm-mcp/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "asana",
+      "namespaces": [],
+      "hosts": [
+        "mcp.asana.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/asana/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "atlan",
+      "namespaces": [
+        "io.github.atlanhq"
+      ],
+      "images": [
+        "mcp/atlan"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/atlan/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "atlassian",
+      "namespaces": [],
+      "hosts": [
+        "mcp.atlassian.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/atlassian-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "audioscrape",
+      "namespaces": [],
+      "hosts": [
+        "mcp.audioscrape.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/audioscrape/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-billing-cost-management",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/billing-cost-management-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-billing-cost-management/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-ccapi",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/ccapi-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-ccapi/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-cfn",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/cfn-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-cfn/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-cloudtrail",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/cloudtrail-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-cloudtrail/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-cloudwatch",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/cloudwatch-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-cloudwatch/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-cloudwatch-appsignals",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/cloudwatch-appsignals-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-cloudwatch-appsignals/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-cost-explorer",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/cost-explorer-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-cost-explorer/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-dynamodb",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/dynamodb-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-dynamodb/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-elasticache",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/elasticache-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-elasticache/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-iam",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/iam-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-iam/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-memcached",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/memcached-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-memcached/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-nova-canvas",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/nova-canvas-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-nova-canvas/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-redshift",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/redshift-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-redshift/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-s3-tables",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/s3-tables-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-s3-tables/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-timestream-for-influxdb",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/timestream-for-influxdb-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-timestream-for-influxdb/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "awslabs-valkey",
+      "namespaces": [
+        "io.github.awslabs"
+      ],
+      "images": [
+        "mcp/valkey-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/awslabs-valkey/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "beagle-security",
+      "namespaces": [
+        "io.github.beaglesecurity"
+      ],
+      "images": [
+        "mcp/beagle-security-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/beagle-security/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "bitrefill",
+      "namespaces": [
+        "io.github.bitrefill"
+      ],
+      "images": [
+        "mcp/bitrefill"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/bitrefill/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "brave",
+      "namespaces": [
+        "io.github.brave"
+      ],
+      "images": [
+        "mcp/brave-search"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/brave/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "brightdata",
+      "namespaces": [],
+      "hosts": [
+        "mcp.brightdata.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/brightdata/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "browserbase",
+      "namespaces": [
+        "io.github.browserbase"
+      ],
+      "images": [
+        "mcp/browserbase"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/browserbase/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "buildkite",
+      "namespaces": [
+        "io.github.buildkite"
+      ],
+      "images": [
+        "mcp/buildkite"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/buildkite/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "carbon-voice",
+      "namespaces": [],
+      "hosts": [
+        "mcp.carbonvoice.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/carbon-voice/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "charmhealth-mcp-server",
+      "namespaces": [
+        "io.github.charmhealth"
+      ],
+      "images": [
+        "mcp/charmhealth-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/charmhealth-mcp-server/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "chroma",
+      "namespaces": [
+        "io.github.chroma-core"
+      ],
+      "images": [
+        "mcp/chroma"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/chroma/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "circleci",
+      "namespaces": [],
+      "hosts": [
+        "mcp.circleci.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/circleci/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "clickhouse",
+      "namespaces": [
+        "io.github.clickhouse"
+      ],
+      "images": [
+        "mcp/clickhouse"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/clickhouse/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "close",
+      "namespaces": [],
+      "hosts": [
+        "mcp.close.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/close/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "context7",
+      "namespaces": [],
+      "hosts": [
+        "mcp.context7.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/context7/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "couchbase",
+      "namespaces": [
+        "io.github.couchbase-ecosystem"
+      ],
+      "images": [
+        "mcp/couchbase"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/couchbase/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "cylera-mcp-server",
+      "namespaces": [
+        "io.github.cylera"
+      ],
+      "images": [
+        "mcp/cylera-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/cylera-mcp-server/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "cyreslab-ai-shodan",
+      "namespaces": [
+        "io.github.cyreslab-ai"
+      ],
+      "images": [
+        "mcp/cyreslab-ai-shodan"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/cyreslab-ai-shodan/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dappier",
+      "namespaces": [
+        "io.github.dappierai"
+      ],
+      "images": [
+        "mcp/dappier"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dappier/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dappier",
+      "namespaces": [],
+      "hosts": [
+        "mcp.dappier.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dappier-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dart",
+      "namespaces": [
+        "io.github.its-dart"
+      ],
+      "images": [
+        "mcp/dart"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dart/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "databutton",
+      "namespaces": [
+        "io.github.databutton"
+      ],
+      "images": [
+        "mcp/databutton"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/databutton/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "deepwiki",
+      "namespaces": [],
+      "hosts": [
+        "mcp.deepwiki.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/deepwiki/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "descope",
+      "namespaces": [
+        "io.github.descope-sample-apps"
+      ],
+      "images": [
+        "mcp/descope"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/descope/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "devhub-cms",
+      "namespaces": [
+        "io.github.devhub"
+      ],
+      "images": [
+        "mcp/devhub-cms"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/devhub-cms/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dialer",
+      "namespaces": [],
+      "hosts": [
+        "getdialer.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dialer/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dockerhub",
+      "namespaces": [
+        "io.github.docker"
+      ],
+      "images": [
+        "mcp/dockerhub"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dockerhub/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "dodo-payments",
+      "namespaces": [],
+      "hosts": [
+        "mcp.dodopayments.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/dodo-payments/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "e2b",
+      "namespaces": [
+        "io.github.e2b-dev"
+      ],
+      "images": [
+        "mcp/e2b"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/e2b/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "edubase",
+      "namespaces": [
+        "io.github.edubase"
+      ],
+      "images": [
+        "mcp/edubase"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/edubase/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "elasticsearch",
+      "namespaces": [
+        "io.github.elastic"
+      ],
+      "images": [
+        "mcp/elasticsearch"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/elasticsearch/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "elevenlabs",
+      "namespaces": [
+        "io.github.elevenlabs"
+      ],
+      "images": [
+        "mcp/elevenlabs"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/elevenlabs/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "exa",
+      "namespaces": [
+        "io.github.exa-labs"
+      ],
+      "images": [
+        "mcp/exa"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/exa/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "excalidraw",
+      "namespaces": [],
+      "hosts": [
+        "excalidraw-mcp-app.vercel.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/excalidraw-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "explorium",
+      "namespaces": [
+        "io.github.explorium-ai"
+      ],
+      "images": [
+        "mcp/explorium"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/explorium/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "fibery",
+      "namespaces": [
+        "io.github.fibery-inc"
+      ],
+      "images": [
+        "mcp/fibery"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/fibery/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "find-a-domain",
+      "namespaces": [],
+      "hosts": [
+        "api.findadomain.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/find-a-domain/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "flexprice",
+      "namespaces": [
+        "io.github.flexprice"
+      ],
+      "images": [
+        "mcp/flexprice"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/flexprice/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "github",
+      "namespaces": [
+        "io.github.github"
+      ],
+      "images": [
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/github-official/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "gitmcp",
+      "namespaces": [],
+      "hosts": [
+        "gitmcp.io"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/gitmcp/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "glif",
+      "namespaces": [
+        "io.github.glifxyz"
+      ],
+      "images": [
+        "mcp/glif"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/glif/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "globalping",
+      "namespaces": [],
+      "hosts": [
+        "mcp.globalping.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/globalping/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "grafana",
+      "namespaces": [
+        "io.github.grafana"
+      ],
+      "images": [
+        "mcp/grafana"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/grafana/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "grafbase",
+      "namespaces": [],
+      "hosts": [
+        "api.grafbase.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/grafbase/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "granola",
+      "namespaces": [],
+      "hosts": [
+        "mcp.granola.ai"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/granola-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hackle",
+      "namespaces": [
+        "io.github.hackle-io"
+      ],
+      "images": [
+        "mcp/hackle"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hackle/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "handwriting-ocr",
+      "namespaces": [
+        "io.github.handwriting-ocr"
+      ],
+      "images": [
+        "mcp/handwriting-ocr"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/handwriting-ocr/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "heroku",
+      "namespaces": [
+        "io.github.heroku"
+      ],
+      "images": [
+        "mcp/heroku"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/heroku/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hostinger-mcp-server",
+      "namespaces": [
+        "io.github.hostinger"
+      ],
+      "images": [
+        "mcp/api-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hostinger-mcp-server/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hubspot",
+      "namespaces": [],
+      "hosts": [
+        "app.hubspot.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hubspot/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hugging-face",
+      "namespaces": [],
+      "hosts": [
+        "huggingface.co"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hugging-face/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hummingbot-mcp",
+      "namespaces": [
+        "io.github.hummingbot"
+      ],
+      "images": [
+        "hummingbot/hummingbot-mcp"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hummingbot-mcp/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hyperbrowser",
+      "namespaces": [
+        "io.github.hyperbrowserai"
+      ],
+      "images": [
+        "mcp/hyperbrowser"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hyperbrowser/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "hyperspell",
+      "namespaces": [
+        "io.github.hyperspell"
+      ],
+      "images": [
+        "mcp/hyperspell"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/hyperspell/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "iaptic",
+      "namespaces": [
+        "io.github.iaptic"
+      ],
+      "images": [
+        "mcp/iaptic"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/iaptic/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "incident-io",
+      "namespaces": [],
+      "hosts": [
+        "mcp.incident.io"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/incident-io/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "inspektor-gadget",
+      "namespaces": [
+        "io.github.inspektor-gadget"
+      ],
+      "images": [
+        "mcp/inspektor-gadget"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/inspektor-gadget/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "instant",
+      "namespaces": [],
+      "hosts": [
+        "mcp.instantdb.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/instant/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "invideo",
+      "namespaces": [],
+      "hosts": [
+        "mcp.invideo.io"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/invideo/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "javadocs",
+      "namespaces": [],
+      "hosts": [
+        "www.javadocs.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/javadocs/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "kagisearch",
+      "namespaces": [
+        "io.github.kagisearch"
+      ],
+      "images": [
+        "mcp/kagisearch"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/kagisearch/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "keboola-mcp",
+      "namespaces": [
+        "io.github.keboola"
+      ],
+      "images": [
+        "mcp/keboola-mcp"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/keboola-mcp/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "kong",
+      "namespaces": [
+        "io.github.kong"
+      ],
+      "images": [
+        "mcp/kong"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/kong/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "line",
+      "namespaces": [
+        "io.github.line"
+      ],
+      "images": [
+        "mcp/line"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/line/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "linear",
+      "namespaces": [],
+      "hosts": [
+        "mcp.linear.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/linear/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "llmtxt",
+      "namespaces": [],
+      "hosts": [
+        "mcp.llmtxt.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/llmtxt/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "manifold",
+      "namespaces": [],
+      "hosts": [
+        "api.manifold.markets"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/manifold/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "mapbox",
+      "namespaces": [
+        "io.github.mapbox"
+      ],
+      "images": [
+        "mcp/mapbox"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/mapbox/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "mapbox-devkit",
+      "namespaces": [
+        "io.github.mapbox"
+      ],
+      "images": [
+        "mcp/mapbox-devkit"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/mapbox-devkit/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "mercado-libre",
+      "namespaces": [],
+      "hosts": [
+        "mcp.mercadolibre.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/mercado-libre/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "mercado-pago",
+      "namespaces": [],
+      "hosts": [
+        "mcp.mercadopago.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/mercado-pago/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "miro",
+      "namespaces": [],
+      "hosts": [
+        "mcp.miro.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/miro-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "monday",
+      "namespaces": [],
+      "hosts": [
+        "mcp.monday.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/monday/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "mongodb",
+      "namespaces": [
+        "io.github.mongodb-js"
+      ],
+      "images": [
+        "mcp/mongodb"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/mongodb/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "multiversx-mx",
+      "namespaces": [
+        "io.github.multiversx"
+      ],
+      "images": [
+        "mcp/multiversx-mx"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/multiversx-mx/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "needle",
+      "namespaces": [],
+      "hosts": [
+        "mcp.needle.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/needle/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "neo4j",
+      "namespaces": [
+        "io.github.neo4j"
+      ],
+      "images": [
+        "mcp/neo4j"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/neo4j/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "neon",
+      "namespaces": [
+        "io.github.neondatabase-labs"
+      ],
+      "images": [
+        "mcp/neon"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/neon/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "notion",
+      "namespaces": [
+        "io.github.makenotion"
+      ],
+      "images": [
+        "mcp/notion"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/notion/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "notion",
+      "namespaces": [],
+      "hosts": [
+        "mcp.notion.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/notion-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "novita",
+      "namespaces": [
+        "io.github.novitalabs"
+      ],
+      "images": [
+        "mcp/novita"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/novita/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "octagon",
+      "namespaces": [],
+      "hosts": [
+        "mcp.octagonagents.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/octagon/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "okta-mcp-server",
+      "namespaces": [
+        "io.github.okta"
+      ],
+      "images": [
+        "mcp/okta-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/okta-mcp-server/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "onlyoffice-docspace",
+      "namespaces": [
+        "io.github.onlyoffice"
+      ],
+      "images": [
+        "mcp/onlyoffice-docspace"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/onlyoffice-docspace/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "openmesh",
+      "namespaces": [],
+      "hosts": [
+        "api.openmesh.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/openmesh/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "oxylabs",
+      "namespaces": [
+        "io.github.oxylabs"
+      ],
+      "images": [
+        "mcp/oxylabs"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/oxylabs/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "paypal",
+      "namespaces": [],
+      "hosts": [
+        "mcp.paypal.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/paypal/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "pica",
+      "namespaces": [
+        "io.github.picahq"
+      ],
+      "images": [
+        "mcp/pica-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/pica/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "pinecone",
+      "namespaces": [
+        "io.github.pinecone-io"
+      ],
+      "images": [
+        "mcp/pinecone"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/pinecone/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "polar-signals",
+      "namespaces": [],
+      "hosts": [
+        "api.polarsignals.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/polar-signals/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "postman",
+      "namespaces": [
+        "io.github.postmanlabs"
+      ],
+      "images": [
+        "mcp/postman"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/postman/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "pulumi",
+      "namespaces": [
+        "io.github.pulumi"
+      ],
+      "images": [
+        "mcp/pulumi"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/pulumi/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "pulumi",
+      "namespaces": [],
+      "hosts": [
+        "mcp.ai.pulumi.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/pulumi-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "quantconnect",
+      "namespaces": [
+        "io.github.quantconnect"
+      ],
+      "images": [
+        "mcp/quantconnect"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/quantconnect/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "razorpay",
+      "namespaces": [
+        "io.github.razorpay"
+      ],
+      "images": [
+        "mcp/razorpay"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/razorpay/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "redis",
+      "namespaces": [
+        "io.github.redis"
+      ],
+      "images": [
+        "mcp/redis"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/redis/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "redis-cloud",
+      "namespaces": [
+        "io.github.redis"
+      ],
+      "images": [
+        "mcp/redis-cloud"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/redis-cloud/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "ref",
+      "namespaces": [
+        "io.github.ref-tools"
+      ],
+      "images": [
+        "mcp/ref-tools-mcp"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/ref/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "remote-mcp",
+      "namespaces": [],
+      "hosts": [
+        "mcp.remote-mcp.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/remote-mcp/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "render",
+      "namespaces": [
+        "io.github.render-oss"
+      ],
+      "images": [
+        "mcp/render"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/render/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "risken",
+      "namespaces": [
+        "io.github.ca-risken"
+      ],
+      "images": [
+        "mcp/risken"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/risken/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "rube",
+      "namespaces": [],
+      "hosts": [
+        "rube.app"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/rube/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "schemacrawler-ai",
+      "namespaces": [
+        "io.github.schemacrawler"
+      ],
+      "images": [
+        "mcp/schemacrawler-ai"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/schemacrawler-ai/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "schogini-mcp-image-border",
+      "namespaces": [
+        "io.github.schogini"
+      ],
+      "images": [
+        "mcp/schogini_mcp_image_border"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/schogini-mcp-image-border/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "scorecard",
+      "namespaces": [],
+      "hosts": [
+        "scorecard-mcp.dare-d5b.workers.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/scorecard/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "scrapegraph",
+      "namespaces": [
+        "io.github.scrapegraphai"
+      ],
+      "images": [
+        "mcp/scrapegraph"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/scrapegraph/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "scrapezy",
+      "namespaces": [
+        "io.github.scrapezy"
+      ],
+      "images": [
+        "mcp/scrapezy"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/scrapezy/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "semgrep",
+      "namespaces": [],
+      "hosts": [
+        "mcp.semgrep.ai"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/semgrep/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "sentry",
+      "namespaces": [],
+      "hosts": [
+        "mcp.sentry.dev"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/sentry-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "sequa",
+      "namespaces": [
+        "io.github.sequa-ai"
+      ],
+      "images": [
+        "mcp/sequa"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/sequa/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "short-io",
+      "namespaces": [],
+      "hosts": [
+        "ai-assistant.short.io"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/short-io/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "singlestore",
+      "namespaces": [
+        "io.github.singlestore-labs"
+      ],
+      "images": [
+        "mcp/singlestore"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/singlestore/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "smartbear",
+      "namespaces": [
+        "io.github.smartbear"
+      ],
+      "images": [
+        "mcp/smartbear"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/smartbear/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "stackgen",
+      "namespaces": [
+        "io.github.stackgenhq"
+      ],
+      "images": [
+        "ghcr.io/stackgenhq/stackgen"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/stackgen/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "stackhawk",
+      "namespaces": [
+        "io.github.stackhawk"
+      ],
+      "images": [
+        "mcp/stackhawk"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/stackhawk/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "stripe",
+      "namespaces": [
+        "io.github.stripe"
+      ],
+      "images": [
+        "mcp/stripe"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/stripe/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "stripe",
+      "namespaces": [],
+      "hosts": [
+        "mcp.stripe.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/stripe-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "supadata",
+      "namespaces": [
+        "io.github.supadata-ai"
+      ],
+      "images": [
+        "ghcr.io/supadata-ai/mcp"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/supadata/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "tavily",
+      "namespaces": [
+        "io.github.tavily-ai"
+      ],
+      "images": [
+        "mcp/tavily"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/tavily/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "teamwork",
+      "namespaces": [
+        "io.github.teamwork"
+      ],
+      "images": [
+        "mcp/teamwork"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/teamwork/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "telnyx",
+      "namespaces": [],
+      "hosts": [
+        "api.telnyx.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/telnyx/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "tembo",
+      "namespaces": [
+        "io.github.tembo-io"
+      ],
+      "images": [
+        "mcp/tembo"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/tembo/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "thingsboard",
+      "namespaces": [
+        "io.github.thingsboard"
+      ],
+      "images": [
+        "mcp/thingsboard"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/thingsboard/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "tigris",
+      "namespaces": [
+        "io.github.tigrisdata"
+      ],
+      "images": [
+        "mcp/tigris"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/tigris/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "triplewhale",
+      "namespaces": [
+        "io.github.triple-whale"
+      ],
+      "images": [
+        "mcp/triplewhale"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/triplewhale/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "uberall",
+      "namespaces": [
+        "io.github.uberall"
+      ],
+      "images": [
+        "uberall/uberall-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/uberall/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "veyrax",
+      "namespaces": [
+        "io.github.veyrax"
+      ],
+      "images": [
+        "mcp/veyrax"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/veyrax/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "victoriametrics",
+      "namespaces": [
+        "io.github.victoriametrics-community"
+      ],
+      "images": [
+        "ghcr.io/victoriametrics-community/mcp-victoriametrics"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/victoriametrics/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "wayfound",
+      "namespaces": [],
+      "hosts": [
+        "app.wayfound.ai"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/wayfound/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "waystation",
+      "namespaces": [],
+      "hosts": [
+        "waystation.ai"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/waystation/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "webflow",
+      "namespaces": [],
+      "hosts": [
+        "mcp.webflow.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/webflow-remote/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "wix",
+      "namespaces": [],
+      "hosts": [
+        "mcp.wix.com"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/wix/server.yaml",
+      "fuzzy": false
+    },
+    {
+      "name": "zscaler-mcp-server",
+      "namespaces": [
+        "io.github.zscaler"
+      ],
+      "images": [
+        "mcp/zscaler-mcp-server"
+      ],
+      "source": "docker/mcp-registry at 98a203ca6e58c67031b8aaed037a26a07ec73ce3, servers/zscaler-mcp-server/server.yaml",
+      "fuzzy": false
+    }
+  ]
+}
