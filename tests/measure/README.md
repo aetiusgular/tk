@@ -41,7 +41,7 @@ Claude Code 2.1.311 sends its environment block as a `role: "system"` entry insi
 
 ## Notes on the 28 Oct data (`results/`)
 
-- `requests.jsonl` holds two HTTP 500 lines tagged `pi-r0002` and `pi-r0004` (11:52 PDT, 12 tools, Qwen3.8's \"System message must be at the beginning\"). They came from a Claude Code smoke run, stopped before the Pi run started, whose process kept retrying through the unfolding proxy; the tag is the task file that was current. No Pi request failed. The summary counts only HTTP 200 turn requests.
-- `t10`'s library `ferrum-orm` turned out to exist on PyPI (0.1.17). In `pi-r0020` the model found it with `bash` and answered from its real docs; that is the one Pi failure. Every other entity was not found by any run.
+- `requests.jsonl` holds two HTTP 500 lines tagged `pi-r0002` and `pi-r0004` (11:52 PDT, 12 tools, Qwen3.8's "System message must be at the beginning"). They came from a Claude Code smoke run, stopped before the Pi run started, whose process kept retrying through the unfolding proxy; the tag is the task file that was current. No Pi request failed. The summary counts only HTTP 200 turn requests.
+- `t10`'s library `ferrum-orm` turned out to exist on PyPI (0.1.17). In `pi-r0020` the model found it with `bash` and answered from its real docs; that is the one Pi failure.
 - The proxy did not record the answers to Claude Code's `count_tokens` calls (llama.cpp returns `input_tokens` at the top level, not under `usage`); `auto` called it once per run and then sent every tool up front.
 - Paths in the raw output name the box user's home folder. No key or token is in them (scanned for `sk-`, `ghp_`, `hf_`, bearer tokens).
