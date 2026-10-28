@@ -88,6 +88,12 @@ export async function exchange(
   const cwd = opts.cwd ?? process.cwd();
   const sock = socketPath(env);
   if (env.TK_DAEMON_SOCKET?.trim() && insideFolder(sock, cwd)) return { error: "TK_DAEMON_SOCKET is inside the session folder, which a project can set; not used" };
+  // Whatever named it (TK_DAEMON_SOCKET, XDG_RUNTIME_DIR, HOME): a project's
+  // settings can set the hook's environment, and a socket the agent made in
+  // the project would answer its own approvals (security finding S14,
+  // integration w2).
+  if (!path.isAbsolute(sock)) return { error: "the daemon socket is not an absolute path; not used" };
+  if (insideFolder(sock, cwd)) return { error: "the daemon socket is inside the session folder, which a project can set; not used" };
   const token = chatToken(env, cwd);
   if (!token) return { error: "no chat token (start the harness with tk run)" };
   const notOwned = socketLooksOwned(sock);

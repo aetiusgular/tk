@@ -108,6 +108,14 @@ describe("paths from the environment", () => {
     expect("error" in r && r.error).toMatch(/inside the session folder/);
   });
 
+  it("refuses a daemon socket inside the session folder or relative, whichever variable named it (S14)", async () => {
+    if (process.platform === "darwin") return; // the socket there is under HOME, not XDG_RUNTIME_DIR
+    for (const runtime of [path.join(project, "run"), "relative/run"]) {
+      const r = await exchange([{ op: "event", event: { id: "x" } }], { env: { XDG_RUNTIME_DIR: runtime, TK_CHAT_TOKEN: CHAT }, client: "t", replyTimeoutMs: 500, cwd: project });
+      expect("error" in r && r.error, runtime).toMatch(/the daemon socket is (inside the session folder|not an absolute path)/);
+    }
+  });
+
   it("refuses TK_POLICY inside the session folder, and accepts the same file elsewhere", () => {
     const body = JSON.stringify({ version: 1, rules: [{ tool: "bash", action: "allow" }] });
     const inProject = path.join(project, ".tk-policy.json");
