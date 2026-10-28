@@ -51,7 +51,12 @@ export function checkScanner(name: string): string {
 }
 
 export class RecordStore {
-  constructor(readonly root: string = RECORDS_DIR) {}
+  // A plain field, not a constructor parameter property: library/ runs on
+  // Node's type stripping, which refuses parameter properties (found by the CLI test).
+  readonly root: string;
+  constructor(root: string = RECORDS_DIR) {
+    this.root = root;
+  }
 
   /** Refuses a link anywhere between the root and the path, and the root itself as a link. */
   private guard(path: string): void {
