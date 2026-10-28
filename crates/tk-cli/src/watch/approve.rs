@@ -204,7 +204,11 @@ pub fn serve(
                     shown = Some((w, Instant::now()));
                     break;
                 }
-                let _ = writeln!(out, "{}: timed out before it was shown; the daemon answers no", label(&w.req));
+                let _ = writeln!(
+                    out,
+                    "{}: timed out before it was shown; the daemon answers no",
+                    label(&w.req)
+                );
             }
         }
         let wait = match &shown {
@@ -220,10 +224,16 @@ pub fn serve(
                     .clamp(1, 3600);
                 // Keep a second of margin: an answer that reaches the
                 // daemon after its own timer is refused.
-                let deadline = Instant::now() + Duration::from_secs(secs).saturating_sub(Duration::from_secs(1));
+                let deadline = Instant::now()
+                    + Duration::from_secs(secs).saturating_sub(Duration::from_secs(1));
                 queue.push_back(Waiting { req, deadline });
                 if let Some((w, _)) = &shown {
-                    let _ = writeln!(out, "  ({} more waiting after {})", queue.len(), label(&w.req));
+                    let _ = writeln!(
+                        out,
+                        "  ({} more waiting after {})",
+                        queue.len(),
+                        label(&w.req)
+                    );
                 }
             }
             Ok(In::Daemon(Incoming::Reply(reply))) => {
@@ -244,13 +254,21 @@ pub fn serve(
                     continue;
                 };
                 if at < since + SETTLE {
-                    let _ = writeln!(out, "  (input typed before the request was shown was ignored)");
+                    let _ = writeln!(
+                        out,
+                        "  (input typed before the request was shown was ignored)"
+                    );
                     shown = Some((w, since));
                     continue;
                 }
                 let yes = is_yes(&text);
                 let word = if yes { "yes" } else { "no" };
-                let id = w.req.get("id").and_then(Value::as_str).unwrap_or("").to_string();
+                let id = w
+                    .req
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .unwrap_or("")
+                    .to_string();
                 let line = json!({"op": "answer", "id": id, "answer": word});
                 if writeln!(writer, "{line}").is_err() {
                     return Ended::DaemonGone("the answer could not be sent".into());
@@ -281,8 +299,13 @@ fn drain_typed(
         match m {
             In::Typed(..) => {}
             In::Daemon(Incoming::Approve(req)) => {
-                let secs = req.get("timeoutSeconds").and_then(Value::as_u64).unwrap_or(60).clamp(1, 3600);
-                let deadline = Instant::now() + Duration::from_secs(secs).saturating_sub(Duration::from_secs(1));
+                let secs = req
+                    .get("timeoutSeconds")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(60)
+                    .clamp(1, 3600);
+                let deadline = Instant::now()
+                    + Duration::from_secs(secs).saturating_sub(Duration::from_secs(1));
                 queue.push_back(Waiting { req, deadline });
             }
             other => keep.push(other),
@@ -315,7 +338,10 @@ fn label(req: &Value) -> String {
 
 fn prompt(out: &mut impl Write, w: &Waiting, more: usize) {
     let s = |k: &str| w.req.get(k).and_then(Value::as_str).unwrap_or("");
-    let left = w.deadline.saturating_duration_since(Instant::now()).as_secs();
+    let left = w
+        .deadline
+        .saturating_duration_since(Instant::now())
+        .as_secs();
     let after = if more > 0 {
         format!(", {more} more waiting")
     } else {
@@ -422,7 +448,18 @@ mod tests {
         for y in ["y", "Y", "yes", " YES \n"] {
             assert!(is_yes(y), "{y}");
         }
-        for n in ["", "\n", "n", "no", "yy", "yes please", "ye", "1", "true", "y\u{0}"] {
+        for n in [
+            "",
+            "\n",
+            "n",
+            "no",
+            "yy",
+            "yes please",
+            "ye",
+            "1",
+            "true",
+            "y\u{0}",
+        ] {
             assert!(!is_yes(n), "{n:?}");
         }
     }
@@ -430,7 +467,10 @@ mod tests {
     #[test]
     fn a_yes_typed_after_the_prompt_is_sent_for_that_request() {
         let (a, out) = run(vec![req("ap-1", 30), typed("y\n", SETTLE * 2)], 1);
-        assert_eq!(a, vec![json!({"op": "answer", "id": "ap-1", "answer": "yes"})]);
+        assert_eq!(
+            a,
+            vec![json!({"op": "answer", "id": "ap-1", "answer": "yes"})]
+        );
         assert!(out.contains("Allow this one call? [y/N]"), "{out}");
     }
 
@@ -477,8 +517,14 @@ mod tests {
         let out = h.join().unwrap();
         let a = answers(&wire);
         assert_eq!(a.len(), 2, "{out}");
-        assert_eq!((a[0]["id"].as_str(), a[0]["answer"].as_str()), (Some("ap-1"), Some("yes")));
-        assert_eq!((a[1]["id"].as_str(), a[1]["answer"].as_str()), (Some("ap-2"), Some("no")));
+        assert_eq!(
+            (a[0]["id"].as_str(), a[0]["answer"].as_str()),
+            (Some("ap-1"), Some("yes"))
+        );
+        assert_eq!(
+            (a[1]["id"].as_str(), a[1]["answer"].as_str()),
+            (Some("ap-2"), Some("no"))
+        );
     }
 
     #[test]
@@ -519,7 +565,10 @@ mod tests {
         tx.send(In::DaemonGone("closed".into())).unwrap();
         let mut out = Vec::new();
         let mut flush = || {};
-        assert!(matches!(serve(&rx, Vec::new(), &mut out, &mut flush), Ended::DaemonGone(_)));
+        assert!(matches!(
+            serve(&rx, Vec::new(), &mut out, &mut flush),
+            Ended::DaemonGone(_)
+        ));
     }
 
     #[test]

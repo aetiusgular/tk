@@ -97,7 +97,10 @@ impl Shared {
 #[test]
 fn tail_shows_the_backlog_then_live_events_and_cleans_them() {
     let l = live("tail");
-    post(&l, ev("pi-old", "tk-chat-a", "adapter", "tool.call", "old call"));
+    post(
+        &l,
+        ev("pi-old", "tk-chat-a", "adapter", "tool.call", "old call"),
+    );
     let out = Shared::default();
     let mut w = out.clone();
     let conn = Conn::open(&l.socket, "test tail").unwrap();
@@ -107,7 +110,13 @@ fn tail_shows_the_backlog_then_live_events_and_cleans_them() {
     out.wait_for("old call");
     post(
         &l,
-        ev("pi-new", "tk-chat-a", "adapter", "tool.call", "new call\x1b]52;c;eA==\x07"),
+        ev(
+            "pi-new",
+            "tk-chat-a",
+            "adapter",
+            "tool.call",
+            "new call\x1b]52;c;eA==\x07",
+        ),
     );
     let text = out.wait_for("new call");
     assert!(!text.contains('\x1b') && !text.contains('\x07'), "{text:?}");
@@ -125,7 +134,10 @@ fn tail_filters_by_chat_and_json_mode_prints_events() {
     });
     // The tail registers before its reply; give it that moment.
     std::thread::sleep(Duration::from_millis(200));
-    post(&l, ev("x-1", "tk-chat-a", "adapter", "tool.call", "not mine"));
+    post(
+        &l,
+        ev("x-1", "tk-chat-a", "adapter", "tool.call", "not mine"),
+    );
     post(&l, ev("x-2", "tk-chat-b", "adapter", "tool.call", "mine"));
     let text = out.wait_for("mine");
     assert!(!text.contains("not mine"), "{text}");
@@ -145,7 +157,10 @@ fn report_counts_what_was_posted() {
     let r = report::fetch(&l.socket, None, now - 60_000, now + 1_000).unwrap();
     assert!(r["events"].as_u64().unwrap() >= 2, "{r}");
     let text = report::render(&r);
-    assert!(text.contains("by source:") && text.contains("adapter"), "{text}");
+    assert!(
+        text.contains("by source:") && text.contains("adapter"),
+        "{text}"
+    );
     assert!(text.contains("chain ok"), "{text}");
 }
 
@@ -159,7 +174,9 @@ fn watch_never_takes_a_chat_token() {
         .as_str()
         .unwrap()
         .to_string();
-    let e = Conn::open_with(&l.socket, &chat, "test").err().expect("refused");
+    let e = Conn::open_with(&l.socket, &chat, "test")
+        .err()
+        .expect("refused");
     assert!(e.contains("daemon scope"), "{e}");
 }
 
@@ -178,8 +195,14 @@ fn no_daemon_is_a_clear_error() {
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
     std::fs::write(dir.join("daemon.token"), format!("{TOKEN}\n")).unwrap();
-    std::fs::set_permissions(dir.join("daemon.token"), std::fs::Permissions::from_mode(0o600)).unwrap();
-    let e = Conn::open(&dir.join("daemon.sock"), "test").err().expect("error");
+    std::fs::set_permissions(
+        dir.join("daemon.token"),
+        std::fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    let e = Conn::open(&dir.join("daemon.sock"), "test")
+        .err()
+        .expect("error");
     assert!(e.contains("not running"), "{e}");
     let _ = std::fs::remove_dir_all(&dir);
 }
@@ -191,11 +214,14 @@ fn ask(l: &Live, id: &str, secs: u32) -> std::thread::JoinHandle<Value> {
     let id = id.to_string();
     std::thread::spawn(move || {
         let mut c = Conn::open(&socket, "test hook").unwrap();
-        c.quiet_timeout(Duration::from_secs(u64::from(secs) + 5)).unwrap();
-        c.request(&json!({"op": "approve", "request": {"id": id, "chat": "tk-chat-a",
+        c.quiet_timeout(Duration::from_secs(u64::from(secs) + 5))
+            .unwrap();
+        c.request(
+            &json!({"op": "approve", "request": {"id": id, "chat": "tk-chat-a",
             "harness": "claude-code", "tool": "bash", "summary": "rm -rf build",
-            "timeoutSeconds": secs}}))
-            .unwrap()
+            "timeoutSeconds": secs}}),
+        )
+        .unwrap()
     })
 }
 
@@ -228,7 +254,10 @@ fn the_approver_answers_a_hooks_request_end_to_end() {
     std::thread::sleep(approve::SETTLE + Duration::from_millis(50));
     tx.send(In::Typed("\n".into(), Instant::now())).unwrap();
     let reply = asked.join().unwrap();
-    assert_eq!((reply["answer"].as_str(), reply["by"].as_str()), (Some("no"), Some("approver")));
+    assert_eq!(
+        (reply["answer"].as_str(), reply["by"].as_str()),
+        (Some("no"), Some("approver"))
+    );
 
     tx.send(In::TtyGone).unwrap();
     assert!(matches!(h.join().unwrap(), approve::Ended::TtyGone));
@@ -245,7 +274,10 @@ fn with_no_approver_the_daemon_says_no_at_once() {
     let l = live("noapprover");
     let t = Instant::now();
     let reply = ask(&l, "ap-1", 30).join().unwrap();
-    assert_eq!((reply["answer"].as_str(), reply["by"].as_str()), (Some("no"), Some("none")));
+    assert_eq!(
+        (reply["answer"].as_str(), reply["by"].as_str()),
+        (Some("no"), Some("none"))
+    );
     assert!(t.elapsed() < Duration::from_secs(5));
 }
 
@@ -262,7 +294,10 @@ fn an_unanswered_request_times_out_to_no_and_is_not_answered_late() {
         approve::serve(&rx, writer, &mut o, &mut flush)
     });
     let reply = ask(&l, "ap-slow", 2).join().unwrap();
-    assert_eq!((reply["answer"].as_str(), reply["by"].as_str()), (Some("no"), Some("timeout")));
+    assert_eq!(
+        (reply["answer"].as_str(), reply["by"].as_str()),
+        (Some("no"), Some("timeout"))
+    );
     out.wait_for("timed out");
     // A "y" now lands on nothing.
     tx.send(In::Typed("y\n".into(), Instant::now())).unwrap();
@@ -273,7 +308,10 @@ fn an_unanswered_request_times_out_to_no_and_is_not_answered_late() {
 fn status_sees_the_daemon_its_server_and_an_open_chat() {
     let l = live("status");
     // A child stands in for a harness `tk run` started.
-    let mut child = std::process::Command::new("sleep").arg("30").spawn().unwrap();
+    let mut child = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .unwrap();
     let pid = child.id();
     post(
         &l,
@@ -306,5 +344,8 @@ fn status_sees_the_daemon_its_server_and_an_open_chat() {
     assert_eq!(chats[0]["boundary"], "none");
     let text = status::render(&[], &d);
     assert!(text.contains("daemon: running"), "{text}");
-    assert!(text.contains("tk-chat-s") && !text.contains("tk-chat-t"), "{text}");
+    assert!(
+        text.contains("tk-chat-s") && !text.contains("tk-chat-t"),
+        "{text}"
+    );
 }

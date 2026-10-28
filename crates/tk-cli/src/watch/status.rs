@@ -55,7 +55,11 @@ pub fn main(args: &Args) -> u8 {
     let mut out = out.lock();
     if args.flag("--json") {
         let doc = json!({"agents": rows, "daemon": daemon});
-        let _ = writeln!(out, "{}", serde_json::to_string_pretty(&doc).unwrap_or_default());
+        let _ = writeln!(
+            out,
+            "{}",
+            serde_json::to_string_pretty(&doc).unwrap_or_default()
+        );
     } else {
         let _ = writeln!(out, "{}", render(&rows, &daemon));
     }
@@ -67,7 +71,6 @@ pub struct Env {
     pub home: Option<PathBuf>,
     pub path: String,
     pub vars: Vec<(String, String)>,
-    pub macos: bool,
 }
 
 impl Env {
@@ -87,7 +90,6 @@ impl Env {
                 .iter()
                 .filter_map(|k| std::env::var(k).ok().map(|v| (k.to_string(), v)))
                 .collect(),
-            macos: cfg!(target_os = "macos"),
         }
     }
 
@@ -226,7 +228,11 @@ pub fn probe_version(program: &Path) -> String {
         use std::io::Read;
         let _ = (&mut o).take(4096).read_to_string(&mut text);
     }
-    let first = text.lines().map(str::trim).find(|l| !l.is_empty()).unwrap_or("");
+    let first = text
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty())
+        .unwrap_or("");
     if first.is_empty() {
         "printed nothing".into()
     } else {
@@ -300,7 +306,11 @@ pub fn running_chats(socket: &Path, now: i64) -> Value {
             if ev.get("source").and_then(Value::as_str) != Some("run") {
                 continue;
             }
-            let chat = ev.get("chatId").and_then(Value::as_str).unwrap_or("").to_string();
+            let chat = ev
+                .get("chatId")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
             match ev.get("kind").and_then(Value::as_str) {
                 Some("run.start") => starts.push(ev),
                 Some("run.stop") => stopped.push(chat),
@@ -344,14 +354,24 @@ pub fn render(rows: &[Value], daemon: &Value) -> String {
     let mut out = String::new();
     let s = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).unwrap_or("").to_string();
     out.push_str(&format!(
-        "{:<14} {:<4} {:<26} {:<12} {:<22} {:<18} {:<20} {}\n",
-        "agent", "tier", "gate", "registered", "when the gate fails", "ask goes to", "verified at", "installed"
+        "{:<14} {:<4} {:<26} {:<12} {:<22} {:<20} {:<22} {}\n",
+        "agent",
+        "tier",
+        "gate",
+        "registered",
+        "when the gate fails",
+        "ask goes to",
+        "verified at",
+        "installed"
     ));
     for r in rows {
         let gate = r.get("gate").cloned().unwrap_or(Value::Null);
         let gate_text = match s(&gate, "status").as_str() {
             "built" => format!("built ({})", s(&gate, "family")),
-            "planned" => match (gate.get("wave").and_then(Value::as_u64), gate.get("lane").and_then(Value::as_str)) {
+            "planned" => match (
+                gate.get("wave").and_then(Value::as_u64),
+                gate.get("lane").and_then(Value::as_str),
+            ) {
                 (Some(w), Some(l)) => format!("planned, wave {w} lane {l}"),
                 _ => "planned".into(),
             },
@@ -359,21 +379,27 @@ pub fn render(rows: &[Value], daemon: &Value) -> String {
             other => clean(other, 26),
         };
         let tier = r.get("tier").and_then(Value::as_str).unwrap_or("-");
-        let installed = match (r.get("onPath").and_then(Value::as_str), r.get("installedVersion").and_then(Value::as_str)) {
+        let installed = match (
+            r.get("onPath").and_then(Value::as_str),
+            r.get("installedVersion").and_then(Value::as_str),
+        ) {
             (Some(_), Some(v)) => clean(v, 40),
             (Some(_), None) => "on PATH (not probed)".into(),
             (None, _) if r.get("cli").map(Value::is_null).unwrap_or(true) => "-".into(),
             (None, _) => "not found".into(),
         };
         out.push_str(&format!(
-            "{:<14} {:<4} {:<26} {:<12} {:<22} {:<18} {:<20} {}\n",
+            "{:<14} {:<4} {:<26} {:<12} {:<22} {:<20} {:<22} {}\n",
             clean(&s(r, "id"), 14),
             tier,
             gate_text,
             s(r, "registered"),
-            fail_text(&s(r, "failMode"), r.get("failSwitch").and_then(Value::as_str)),
+            fail_text(
+                &s(r, "failMode"),
+                r.get("failSwitch").and_then(Value::as_str)
+            ),
             ask_text(&s(r, "ask")),
-            clean(&s(r, "verifiedAt"), 20),
+            clean(&s(r, "verifiedAt"), 22),
             installed,
         ));
     }
@@ -401,7 +427,7 @@ pub fn render(rows: &[Value], daemon: &Value) -> String {
 fn fail_text(mode: &str, switch: Option<&str>) -> String {
     match mode {
         "blocks" => "blocks".into(),
-        "blocks-with-switch" => "blocks (switch set)".into(),
+        "blocks-with-switch" => "blocks, with switch".into(),
         "open" => "FAILS OPEN".into(),
         "open-on-timeout" => "FAILS OPEN on timeout".into(),
         _ => match switch {
@@ -431,12 +457,18 @@ fn render_daemon(d: &Value) -> String {
     let info = d.get("daemon").cloned().unwrap_or(Value::Null);
     out.push_str(&format!(
         "daemon: running, version {}, protocol {}\n",
-        clean(info.get("version").and_then(Value::as_str).unwrap_or("?"), 32),
+        clean(
+            info.get("version").and_then(Value::as_str).unwrap_or("?"),
+            32
+        ),
         info.get("protocol").and_then(Value::as_u64).unwrap_or(0)
     ));
     if let Some(by) = d.get("servedBy").filter(|v| !v.is_null()) {
         let pid = by.get("pid").and_then(Value::as_u64);
-        let program = by.get("program").and_then(Value::as_str).unwrap_or("unknown program");
+        let program = by
+            .get("program")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown program");
         let yours = by.get("yours").and_then(Value::as_bool) == Some(true);
         let matches = by.get("matchesHello").and_then(Value::as_bool) == Some(true);
         out.push_str(&format!(
@@ -444,12 +476,20 @@ fn render_daemon(d: &Value) -> String {
             pid.map(|p| p.to_string()).unwrap_or_else(|| "?".into()),
             clean(program, 120),
             if yours { "" } else { ", NOT your user" },
-            if matches { "" } else { ", not the pid the daemon gave" },
+            if matches {
+                ""
+            } else {
+                ", not the pid the daemon gave"
+            },
         ));
     }
     if let Some(h) = d.get("lastHour").filter(|v| !v.is_null()) {
         let by = h.get("bySource").and_then(Value::as_object);
-        let n = |k: &str| by.and_then(|m| m.get(k)).and_then(Value::as_u64).unwrap_or(0);
+        let n = |k: &str| {
+            by.and_then(|m| m.get(k))
+                .and_then(Value::as_u64)
+                .unwrap_or(0)
+        };
         out.push_str(&format!(
             "  last hour: {} events, {} flags; otel {}, adapter {}, run {}, approval {}\n",
             h.get("events").and_then(Value::as_u64).unwrap_or(0),
@@ -460,7 +500,10 @@ fn render_daemon(d: &Value) -> String {
             n("approval"),
         ));
         let os_events = n("auditd") + n("eslogger");
-        let reach = h.get("collectorReachable").and_then(Value::as_str).unwrap_or("unknown");
+        let reach = h
+            .get("collectorReachable")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
         if os_events == 0 && reach != "yes" {
             out.push_str("  os feed: off (no auditd or collector events in the last hour); the feed shows the harnesses' own records only\n");
         } else {
@@ -517,14 +560,14 @@ mod tests {
             home: Some(home.to_path_buf()),
             path: String::new(),
             vars: Vec::new(),
-            macos: false,
         }
     }
 
     #[test]
     fn every_preset_row_has_a_status_row() {
         let table: Value = serde_json::from_str(PRESETS).unwrap();
-        let n = table["harnesses"].as_array().unwrap().len() + table["planned"].as_array().unwrap().len();
+        let n = table["harnesses"].as_array().unwrap().len()
+            + table["planned"].as_array().unwrap().len();
         let dir = std::env::temp_dir().join(format!("tk-status-{}", std::process::id()));
         let rows = agents(&env(&dir), false);
         assert_eq!(rows.len(), n);
@@ -537,10 +580,23 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("tk-status2-{}", std::process::id()));
         let rows = agents(&env(&dir), false);
         let text = render(&rows, &json!({"running": false, "error": "x"}));
-        let line = |id: &str| text.lines().find(|l| l.starts_with(&format!("{id} "))).unwrap().to_string();
+        let line = |id: &str| {
+            text.lines()
+                .find(|l| l.starts_with(&format!("{id} ")))
+                .unwrap()
+                .to_string()
+        };
         assert!(line("codex").contains("FAILS OPEN"), "{}", line("codex"));
-        assert!(line("gemini").contains("planned, wave 2 lane I"), "{}", line("gemini"));
-        assert!(line("droid").contains("planned, wave 4 lane L"), "{}", line("droid"));
+        assert!(
+            line("gemini").contains("planned, wave 2 lane I"),
+            "{}",
+            line("gemini")
+        );
+        assert!(
+            line("droid").contains("planned, wave 4 lane L"),
+            "{}",
+            line("droid")
+        );
         assert!(line("copilot-cli").contains("on timeout"));
         assert!(line("zed").contains("no in-harness gate"));
         assert!(line("pi").contains("built (pi-extension)"));
@@ -550,14 +606,19 @@ mod tests {
     #[test]
     fn a_daemon_that_is_down_is_said_with_what_that_costs() {
         let t = render_daemon(&json!({"running": false, "error": "the daemon is not running (x)"}));
-        assert!(t.contains("not reachable") && t.contains("no approver"), "{t}");
+        assert!(
+            t.contains("not reachable") && t.contains("no approver"),
+            "{t}"
+        );
     }
 
     #[test]
     fn an_os_feed_with_no_events_is_said_off() {
-        let t = render_daemon(&json!({"running": true, "daemon": {"version": "0.0.0", "protocol": 1},
+        let t = render_daemon(
+            &json!({"running": true, "daemon": {"version": "0.0.0", "protocol": 1},
             "lastHour": {"events": 3, "flags": 0, "bySource": {"adapter": 3}, "chainOk": true, "collectorReachable": "unknown"},
-            "chats": []}));
+            "chats": []}),
+        );
         assert!(t.contains("os feed: off"), "{t}");
         assert!(t.contains("no chats started by tk run are open"), "{t}");
     }

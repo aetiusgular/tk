@@ -18,14 +18,17 @@ pub const FLAGS: &[super::Flag] = &[
     ("--socket", true),
 ];
 
-pub const USAGE: &str = "usage: tk watch tail [--since <30s|10m|2h|1d|ms>] [--chat <id>] [--json] [--socket <path>]";
+pub const USAGE: &str =
+    "usage: tk watch tail [--since <30s|10m|2h|1d|ms>] [--chat <id>] [--json] [--socket <path>]";
 
 pub fn main(args: &Args) -> u8 {
     let since = match args.value("--since") {
         Some(t) => match parse_when(t, now_ms()) {
             Some(ms) => Some(ms),
             None => {
-                eprintln!("tk watch tail: --since takes 30s, 10m, 2h, 1d, now or epoch ms, got {t:?}");
+                eprintln!(
+                    "tk watch tail: --since takes 30s, 10m, 2h, 1d, now or epoch ms, got {t:?}"
+                );
                 return 2;
             }
         },
@@ -47,7 +50,13 @@ pub fn main(args: &Args) -> u8 {
     };
     let out = std::io::stdout();
     let mut out = out.lock();
-    match run(conn, since, args.value("--chat"), args.flag("--json"), &mut out) {
+    match run(
+        conn,
+        since,
+        args.value("--chat"),
+        args.flag("--json"),
+        &mut out,
+    ) {
         Ok(()) => 0,
         Err(e) => {
             eprintln!("tk watch tail: {e}");

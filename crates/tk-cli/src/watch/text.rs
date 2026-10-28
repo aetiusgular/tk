@@ -123,7 +123,7 @@ pub fn count(n: u64) -> String {
     let s = n.to_string();
     let mut out = String::new();
     for (i, c) in s.chars().enumerate() {
-        if i > 0 && (s.len() - i) % 3 == 0 {
+        if i > 0 && (s.len() - i).is_multiple_of(3) {
             out.push(',');
         }
         out.push(c);
@@ -173,10 +173,7 @@ mod tests {
 
     #[test]
     fn zero_width_and_bom_are_shown() {
-        assert_eq!(
-            clean("a\u{200b}b\u{feff}", 100),
-            "a\\u{200B}b\\u{FEFF}"
-        );
+        assert_eq!(clean("a\u{200b}b\u{feff}", 100), "a\\u{200B}b\\u{FEFF}");
     }
 
     #[test]
@@ -201,7 +198,10 @@ mod tests {
         assert_eq!(parse_when("30s", now), Some(now - 30_000));
         assert_eq!(parse_when("10m", now), Some(now - 600_000));
         assert_eq!(parse_when("2h", now), Some(now - 7_200_000));
-        assert_eq!(parse_when("1d", 100_000_000), Some(100_000_000 - 86_400_000));
+        assert_eq!(
+            parse_when("1d", 100_000_000),
+            Some(100_000_000 - 86_400_000)
+        );
         assert_eq!(parse_when("now", now), Some(now));
         assert_eq!(parse_when("1792204985350", now), Some(1_792_204_985_350));
         for bad in ["", "m", "-5m", "5w", "5 m", "1e3", "99999999999999999999d"] {

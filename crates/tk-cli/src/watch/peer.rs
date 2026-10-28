@@ -7,12 +7,17 @@
 //! integration w2 owns (security finding S2; the lane J status doc has the
 //! request and its sources).
 //!
-//! Linux: `SO_PEERCRED` gives the peer's pid, uid and gid as they were at
-//! `connect(2)` (unix(7)); ancestry is read from `/proc/<pid>/stat`
-//! (proc(5)). macOS: `LOCAL_PEERCRED` gives the uid and `LOCAL_PEERPID` the
-//! pid (XNU `bsd/sys/un.h`); ancestry from `proc_pidinfo(PROC_PIDTBSDINFO)`
-//! and the program from `proc_pidpath`. A pid can be reused once its process
-//! exits, so a pid read here names a process only while it runs.
+//! Linux: `SO_PEERCRED` gives the peer's pid and effective uid and gid as
+//! they were at `connect(2)` (unix(7); `net/unix/af_unix.c`
+//! `prepare_peercred`); ancestry is read from `/proc/<pid>/stat` (proc(5)).
+//! macOS: `LOCAL_PEERCRED` gives the effective uid copied at `connect()`;
+//! `LOCAL_PEERPID` gives the pid of the process that last used the peer's
+//! socket (`so->last_pid`, rewritten on listen, connect, send, receive and
+//! poll: XNU `bsd/kern/uipc_usrreq.c`, `uipc_socket.c`), not the one that
+//! connected. Ancestry from `proc_pidinfo(PROC_PIDTBSDINFO)`, the program
+//! from `proc_pidpath`. A pid can be reused once its process exits, so a pid
+//! read here names a process only while it runs; the daemon's check should
+//! use `SO_PEERPIDFD` (Linux 6.5) or the audit token's pid version instead.
 
 use std::os::fd::AsRawFd;
 use std::os::unix::net::UnixStream;
@@ -164,7 +169,10 @@ mod os {
             )
         };
         Some(Peer {
-            pid: (rp == 0).then(|| u32::try_from(pid).ok()).flatten().filter(|p| *p > 0),
+            pid: (rp == 0)
+                .then(|| u32::try_from(pid).ok())
+                .flatten()
+                .filter(|p| *p > 0),
             uid: cred.cr_uid,
         })
     }
@@ -174,7 +182,11 @@ mod os {
         // SAFETY: the buffer is PROC_PIDPATHINFO_MAXSIZE bytes, as
         // proc_pidpath requires.
         let n = unsafe {
-            libc::proc_pidpath(pid as libc::c_int, buf.as_mut_ptr().cast(), buf.len() as u32)
+            libc::proc_pidpath(
+                pid as libc::c_int,
+                buf.as_mut_ptr().cast(),
+                buf.len() as u32,
+            )
         };
         if n <= 0 {
             return None;
