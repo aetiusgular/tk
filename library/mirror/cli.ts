@@ -7,7 +7,7 @@
 // daemon (plans/parallel_build_tk.md, lane G's card). It is the one part of
 // the library that calls out by default: the registry's list API, and with
 // probes on, each mirrored remote's own host. `--no-probe` turns the second off.
-import { probe } from "./liveness.ts";
+import { canResolve, probe } from "./liveness.ts";
 import { pull } from "./pull.ts";
 
 function usage(): never {
@@ -66,6 +66,11 @@ if (cmd === "pull") {
 } else if (cmd === "probe") {
   const url = args[0];
   if (!url || args.length !== 1) usage();
+  const cannot = await canResolve();
+  if (cannot) {
+    console.error(`not probed: ${cannot}; a result from here would call every remote dead`);
+    process.exit(3);
+  }
   console.log(JSON.stringify(await probe(url), null, 2));
 } else {
   usage();

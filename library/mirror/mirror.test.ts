@@ -296,3 +296,23 @@ describe("store safety", () => {
     expect(readdirSync(elsewhere)).toEqual([]);
   });
 });
+
+describe("a machine that cannot resolve names", () => {
+  it("skips the probes instead of calling every remote dead (seen in the cloud workspace, 28 Oct)", async () => {
+    const reg = new FakeRegistry();
+    for (let i = 0; i < 30; i++) reg.publish(remoteServer(`io.github.tt/s${i}`, "1", `https://h${i}.example.com/mcp`));
+    const out = tmp();
+    const noDns = (_h: string, cb: (e: NodeJS.ErrnoException, a: never[]) => void) => cb(Object.assign(new Error("x"), { code: "EAI_AGAIN" }), []);
+    const r = await pull({ out, client: { baseUrl: "https://registry.test", fetchImpl: reg.fetch, ...quiet }, probeOptions: { lookup: noDns as never } });
+    expect(r.probed).toBe(0);
+    expect(r.probeSkipped).toMatch(/does not resolve from this machine/);
+    expect(new Store(out).read("liveness.json")).toBeUndefined();
+  });
+  it("does not record a batch where every probe failed at the network", async () => {
+    const { machineLooksOffline } = await import("./liveness.ts");
+    const d = (reason: string) => ({ url: "u", state: "dead" as const, checkedAt: "t", reason });
+    expect(machineLooksOffline(Array.from({ length: 25 }, () => d("dns")))).toBe(true);
+    expect(machineLooksOffline([...Array.from({ length: 24 }, () => d("dns")), d("HTTP 503")])).toBe(false);
+    expect(machineLooksOffline(Array.from({ length: 5 }, () => d("dns")))).toBe(false);
+  });
+});

@@ -12,7 +12,8 @@
 // No credential is ever sent: a server that needs one answers 401, which
 // proves it is there. Results use the contract's states (alive, dead,
 // unknown); the detail goes in the mirror's own record.
-import { GuardError, guardedRequest, refuseUrl, type GuardedRequest, type GuardedResponse } from "./netguard.ts";
+import { lookup as dnsLookup } from "node:dns";
+import { GuardError, guardedRequest, refuseUrl, type GuardedRequest, type GuardedResponse, type Lookup } from "./netguard.ts";
 
 export const PROTOCOL_VERSION = "2026-07-28";
 
@@ -143,4 +144,30 @@ export async function pool<T, R>(items: T[], limit: number, task: (t: T) => Prom
   });
   await Promise.all(workers);
   return out;
+}
+
+/** Hosts that resolve from any machine with open DNS: the registry the
+ *  mirror reads, and one other. */
+export const CANARY_HOSTS = ["registry.modelcontextprotocol.io", "example.com"];
+
+/** Whether this machine resolves names itself. Behind an egress proxy that
+ *  resolves only an allowlist (the cloud workspace this was built in: github.com
+ *  resolved, registry.modelcontextprotocol.io, mcp.exa.ai and example.com did
+ *  not, and every probe came back `dns`), remotes would read as dead; the pull
+ *  then skips the probes instead of recording them (run on 28 Oct 2026). Every
+ *  canary must resolve. Returns why not, or undefined when it can. */
+export async function canResolve(lookup?: Lookup): Promise<string | undefined> {
+  const l: Lookup = lookup ?? ((h, cb) => dnsLookup(h, { all: true }, cb));
+  for (const host of CANARY_HOSTS) {
+    const ok = await new Promise<boolean>((resolve) => l(host, (err, addrs) => resolve(!err && addrs.length > 0)));
+    if (!ok) return `${host} does not resolve from this machine`;
+  }
+  return undefined;
+}
+
+/** A batch where every probe failed at the network is a fact about this
+ *  machine, not about the remotes. */
+export function machineLooksOffline(results: ProbeDetail[]): boolean {
+  if (results.length < 20) return false;
+  return results.every((d) => d.state === "dead" && (d.reason === "dns" || d.reason === "network" || d.reason === "timeout"));
 }

@@ -2,7 +2,7 @@
 // flag, write the entries and the index.
 import { mirroredEntry, remoteUrls } from "./entry.ts";
 import { computeFlags, type Flag } from "./flags.ts";
-import { combine, pool, probe, type ProbeDetail, type ProbeOptions } from "./liveness.ts";
+import { canResolve, combine, machineLooksOffline, pool, probe, type ProbeDetail, type ProbeOptions } from "./liveness.ts";
 import { OFFICIAL_KEY, OFFICIAL_REGISTRY, RegistryClient, type ClientOptions, type ServerRecord } from "./registry.ts";
 import { Store } from "./store.ts";
 
@@ -40,6 +40,8 @@ export type PullReport = {
   latestCorrected: number;
   missingUpstream: number;
   probed: number;
+  /** Why the probes did not run or were not kept, when they were not. */
+  probeSkipped?: string;
   servers: number;
   watermark?: string;
 };
@@ -132,7 +134,9 @@ export async function pull(o: PullOptions): Promise<PullReport> {
 
   // 3. Liveness, oldest first, within the budget. Only active latest remotes.
   const livenessFile = (store.read("liveness.json") as { urls?: Record<string, ProbeDetail> } | undefined)?.urls ?? {};
-  if (o.probe !== false) {
+  const cannot = o.probe === false ? undefined : await canResolve(o.probeOptions?.lookup);
+  if (cannot) report.probeSkipped = cannot;
+  if (o.probe !== false && !cannot) {
     const maxAge = o.probeMaxAgeMs ?? 24 * 3600_000;
     const due = new Set<string>();
     for (const r of latest.values()) {
@@ -145,9 +149,13 @@ export async function pull(o: PullOptions): Promise<PullReport> {
     const order = [...due].sort((a, b) => (livenessFile[a]?.checkedAt ?? "").localeCompare(livenessFile[b]?.checkedAt ?? "") || a.localeCompare(b));
     const batch = order.slice(0, o.probeBudget ?? 2000);
     const results = await pool(batch, o.probeConcurrency ?? 8, (url) => probe(url, { ...(o.probeOptions ?? {}), now }));
-    for (const d of results) livenessFile[d.url] = d;
-    report.probed = results.length;
-    store.write("liveness.json", { urls: livenessFile });
+    if (machineLooksOffline(results)) {
+      report.probeSkipped = `all ${results.length} probes failed at the network; not recorded`;
+    } else {
+      for (const d of results) livenessFile[d.url] = d;
+      report.probed = results.length;
+      store.write("liveness.json", { urls: livenessFile });
+    }
   }
 
   // 4. Entries and flags.

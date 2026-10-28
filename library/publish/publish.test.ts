@@ -358,3 +358,19 @@ describe("the library's check", () => {
     expect((await verifyEntry({ prLibrary: p.pr, baseLibrary: p.base, id: "../../etc", prAuthor: "alice" }))[0]!.rule).toBe("verify/id");
   });
 });
+
+describe("the library's check, against a stranger's files", () => {
+  it("refuses a proof file that is a link", async () => {
+    const fx = fixture(server("io.github.alice/weather-tool"), "weather-tool");
+    const r = await publish({ dir: fx.dir, library: fx.lib, proof: "github" }, { gh: ghAs("alice"), fetchImpl: noPackages });
+    await runSteps(prSteps({ clone: fx.lib, entryDir: fx.dir, manifestFile: "server.json", manifest: r.manifest!, proof: r.proof!, body: "b" }), async () => {});
+    const proofPath = join(fx.lib, "library", "catalog", "weather-tool", PROOF_FILE);
+    const elsewhere = join(fx.root, "elsewhere.json");
+    writeFileSync(elsewhere, readFileSync(proofPath));
+    const { rmSync } = await import("node:fs");
+    rmSync(proofPath);
+    symlinkSync(elsewhere, proofPath);
+    const out = await verifyEntry({ prLibrary: fx.lib, baseLibrary: fx.lib, id: "weather-tool", prAuthor: "alice" }, { fetchImpl: noPackages });
+    expect(out.map((x) => x.rule)).toEqual(["verify/no-proof"]);
+  });
+});

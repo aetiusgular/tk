@@ -33,7 +33,7 @@ export type ServerRecord = {
   _meta: { [OFFICIAL_KEY]: Official } & Record<string, unknown>;
 };
 
-export type FetchLike = (url: string, init?: { headers?: Record<string, string>; signal?: AbortSignal }) => Promise<{
+export type FetchLike = (url: string, init?: { headers?: Record<string, string>; signal?: AbortSignal; redirect?: "error" | "manual" | "follow" }) => Promise<{
   status: number;
   headers: { get(name: string): string | null };
   text(): Promise<string>;
@@ -126,7 +126,8 @@ export class RegistryClient {
       let text = "";
       let retryAfter: string | null = null;
       try {
-        const res = await this.fetchImpl(url, { headers: { accept: "application/json", "user-agent": "tk-library-mirror/0 (+https://github.com/aetiusgular/tk)" } });
+        // A redirect is an error: the mirror reads the one host it was given.
+        const res = await this.fetchImpl(url, { redirect: "error", headers: { accept: "application/json", "user-agent": "tk-library-mirror/0 (+https://github.com/aetiusgular/tk)" } });
         status = res.status;
         retryAfter = res.headers.get("retry-after");
         const len = Number(res.headers.get("content-length") ?? "0");

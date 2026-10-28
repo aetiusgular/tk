@@ -40,7 +40,7 @@ const NPM = "https://registry.npmjs.org";
 const PYPI = "https://pypi.org";
 
 async function getJson(fetchImpl: FetchLike, url: string): Promise<{ status: number; body?: unknown }> {
-  const r = await fetchImpl(url, { headers: { accept: "application/json" } });
+  const r = await fetchImpl(url, { redirect: "error", headers: { accept: "application/json" } });
   if (r.status !== 200) return { status: r.status };
   const text = await r.text();
   if (text.length > 32 * 1024 * 1024) return { status: 413 };

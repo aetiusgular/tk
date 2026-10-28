@@ -10,7 +10,7 @@
 //     read another user's org role); for a domain, the signature verifies
 //     against a key the domain publishes now;
 //   - the packages: install scripts and provenance again, from npm and PyPI.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type { FetchLike } from "../mirror/registry.ts";
 import { loadBrands, loadCatalog, loadEntry, validateCatalog, validateEntry, type Catalog, type Finding } from "../validate/index.ts";
@@ -37,7 +37,17 @@ export async function verifyEntry(o: { prLibrary: string; baseLibrary: string; i
   const entry = existsSync(dir) ? loadEntry(dir, prRoot) : undefined;
   if (!entry) return [f("verify/no-entry", "error", `library/catalog/${o.id} holds no manifest`)];
   const proofPath = join(dir, PROOF_FILE);
-  const proofRaw = existsSync(proofPath) ? (JSON.parse(readFileSync(proofPath, "utf8")) as unknown) : undefined;
+  // The proof is a stranger's file: a regular file under 2 MB, never a link out of the checkout.
+  let proofRaw: unknown;
+  if (existsSync(proofPath)) {
+    const st = lstatSync(proofPath);
+    if (!st.isFile() || st.size > 2 * 1024 * 1024) return [f("verify/no-proof", "error", `${PROOF_FILE} is not a regular file under 2 MB`)];
+    try {
+      proofRaw = JSON.parse(readFileSync(proofPath, "utf8")) as unknown;
+    } catch {
+      return [f("verify/no-proof", "error", `${PROOF_FILE} is not JSON`)];
+    }
+  }
   const meta = getMeta(entry.kind, entry.data);
   const tier = meta?.tier;
   if (!isProof(proofRaw)) {
