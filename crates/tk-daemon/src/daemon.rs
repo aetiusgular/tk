@@ -484,29 +484,41 @@ impl Daemon {
                 return;
             }
         };
-        out.send(&ok());
         // The log on disk first, outside the lock; then, under it, the ring
-        // (which holds anything not yet on disk) and the subscription.
+        // (which holds anything not yet on disk), the subscription, and only
+        // then the `ok`. `ingest` broadcasts under the same lock, so nothing
+        // a client does after it reads `ok` can be ingested before the
+        // subscription exists (lane K's request 5: the old order sent `ok`
+        // first, and an event ingested in between was never pushed).
         let mut backlog: Vec<Event> = match since {
             Some(since) => {
                 store::read(&self.log_dir, since, i64::MAX, chat.as_deref(), MAX_BACKLOG).events
             }
             None => Vec::new(),
         };
-        let Ok(ring) = self.order.lock() else { return };
+        let Ok(ring) = self.order.lock() else {
+            out.send(&error("busy"));
+            return;
+        };
         if let Some(since) = since {
             backlog = merge_backlog(backlog, ring.iter(), since, chat.as_deref());
         }
+        let Ok(mut tails) = self.tails.lock() else {
+            out.send(&error("busy"));
+            return;
+        };
+        out.send(&ok());
         for event in backlog {
             out.send(&Push::Event(event));
         }
-        if let Ok(mut tails) = self.tails.lock() {
-            tails.push(TailSub {
-                chat,
-                out: out.clone(),
-            });
-        }
+        tails.push(TailSub {
+            chat,
+            out: out.clone(),
+        });
+        drop(tails);
         drop(ring);
+        #[cfg(test)]
+        tests::after_tail_ok();
     }
 
     /// The `report` object (contract, section 5: lane B defines it, lane J
@@ -826,4 +838,77 @@ fn collector_events(
         }
     }
     Some(reply)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::activity::types::ActivitySource;
+    use std::sync::mpsc::RecvTimeoutError;
+
+    const TOKEN: &str = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    type Hook = Box<dyn Fn() + Send>;
+    static AFTER_OK: Mutex<Option<Hook>> = Mutex::new(None);
+
+    /// Runs where a tail's client first holds its `ok` and can act on it.
+    pub(super) fn after_tail_ok() {
+        if let Ok(hook) = AFTER_OK.lock() {
+            if let Some(hook) = hook.as_ref() {
+                hook();
+            }
+        }
+    }
+
+    fn daemon() -> (Arc<Daemon>, PathBuf) {
+        let root = std::env::temp_dir().join(format!(
+            "tkd-unit-{}-{}",
+            std::process::id(),
+            &tk_core::token::mint().unwrap()[..12]
+        ));
+        let data = root.join("data");
+        let log: &'static ActivityLog =
+            Box::leak(Box::new(ActivityLog::start(data.join("activity"))));
+        (Daemon::new(TOKEN, log, &data, false).unwrap(), root)
+    }
+
+    fn event(id: &str) -> Event {
+        Event {
+            id: id.into(),
+            at: 0,
+            chat_id: "chat-a".into(),
+            harness: "pi".into(),
+            source: ActivitySource::Adapter,
+            kind: "tool.call".into(),
+            summary: id.into(),
+            detail: json!({}),
+            pid: None,
+            approval_id: None,
+        }
+    }
+
+    /// Lane K's request 5 (the CI flake `ids_the_daemon_makes_never_repeat`):
+    /// a client that acts on `tail`'s `ok` at once must see what it caused.
+    /// On the old order (`ok` before the subscription) an event ingested at
+    /// that moment was never pushed.
+    #[test]
+    fn an_event_right_after_the_tail_ok_reaches_the_tail() {
+        let (d, root) = daemon();
+        let hooked = d.clone();
+        *AFTER_OK.lock().unwrap() = Some(Box::new(move || {
+            hooked.ingest(event("right-after-ok"));
+        }));
+        let (out, rx, _) = Outbox::new(d.next_conn());
+        d.op_tail(&Who::Daemon, None, None, &out);
+        *AFTER_OK.lock().unwrap() = None;
+        let first: Value = serde_json::from_str(&rx.recv().unwrap()).unwrap();
+        assert_eq!(first["ok"], true, "{first}");
+        let pushed = match rx.recv_timeout(Duration::from_secs(2)) {
+            Ok(line) => line,
+            Err(RecvTimeoutError::Timeout) => panic!("the event after ok was never pushed"),
+            Err(e) => panic!("{e}"),
+        };
+        assert!(pushed.contains("right-after-ok"), "{pushed}");
+        let _ = std::fs::remove_dir_all(root);
+    }
 }
