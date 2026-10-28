@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "Kilo Code CLI plugin: lane F's OpenCode plugin with Kilo's paths, no runtime import of @opencode-ai/plugin (wave 2, lane I, T2.4)",
+  "description": "Kilo Code CLI plugin: tool.execute.before and after on tk's shared gate core (wave 2, lane I, T2.4)",
+  "main": "./src/plugin.ts",
+  "exports": { "./server": "./src/plugin.ts" },
+  "files": ["src/plugin.ts", "src/kilo.ts", "src/control.ts", "src/core/", "README.md", "kilo.fragment.json"],
   "engines": { "node": ">=22.19.0" }
 }

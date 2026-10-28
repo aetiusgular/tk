@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "Hermes Agent plugin: pre_tool_call in Python (wave 2, lane I, T2.4)",
+  "description": "Hermes Agent plugin: pre_tool_call and transform_tool_result in Python, deciding through tk's shared gate core in Node (wave 2, lane I, T2.4)",
+  "files": ["plugin.yaml", "__init__.py", "tk_gate.py", "bin/tk-decide.mjs", "src/decide.ts", "src/control.ts", "src/core/", "README.md"],
   "engines": { "node": ">=22.19.0" }
 }

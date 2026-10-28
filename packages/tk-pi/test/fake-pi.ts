@@ -146,6 +146,8 @@ export interface MemFile {
   uid?: number;
   mtimeMs?: number;
   isDir?: boolean;
+  /** A symbolic link at the path: open with O_NOFOLLOW fails. */
+  isLink?: boolean;
 }
 
 /** An in-memory FsLike that counts reads. */
@@ -155,24 +157,32 @@ export function memFs(files: Record<string, MemFile>) {
     calls,
     files,
     fs: {
-      async stat(path: string) {
-        calls.push(`stat:${path}`);
+      async open(path: string) {
+        calls.push(`open:${path}`);
         const f = files[path];
         if (!f) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+        if (f.isLink) throw Object.assign(new Error("ELOOP"), { code: "ELOOP" });
+        // The handle holds the file it opened, as a real one does: a later
+        // change to `files` does not reach it.
+        const held = { ...f };
         return {
-          mtimeMs: f.mtimeMs ?? 1,
-          size: Buffer.byteLength(f.text),
-          mode: f.mode ?? 0o100600,
-          uid: f.uid ?? 1000,
-          ino: 7,
-          isFile: () => !f.isDir,
+          async stat() {
+            calls.push(`stat:${path}`);
+            return {
+              mtimeMs: held.mtimeMs ?? 1,
+              size: Buffer.byteLength(held.text),
+              mode: held.mode ?? 0o100600,
+              uid: held.uid ?? 1000,
+              ino: 7,
+              isFile: () => !held.isDir,
+            };
+          },
+          async readText() {
+            calls.push(`read:${path}`);
+            return held.text;
+          },
+          async close() {},
         };
-      },
-      async readFile(path: string) {
-        calls.push(`read:${path}`);
-        const f = files[path];
-        if (!f) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
-        return f.text;
       },
     },
   };

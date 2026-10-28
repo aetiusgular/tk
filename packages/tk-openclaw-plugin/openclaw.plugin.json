@@ -1,0 +1,7 @@
+{
+  "id": "tk",
+  "name": "tk",
+  "description": "tk policy gate: checks every tool call against ~/.tk/policy.json before it runs, at the lowest priority so the call that runs is the call tk checked.",
+  "activation": { "onStartup": true },
+  "configSchema": { "type": "object", "additionalProperties": false }
+}

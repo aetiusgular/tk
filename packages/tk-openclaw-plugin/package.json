@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "OpenClaw plugin (wave 2, lane I, T2.4); OpenClaw is not in Orca's grid",
+  "description": "OpenClaw plugin: before_tool_call at the lowest priority on tk's shared gate core (wave 2, lane I, T2.4)",
+  "openclaw": { "extensions": ["./index.ts"] },
+  "files": ["index.ts", "openclaw.plugin.json", "src/openclaw.ts", "src/control.ts", "src/core/", "README.md"],
   "engines": { "node": ">=22.19.0" }
 }

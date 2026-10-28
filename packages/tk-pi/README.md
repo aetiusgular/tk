@@ -19,6 +19,24 @@ A git source cannot name a subfolder: Pi clones `git:github.com/<owner>/<repo>` 
 
 To try it for one run without installing: `pi -e /absolute/path/to/tk/packages/tk-pi`.
 
+### oh-my-pi (wave 2, lane I)
+
+The same package runs in oh-my-pi (`omp`), which reads its `pi.extensions` field when a package has no `omp` field. Run and checked against omp 18.13.3 (`tests/cli-contract/checks/I/piFamily.mjs`):
+
+```bash
+omp install /absolute/path/to/tk/packages/tk-pi
+```
+
+`omp install <path>` links the folder (a symlink under `~/.omp/plugins/node_modules/`), it does not copy it, so a `git pull` in the clone updates it. Under omp the gate answers as harness `oh-my-pi`, so a rule with `"harness": "oh-my-pi"` applies there and not in Pi; it knows it is in omp because omp runs on Bun and Pi on Node.
+
+What differs in omp:
+
+- **omp's default approval mode is `yolo`: tk's gate is the only check.** Keep `bash`, `edit` and `write` at `ask` or tighter, or set `tools.approvalMode` in `~/.omp/agent/config.yml`.
+- omp names an MCP tool `mcp__<server>_<tool>` and drops a tool's own `<server>_` prefix, so server `echo`'s tool `echo_it` arrives as `mcp__echo_it`. With the server in the policy's `servers`, the gate reads `echo/it`; write rules as `echo/it` or `echo/*`.
+- In print mode (`-p`), and in ACP without form elicitation, `ctx.ui.confirm` answers no at once, so every ask is a no.
+- A `tool_call` handler that does not answer within 30 seconds blocks the call (omp's own limit); dialogs do not count against it.
+- `~/.omp/` is a control path: `agent/config.yml` holds the approval mode and the extensions list, and the plugin lock file can switch this package off.
+
 ## What it runs
 
 Pi shows that a package has extensions, not what they do, so here is all of it. Both files register handlers when Pi loads them and do nothing else until an event arrives: no file read, no timer, no network (rules case 46).
@@ -30,6 +48,12 @@ Pi shows that a package has extensions, not what they do, so here is all of it. 
 | | `user_bash` | Refuses a `!` or `!!` command you type that hits the reject list. |
 | `extensions/emitter.ts` | `before_agent_start`, `tool_execution_start`, `tool_execution_end`, `message_end`, `session_start`, `session_shutdown`, and the gate's decisions | Sends OTLP log records to `TK_OTLP_ENDPOINT` (loopback only), once a second. Sends nothing without `TK_CHAT_TOKEN`. |
 
+## The input that runs is the input the gate allowed
+
+Pi runs every extension's `tool_call` handler in load order on one event, and a handler that runs after tk's can change the call's input after tk allowed it (Pi 1.4.0 `docs/extensions.md`, "Events and concurrency"); no handler can run after all others. So when the gate allows a call it freezes the input. A later extension that tries to change it throws, and Pi fails the call with that error instead of running input tk never saw ("Cannot assign to read only property", run on Pi 1.4.0 and omp 18.13.3). An extension that only reads the input, as Orca's status extension does, is unaffected. `TK_PI_FREEZE_INPUT=0` in the harness's environment turns this off, for a tool that changes its own arguments while it runs (none of Pi's built-ins does).
+
+Not covered: in omp, a later extension can also return `{ input }`, which replaces the arguments without touching the frozen object (omp's documented rewrite). Only the extensions you install can do that.
+
 ## The policy file
 
 `~/.tk/policy.json`, or the absolute path in `TK_POLICY`. The format is `contracts/policy.md` in the tk repository. Make it yours alone:
@@ -39,7 +63,7 @@ mkdir -p ~/.tk && chmod 700 ~/.tk
 $EDITOR ~/.tk/policy.json && chmod 600 ~/.tk/policy.json
 ```
 
-The gate does not use a file that another user owns or that group or others can write, a relative `TK_POLICY`, or a file over 1 MiB. With no usable file every call is asked about, and an unanswered question is a no.
+The gate does not use a file that another user owns or that group or others can write, a symbolic link, a FIFO or anything else that is not a regular file, a relative `TK_POLICY` or one inside the project folder, or a file over 1 MiB. It opens the file once per check and reads from that same handle, so the file it checked is the file it reads. With no usable file every call is asked about, and an unanswered question is a no.
 
 An example for Pi on the box:
 
@@ -66,7 +90,7 @@ Pi names an MCP tool `mcp__<server>__<tool>` (Pi `docs/mcp.md`); the gate reads 
 
 What each answer does:
 
-- `allow`: the call runs. Even so, it is asked about when it is a shell command with text the matcher cannot read (`$`, a backtick, `!`, braces, `~`, `\`), when it names a tk or Pi control file (`~/.tk/`, the daemon's token, `~/.pi/agent/`), or when the tool's description no longer matches a pinned `descriptionSha256`.
+- `allow`: the call runs. Even so, it is asked about when it is a shell command with text the matcher cannot read (`$`, a backtick, `!`, braces, `~`, `\`), when it names a tk, Pi or omp control file (`~/.tk/`, the daemon's token, `~/.pi/`, `~/.omp/`, `PI_CODING_AGENT_DIR`, `PI_CONFIG_DIR`), or when the tool's description no longer matches a pinned `descriptionSha256`.
 - `ask`: a confirm dialog: in the TUI, in Orca as a card, in MonoCode's host as a card, through Pi's RPC protocol to any client. No answer within `askTimeoutSeconds` is a no. Where there is no UI (`--mode json`, `--print`) it is a no at once.
 - `deny`: blocked; the model reads `Blocked by tk: <reason>`.
 - Whatever the rules say, a call whose input names an endpoint, sandbox or approval key (`ANTHROPIC_BASE_URL`, `chatgpt_base_url`, `dangerouslyDisableSandbox`, `approval_policy`, `--dangerously-`, `settings.local.json`), or a git setting that runs a program inside a git command, is denied, in any letter case and in look-alike spellings.
