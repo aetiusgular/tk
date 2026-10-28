@@ -12,8 +12,14 @@
 //
 // Corner case 46: the factory only registers handlers. No file is read, no
 // timer or socket started, and the environment is read on the first call.
+//
+// Wave 2 lane I: the same package runs in oh-my-pi (src/harness.ts: the
+// harness id, omp's MCP names), and an allowed call's input is frozen so a
+// later extension cannot change it after the gate (src/freeze.ts, BX9).
 
 import { askUser, cardText } from "../src/ask.ts";
+import { deepFreeze, freezeEnabled } from "../src/freeze.ts";
+import { harnessId, OMP, ompToolName } from "../src/harness.ts";
 import { inputTextFor } from "../src/input-text.ts";
 import {
   DECISION_CHANNEL,
@@ -32,7 +38,8 @@ import { evaluate, normalizeToolName, rejectKey, type PolicyFile } from "../src/
 import { PolicyStore, policyPath, type FsLike, realFs } from "../src/policy-store.ts";
 import { redactDeep, redactText } from "../src/redact.ts";
 
-export const HARNESS = "pi";
+/** The harness this gate answers for: `pi`, or `oh-my-pi` when Bun runs it (src/harness.ts). */
+export const HARNESS = harnessId();
 const PREVIEW_CHARS = 1500;
 
 export interface GateOptions {
@@ -41,6 +48,8 @@ export interface GateOptions {
   fs?: FsLike;
   home?: () => string;
   uid?: number;
+  /** The harness id; defaults to the one detected at load. Tests set it. */
+  harness?: string;
 }
 
 function chatFor(env: Record<string, string | undefined>, ctx: PiContext): string | undefined {
@@ -82,19 +91,28 @@ export function createGate(options: GateOptions = {}) {
       }
     };
 
+    const harness = options.harness ?? HARNESS;
+
+    /** After an allow: freeze the input the gate saw, so it is the input that runs (BX9). */
+    const sealed = (event: ToolCallEvent): ToolCallResult | undefined => {
+      if (!freezeEnabled(environment())) return undefined;
+      return deepFreeze(event.input) ? undefined : block("tool input nested too deep to hold still");
+    };
+
     pi.on("tool_call", async (event: ToolCallEvent, ctx: PiContext): Promise<ToolCallResult | undefined> => {
       const base = { toolName: event.toolName, toolCallId: event.toolCallId };
       let normalized = event.toolName;
       try {
         const { policy, problem } = await policyStore().get();
-        normalized = normalizeToolName(event.toolName, policy.servers, "pi");
+        const toolName = harness === OMP ? ompToolName(event.toolName, policy.servers) : event.toolName;
+        normalized = normalizeToolName(toolName, policy.servers, harness);
         const inputText = inputTextFor(normalized, event.input);
         const chat = chatFor(environment(), ctx);
         const d = evaluate(
           policy,
           {
-            tool: event.toolName,
-            harness: HARNESS,
+            tool: toolName,
+            harness,
             ...(chat !== undefined ? { chat } : {}),
             description: () => describeTool(event.toolName),
             inputText,
@@ -104,7 +122,7 @@ export function createGate(options: GateOptions = {}) {
         normalized = d.normalizedTool;
         if (d.action === "allow") {
           announce({ ...base, toolNameNormalized: normalized, decision: "accept", reason: d.reason });
-          return undefined;
+          return sealed(event);
         }
         if (d.action === "deny") {
           announce({ ...base, toolNameNormalized: normalized, decision: "reject", reason: d.reason });
@@ -114,7 +132,7 @@ export function createGate(options: GateOptions = {}) {
         switch (outcome) {
           case "yes":
             announce({ ...base, toolNameNormalized: normalized, decision: "ask_accept", reason: d.reason });
-            return undefined;
+            return sealed(event);
           case "timeout":
             announce({ ...base, toolNameNormalized: normalized, decision: "ask_timeout", reason: "ask timed out" });
             return block("ask timed out");

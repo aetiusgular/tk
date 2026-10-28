@@ -318,6 +318,15 @@ export const CONTROL_PATH_MARKERS = [
   ".claude/",
   ".codex/",
   ".pi/",
+  // Wave 2 lane I, tk-pi only until integration adds them to the hook core
+  // and tk-core: oh-my-pi's config root (~/.omp: agent/config.yml holds
+  // tools.approvalMode and the extensions list, plugins/omp-plugins.lock.json
+  // can switch this package off; dirs.ts at 18.13.3), the variables that move
+  // Pi's and omp's folders, and the gate's own freeze switch.
+  ".omp/",
+  "pi_coding_agent_dir",
+  "pi_config_dir",
+  "tk_pi_freeze_input",
 ] as const;
 
 const GIT_WORD = /(^|[^a-z0-9_])git(?![a-z0-9_])/g;

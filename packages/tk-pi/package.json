@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "description": "The tk Pi package: a tool_call gate and an OTLP emitter (lane A); a memory extension in wave 2 (lane K)",
+  "description": "The tk Pi package for Pi and oh-my-pi: a tool_call gate and an OTLP emitter (lane A, lane I); a memory extension in wave 2 (lane K)",
   "keywords": ["pi-package"],
   "engines": { "node": ">=22.19.0" },
   "pi": {

@@ -247,10 +247,32 @@ describe("the policy file (contract section 1; rules section 5, item 4)", () => 
     expect(s.mem.calls).toEqual([]);
   });
 
+  it("a symbolic link at the policy path is refused, not followed (S11)", async () => {
+    const s = setup({ answer: () => ({ confirmed: false }) });
+    s.mem.files[POLICY] = { ...(s.mem.files[POLICY] as object), isLink: true } as never;
+    expect(await s.call("read", { path: "a" })).toMatchObject({ block: true });
+    expect(s.client.requests[0]?.message).toContain("policy file is a symbolic link");
+  });
+
+  it("the file that is checked is the file that is read: one handle for both (S11)", async () => {
+    const s = setup();
+    // The handle keeps what it opened, so a swap after the open does not
+    // reach the read; only the next call's open sees it.
+    expect(await s.call("mcp__exa__delete_index", {})).toMatchObject({ block: true });
+    expect(s.mem.calls.filter((c) => c.startsWith("open:"))).toHaveLength(1);
+  });
+
+  it("a TK_POLICY inside the session folder is refused (S11; the hook core does the same)", async () => {
+    const s = setup({ env: { TK_POLICY: `${process.cwd()}/evil-policy.json` }, answer: () => ({ confirmed: false }) });
+    await s.call("read", { path: "a" });
+    expect(s.client.requests[0]?.message).toContain("TK_POLICY is inside the session folder");
+    expect(s.mem.calls).toEqual([]);
+  });
+
   it("an absolute TK_POLICY is used", async () => {
     const s = setup({ env: { TK_POLICY: "/etc/elsewhere.json" }, answer: () => ({ confirmed: false }) });
     await s.call("read", { path: "a" });
-    expect(s.mem.calls[0]).toBe("stat:/etc/elsewhere.json");
+    expect(s.mem.calls[0]).toBe("open:/etc/elsewhere.json");
   });
 
   it("a chat rule matches TK_CHAT_ID, else the Pi session id", async () => {
@@ -284,7 +306,7 @@ describe("fails closed", () => {
 
   it("an fs that throws something odd leaves the default policy, not an allow", async () => {
     const s = setup({ answer: () => ({ confirmed: false }) });
-    s.mem.fs.stat = async () => {
+    s.mem.fs.open = async () => {
       throw new Error("EIO");
     };
     expect(await s.call("read", { path: "a" })).toMatchObject({ block: true });
