@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::daemon::{error, After, Daemon, Outbox};
+use crate::daemon::{error, After, ConnPeer, Daemon, Outbox};
 use crate::protocol::Request;
 
 /// Longest line read, in bytes, before the newline.
@@ -130,7 +130,11 @@ fn read_line(reader: &mut impl BufRead) -> std::io::Result<Line> {
 /// Serves one connection until the client closes or a rule closes it.
 pub fn serve_one(stream: UnixStream, daemon: &Arc<Daemon>) -> std::io::Result<()> {
     let conn = daemon.next_conn();
-    let (out, rx, pending) = Outbox::new(conn);
+    // Who connected, read now: `SO_PEERCRED` holds the credentials of the
+    // process that called connect(2) (unix(7)); the approver check uses it
+    // (integration w2, S2).
+    let peer = Arc::new(ConnPeer::of(&stream));
+    let (out, rx, pending) = Outbox::with_peer(conn, Some(peer));
     let mut writer = stream.try_clone()?;
     let writer_thread = std::thread::Builder::new()
         .name("tk-daemon-write".into())

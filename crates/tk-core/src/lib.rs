@@ -9,6 +9,8 @@
 //! `contracts/fixtures/policy/cases.json`.
 
 pub mod event;
+#[cfg(unix)]
+pub mod peer;
 #[rustfmt::skip]
 mod fold_tables;
 pub mod policy;

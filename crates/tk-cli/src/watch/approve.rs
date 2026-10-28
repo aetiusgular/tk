@@ -41,9 +41,10 @@ get no from the daemon.";
 pub const SETTLE: Duration = Duration::from_millis(300);
 
 pub const BANNER: &str = "tk watch --approve: answering approval requests from this terminal.
-Known gap (finding S2, open): the daemon takes any process that can read
-daemon.token as an approver, and under `tk run --boundary none` an agent runs
-as you and can read it. Allow only calls you expect to see.";
+Known gap (finding S2, open): the daemon refuses an approver that a running
+chat started, but under `tk run --boundary none` an agent runs as you, can read
+daemon.token, and can leave its chat's process tree first. Allow only calls
+you expect to see.";
 
 /// Lines into the approver's loop: from the daemon's socket or the terminal.
 #[derive(Debug)]

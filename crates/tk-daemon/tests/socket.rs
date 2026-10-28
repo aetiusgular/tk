@@ -747,6 +747,81 @@ fn two_chats_may_wait_on_the_same_request_id() {
     assert_eq!(a.recv()["answer"], "no");
 }
 
+/// Integration w1's security finding S2, part a (lane J's request 1a): an
+/// approver whose process is a running chat's harness, or runs under one,
+/// is the agent and is refused. Here the test process itself is named as a
+/// chat's harness, so its own approver connection must be refused until the
+/// run stops; both outcomes are recorded with the peer, and an answer
+/// carries the approver's pid.
+#[test]
+fn an_approver_inside_a_running_chat_is_refused() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let me = std::process::id();
+    let run = |kind: &str| {
+        json!({"op": "event", "event": {
+            "id": format!("run-{kind}"), "at": 0, "chatId": "chat-s2", "harness": "pi",
+            "source": "run", "kind": kind, "summary": kind,
+            "detail": {"cwd": "/tmp"}, "pid": me
+        }})
+    };
+    assert_eq!(d.ask(run("run.start"))["ok"], true);
+    let mut a = Client::daemon(&f);
+    let r = a.ask(json!({"op": "approver"}));
+    assert_eq!(r["ok"], false, "{r}");
+    let why = r["error"].as_str().unwrap();
+    assert!(
+        why.starts_with("approver refused: it runs inside chat chat-s2"),
+        "{why}"
+    );
+    // An approve with no approver is no at once: the refused one is not one.
+    let r = d.ask(json!({"op": "approve", "request": {
+        "id": "s2-1", "chat": "chat-s2", "harness": "pi", "tool": "bash",
+        "summary": "", "timeoutSeconds": 5
+    }}));
+    assert_eq!(
+        (r["answer"].as_str(), r["by"].as_str()),
+        (Some("no"), Some("none")),
+        "{r}"
+    );
+    assert_eq!(d.ask(run("run.stop"))["ok"], true);
+    let mut a = Client::daemon(&f);
+    assert_eq!(a.ask(json!({"op": "approver"}))["ok"], true);
+    let asker = std::thread::spawn(move || {
+        d.ask(json!({"op": "approve", "request": {
+            "id": "s2-2", "chat": "chat-s2", "harness": "pi", "tool": "bash",
+            "summary": "", "timeoutSeconds": 30
+        }}))
+    });
+    assert_eq!(a.recv()["approve"]["id"], "s2-2");
+    a.ask(json!({"op": "answer", "id": "s2-2", "answer": "yes"}));
+    assert_eq!(asker.join().unwrap()["answer"], "yes");
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let mut approver_events = Vec::new();
+    let mut answered = None;
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        let e = &line["event"];
+        if e["kind"] == "approver" {
+            approver_events.push(e.clone());
+        }
+        if e["kind"] == "approval" && e["detail"]["requestId"] == "s2-2" {
+            answered = Some(e.clone());
+        }
+    }
+    let accepted: Vec<bool> = approver_events
+        .iter()
+        .map(|e| e["detail"]["accepted"].as_bool().unwrap())
+        .collect();
+    assert_eq!(accepted, vec![false, true], "{approver_events:?}");
+    for e in &approver_events {
+        assert_eq!(e["detail"]["peer"]["pid"], me);
+        assert!(e["detail"]["peer"]["program"].as_str().is_some(), "{e}");
+    }
+    let answered = answered.expect("the answered request's record");
+    assert_eq!(answered["detail"]["approver"]["pid"], me, "{answered}");
+}
+
 /// Integration w1, lane D's request 2: a chat token sits in the harness's
 /// environment and, under sbx, in the sandbox's saved config. Once its run
 /// stops, the token opens nothing: no new hello, no OTLP post. Only the

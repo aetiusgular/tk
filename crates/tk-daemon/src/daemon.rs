@@ -62,10 +62,61 @@ pub struct Outbox {
     tx: Sender<String>,
     pending: Arc<AtomicUsize>,
     pub conn: u64,
+    /// Who connected, for a socket connection (read at accept, S2). `None`
+    /// for the daemon's own in-process clients (the collector, computer
+    /// use), which are not a process an agent can start.
+    pub peer: Option<Arc<ConnPeer>>,
+}
+
+/// The process on the other end of a socket connection, read when it was
+/// accepted (integration w2, security finding S2).
+#[derive(Debug, Default)]
+pub struct ConnPeer {
+    /// `SO_PEERCRED` / `LOCAL_PEERCRED`; `None` when the OS call failed.
+    pub cred: Option<tk_core::peer::Peer>,
+    /// The connecting process itself, on Linux 6.5 and later.
+    pub pidfd: Option<std::os::fd::OwnedFd>,
+    pub program: Option<String>,
+    pub start_time: Option<u64>,
+}
+
+impl ConnPeer {
+    /// Reads the peer of an accepted connection.
+    pub fn of(stream: &std::os::unix::net::UnixStream) -> Self {
+        let cred = tk_core::peer::of(stream);
+        let pid = cred.as_ref().and_then(|c| c.pid);
+        ConnPeer {
+            pidfd: tk_core::peer::pidfd_of(stream),
+            program: pid
+                .and_then(tk_core::peer::program)
+                .map(|p| p.to_string_lossy().into_owned()),
+            start_time: pid.and_then(tk_core::peer::start_time),
+            cred,
+        }
+    }
+
+    /// What the log records about the peer.
+    pub fn record(&self) -> Value {
+        json!({
+            "pid": self.cred.as_ref().and_then(|c| c.pid),
+            "uid": self.cred.as_ref().map(|c| c.uid),
+            "program": self.program.as_deref().map(|p| clip(p, 300)),
+            "startTime": self.start_time,
+            "pidfd": self.pidfd.is_some(),
+        })
+    }
 }
 
 impl Outbox {
     pub fn new(conn: u64) -> (Self, Rx<String>, Arc<AtomicUsize>) {
+        Self::with_peer(conn, None)
+    }
+
+    /// An outbox for a socket connection, with who connected.
+    pub fn with_peer(
+        conn: u64,
+        peer: Option<Arc<ConnPeer>>,
+    ) -> (Self, Rx<String>, Arc<AtomicUsize>) {
         let (tx, rx) = mpsc::channel();
         let pending = Arc::new(AtomicUsize::new(0));
         (
@@ -73,6 +124,7 @@ impl Outbox {
                 tx,
                 pending: pending.clone(),
                 conn,
+                peer,
             },
             rx,
             pending,
@@ -107,7 +159,8 @@ struct TailSub {
 }
 
 struct Pending {
-    answer: SyncSender<Answer>,
+    /// The answer and who gave it (the approver's peer record, S2).
+    answer: SyncSender<(Answer, Value)>,
     chat: String,
 }
 
@@ -170,6 +223,10 @@ pub struct Daemon {
     /// same client id (S8).
     pending: Mutex<HashMap<(String, String), Pending>>,
     chats: Mutex<HashMap<String, ChatContext>>,
+    /// Each running chat's harness pid, from its daemon-scope `run.start`
+    /// until its `run.stop` (S2: an approver may not be one of them or run
+    /// under one).
+    runs: Mutex<HashMap<String, u32>>,
     next_conn: AtomicU64,
     pub counters: Counters,
 }
@@ -263,6 +320,7 @@ impl Daemon {
             approvers: Mutex::new(Vec::new()),
             pending: Mutex::new(HashMap::new()),
             chats: Mutex::new(HashMap::new()),
+            runs: Mutex::new(HashMap::new()),
             next_conn: AtomicU64::new(1),
             counters: Counters::default(),
         });
@@ -376,9 +434,15 @@ impl Daemon {
             Request::Approver {} => {
                 if *who != Who::Daemon {
                     out.send(&error("approver needs daemon scope"));
+                } else if let Some(why) = out.peer.as_deref().and_then(|p| self.approver_refusal(p))
+                {
+                    self.approver_event(out, false, Some(&why));
+                    out.send(&error(format!("approver refused: {why}")));
                 } else if let Ok(mut approvers) = self.approvers.lock() {
                     approvers.retain(|a| a.conn != out.conn);
                     approvers.push(out.clone());
+                    drop(approvers);
+                    self.approver_event(out, true, None);
                     out.send(&ok());
                 }
             }
@@ -414,12 +478,20 @@ impl Daemon {
                 }
                 if event.source == Source::Run && event.kind == "run.start" {
                     self.set_chat_from_run(&event);
+                    if let (Some(pid), Ok(mut runs)) = (event.pid, self.runs.lock()) {
+                        if runs.len() < 2_048 || runs.contains_key(&event.chat_id) {
+                            runs.insert(event.chat_id.clone(), pid);
+                        }
+                    }
                 }
                 // The run is over: its chat tokens open nothing from now on
                 // (integration w1, lane D's request 2). A connection already
                 // greeted keeps its scope until it closes.
                 if event.source == Source::Run && event.kind == "run.stop" {
                     self.receiver.revoke_chat(&event.chat_id);
+                    if let Ok(mut runs) = self.runs.lock() {
+                        runs.remove(&event.chat_id);
+                    }
                 }
             }
         }
@@ -619,9 +691,9 @@ impl Daemon {
         }
         self.counters.approvals.fetch_add(1, Ordering::Relaxed);
         let record_id = format!("approval-{}", uuid::Uuid::new_v4().simple());
-        self.approval_event(&record_id, &request, None, None);
-        let (answer, by) = self.wait_for_answer(&request);
-        self.approval_event(&record_id, &request, Some(answer), Some(by));
+        self.approval_event(&record_id, &request, None, None, Value::Null);
+        let (answer, by, approver) = self.wait_for_answer(&request);
+        self.approval_event(&record_id, &request, Some(answer), Some(by), approver);
         self.record_approval(ApprovalRecord {
             id: record_id,
             chat_id: request.chat.clone(),
@@ -643,11 +715,11 @@ impl Daemon {
 
     /// Sends the request to every approver; the first answer wins. None
     /// connected: `no` at once (case 63). None in time: `no` at the timeout.
-    fn wait_for_answer(&self, request: &ApprovalRequest) -> (Answer, AnsweredBy) {
-        let (tx, rx) = mpsc::sync_channel::<Answer>(1);
+    fn wait_for_answer(&self, request: &ApprovalRequest) -> (Answer, AnsweredBy, Value) {
+        let (tx, rx) = mpsc::sync_channel::<(Answer, Value)>(1);
         {
             let Ok(mut pending) = self.pending.lock() else {
-                return (Answer::No, AnsweredBy::None);
+                return (Answer::No, AnsweredBy::None, Value::Null);
             };
             let key = (request.chat.clone(), request.id.clone());
             let this_chat = pending.values().filter(|p| p.chat == request.chat).count();
@@ -655,7 +727,7 @@ impl Daemon {
                 || pending.len() >= MAX_PENDING_APPROVALS
                 || this_chat >= MAX_PENDING_PER_CHAT
             {
-                return (Answer::No, AnsweredBy::None);
+                return (Answer::No, AnsweredBy::None, Value::Null);
             }
             pending.insert(
                 key,
@@ -672,11 +744,11 @@ impl Daemon {
             reached = approvers.len();
         }
         let outcome = if reached == 0 {
-            (Answer::No, AnsweredBy::None)
+            (Answer::No, AnsweredBy::None, Value::Null)
         } else {
             match rx.recv_timeout(Duration::from_secs(u64::from(request.timeout_seconds))) {
-                Ok(answer) => (answer, AnsweredBy::Approver),
-                Err(_) => (Answer::No, AnsweredBy::Timeout),
+                Ok((answer, approver)) => (answer, AnsweredBy::Approver, approver),
+                Err(_) => (Answer::No, AnsweredBy::Timeout, Value::Null),
             }
         };
         if let Ok(mut pending) = self.pending.lock() {
@@ -686,14 +758,18 @@ impl Daemon {
     }
 
     fn op_answer(&self, conn: u64, id: &str, chat: Option<&str>, answer: Answer) -> Reply {
-        let is_approver = self
+        let approver = self
             .approvers
             .lock()
-            .map(|a| a.iter().any(|o| o.conn == conn))
-            .unwrap_or(false);
-        if !is_approver {
+            .ok()
+            .and_then(|a| a.iter().find(|o| o.conn == conn).cloned());
+        let Some(approver) = approver else {
             return error("not an approver");
-        }
+        };
+        let who = match approver.peer.as_deref() {
+            Some(p) => p.record(),
+            None => json!({ "inProcess": true }),
+        };
         let Ok(pending) = self.pending.lock() else {
             return error("busy");
         };
@@ -704,7 +780,7 @@ impl Daemon {
             // The channel holds one answer: the first wins, the rest fail
             // to send and are told nothing more.
             (Some((_, p)), None) => {
-                let _ = p.answer.try_send(answer);
+                let _ = p.answer.try_send((answer, who));
                 ok()
             }
             (Some(_), Some(_)) => error("two chats wait on this id: name the chat"),
@@ -720,6 +796,7 @@ impl Daemon {
         request: &ApprovalRequest,
         answer: Option<Answer>,
         by: Option<AnsweredBy>,
+        approver: Value,
     ) {
         let word = |v: Option<Value>| v.and_then(|v| v.as_str().map(str::to_string));
         let answer_text = word(answer.and_then(|a| serde_json::to_value(a).ok()));
@@ -737,6 +814,9 @@ impl Daemon {
         if let (Some(a), Some(b), Value::Object(map)) = (answer_text, by_text, &mut detail) {
             map.insert("answer".into(), Value::String(a));
             map.insert("by".into(), Value::String(b));
+            if !approver.is_null() {
+                map.insert("approver".into(), approver);
+            }
         }
         self.ingest(Event {
             id: record_id.to_string(),
@@ -749,6 +829,87 @@ impl Daemon {
             detail,
             pid: None,
             approval_id: Some(request.id.clone()),
+        });
+    }
+
+    /// Why a socket peer may not become an approver, if it may not
+    /// (integration w2, security finding S2; lane J's request 1a). A process
+    /// that is a running chat's harness or descends from one is the agent;
+    /// so is one under a `tk` program (a chat this daemon may not know, from
+    /// before a restart). This does not stop an agent that leaves the tree
+    /// (a double fork, `setsid`, tmux, `systemd-run --user`): S2 stays open
+    /// until the approver proves a person (a PAM check) or agents run as
+    /// another user.
+    fn approver_refusal(&self, peer: &ConnPeer) -> Option<String> {
+        let Some(cred) = peer.cred.as_ref() else {
+            return Some("the daemon cannot read who is asking".into());
+        };
+        // SAFETY: geteuid has no preconditions and cannot fail.
+        let me = unsafe { libc::geteuid() };
+        if cred.uid != me {
+            return Some(format!("uid {} is not this daemon's user", cred.uid));
+        }
+        let Some(pid) = cred.pid else {
+            return Some("the OS gave no pid for the peer".into());
+        };
+        let mut line = vec![pid];
+        line.extend(tk_core::peer::ancestors(pid));
+        let runs = self.runs.lock().map(|r| r.clone()).unwrap_or_default();
+        for (chat, harness_pid) in &runs {
+            if line.contains(harness_pid) {
+                return Some(format!(
+                    "it runs inside chat {} (harness pid {harness_pid})",
+                    clip(chat, 128)
+                ));
+            }
+        }
+        if let Some(tk) = tk_core::peer::tk_run_ancestor(pid) {
+            return Some(format!(
+                "it runs under a tk process (pid {tk}), a chat's shell"
+            ));
+        }
+        // Read last, so a pid that was reused while the walk ran is caught.
+        if let Some(fd) = peer.pidfd.as_ref() {
+            if !tk_core::peer::pidfd_alive(fd) {
+                return Some("the process that connected has exited".into());
+            }
+        }
+        None
+    }
+
+    /// Records an approver's registration, or its refusal, with who it was.
+    fn approver_event(&self, out: &Outbox, accepted: bool, why: Option<&str>) {
+        let peer = out
+            .peer
+            .as_deref()
+            .map(ConnPeer::record)
+            .unwrap_or(Value::Null);
+        let program = peer
+            .get("program")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown program")
+            .to_string();
+        let pid = peer.get("pid").and_then(Value::as_u64);
+        let summary = match (accepted, why) {
+            (true, _) => format!("approver connected: {program} (pid {})", pid.unwrap_or(0)),
+            (false, why) => format!("approver refused: {}", why.unwrap_or("")),
+        };
+        self.ingest(Event {
+            id: format!("approver-{}", uuid::Uuid::new_v4().simple()),
+            at: 0,
+            chat_id: String::new(),
+            harness: String::new(),
+            source: Source::Approval,
+            kind: "approver".into(),
+            summary: clip(&summary, 200),
+            detail: json!({
+                "accepted": accepted,
+                "reason": why,
+                "peer": peer,
+                "conn": out.conn,
+            }),
+            pid: pid.and_then(|p| u32::try_from(p).ok()),
+            approval_id: None,
         });
     }
 
