@@ -163,6 +163,22 @@ describe("the index, injected as a message", () => {
     expect(message.content).toContain("- evil [2J line here");
   });
 
+  it("an untrusted project gets no index; one that says nothing about trust does", async () => {
+    put("memory/INDEX.md", "- a line\n");
+    const h = host();
+    expect(await h.emit("before_agent_start", userRun, { ...h.ctx(project), isProjectTrusted: () => false })).toBeUndefined();
+    expect(await h.emit("before_agent_start", userRun, { ...h.ctx(project), isProjectTrusted: () => true })).toBeDefined();
+    const thrown = host();
+    expect(
+      await thrown.emit("before_agent_start", userRun, {
+        ...thrown.ctx(project),
+        isProjectTrusted: () => {
+          throw new Error("x");
+        },
+      }),
+    ).toBeUndefined();
+  });
+
   it("reads no index through a link: a linked folder or a linked file", async () => {
     const elsewhere = path.join(root, "secrets");
     mkdirSync(elsewhere);

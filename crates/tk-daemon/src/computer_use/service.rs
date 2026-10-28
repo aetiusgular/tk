@@ -230,12 +230,25 @@ pub fn summary(card: &PendingView) -> String {
         }
         None => format!("\"{}\" (not found on this Mac)", card.app),
     };
-    let reason: String = card
-        .reason
-        .chars()
-        .map(|c| if c.is_control() { ' ' } else { c })
-        .collect();
+    let reason: String = card.reason.chars().map(shown).collect();
     format!("Let this chat control {app} until the chat ends. The agent's reason: \"{reason}\"")
+}
+
+/// One character of the agent's text as the approver sees it: controls as
+/// a space, and the marks that reorder or hide text (bidi overrides and
+/// isolates, zero-width marks) as a visible `\u{..}`, as tk-pi's cards do
+/// (`packages/tk-pi/src/ask.ts`, `cardText`).
+fn shown(c: char) -> String {
+    match c {
+        '\u{200b}'..='\u{200f}'
+        | '\u{202a}'..='\u{202e}'
+        | '\u{2060}'..='\u{2069}'
+        | '\u{feff}' => {
+            format!("\\u{{{:x}}}", c as u32)
+        }
+        c if c.is_control() => " ".to_string(),
+        c => c.to_string(),
+    }
 }
 
 /// The daemon as the service's host.
@@ -533,6 +546,15 @@ mod tests {
             ..card
         };
         assert!(summary(&unknown).contains("\"Calc\" (not found on this Mac)"));
+        let hidden = PendingView {
+            reason: "fine\u{202e}txt.exe\u{200b}".into(),
+            ..unknown
+        };
+        assert!(
+            summary(&hidden).ends_with("\"fine\\u{202e}txt.exe\\u{200b}\""),
+            "{}",
+            summary(&hidden)
+        );
     }
 }
 
