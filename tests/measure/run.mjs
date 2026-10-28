@@ -5,6 +5,7 @@
 //
 //   node run.mjs --out <dir> --conditions pi-deferred,pi-direct,cc-unset,cc-auto,cc-false \
 //     --k 3 [--tasks t01,t02] [--timeout 480] [--proxy http://127.0.0.1:8091]
+//     [--state <dir shared with the proxy>] [--tag <run id prefix>]
 //
 // Expects the proxy (proxy.mjs) to be running with --state <out>/state.
 // Paths to Pi, Claude Code and the tk packages come from the environment
@@ -34,7 +35,8 @@ if (!TK) throw new Error("set TKM_TK to a tk checkout");
 
 const spec = JSON.parse(readFileSync(join(here, "tasks.json"), "utf8"));
 const tasks = spec.tasks.filter((t) => !only || only.includes(t.id));
-const state = join(out, "state");
+const state = resolve(arg("state", join(out, "state")));
+const tag = arg("tag", "");
 for (const d of [out, state, join(out, "raw"), join(out, "work")]) mkdirSync(d, { recursive: true });
 
 const SERVERS = { context7: "context7.json", exa: "exa.json", hf: "hugging-face.json", shopify: "shopify-dev.json" };
@@ -201,7 +203,7 @@ let seq = existsSync(results) ? readFileSync(results, "utf8").split("\n").filter
 for (let k = kFrom; k <= K; k++) {
   for (const task of tasks) {
     for (const cond of conditions) {
-      const runId = `r${String(++seq).padStart(4, "0")}-${cond}-${task.id}-k${k}`;
+      const runId = `${tag}r${String(++seq).padStart(4, "0")}-${cond}-${task.id}-k${k}`;
       const work = join(out, "work", runId);
       rmSync(work, { recursive: true, force: true });
       mkdirSync(work, { recursive: true });
