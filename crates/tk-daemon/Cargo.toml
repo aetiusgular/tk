@@ -17,11 +17,11 @@ path = "src/main.rs"
 
 [features]
 # [lane-K]
-default = []
-# The fork's computer_use/ as copied. Lane K wires it in wave 2 and may turn
-# it on by default here; it still references `tauri::` in
-# computer_use/mod.rs. activity/ and otel_receiver/ no longer sit behind a
-# flag (lane B, wave 1).
+default = ["computer-use"]
+# The fork's computer_use/, out of Tauri since lane K (wave 2): the bridge
+# and the helper client served by the daemon (toolkit plan T1.5). On by
+# default; it starts only on macOS (computer_use/service.rs). activity/ and
+# otel_receiver/ no longer sit behind a flag (lane B, wave 1).
 computer-use = []
 
 [dependencies]

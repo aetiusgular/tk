@@ -1,10 +1,11 @@
-//! `MonoCode computer-use-mcp`: the stdio MCP server a harness starts for a
-//! chat with computer use on. It holds no chat state: it connects to the
-//! app's loopback endpoint with the chat's token and relays lines both ways.
+//! `tk-daemon cu-mcp`: the stdio MCP server a harness starts for a chat
+//! with computer use. It holds no chat state: it connects to the daemon's
+//! loopback bridge with the chat's token and relays lines both ways.
 //!
-//! The endpoint and token come only from the environment MonoCode set on the
-//! harness process (`MONOCODE_CU_ENDPOINT`, `MONOCODE_CU_TOKEN`), never from
-//! arguments, so no command line or MCP config file names them.
+//! The endpoint comes from the daemon's `cu.endpoint` file and the token from
+//! what `tk run` gave the harness (`relay.rs`, lane K), never from arguments,
+//! so no command line or MCP config file names them. The fork read both from
+//! `MONOCODE_CU_ENDPOINT` and `MONOCODE_CU_TOKEN`, which tk does not set.
 //!
 //! It lives as long as the harness keeps its stdin open. Claude Code does not
 //! restart a stdio MCP server that exits ("Stdio servers are local processes,
@@ -23,18 +24,16 @@ use std::time::{Duration, Instant};
 
 use serde_json::{json, Value};
 
-pub const ENDPOINT_ENV: &str = "MONOCODE_CU_ENDPOINT";
-pub const TOKEN_ENV: &str = "MONOCODE_CU_TOKEN";
 /// The longest line relayed either way: a screenshot result.
 const MAX_LINE: usize = 64 * 1024 * 1024;
 /// How often a relay with no connection dials again, at most.
 const RETRY: Duration = Duration::from_secs(2);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const HELLO_TIMEOUT: Duration = Duration::from_secs(10);
-/// A MonoCode that stops reading cannot hold the harness forever.
+/// A daemon that stops reading cannot hold the harness forever.
 const WRITE_TIMEOUT: Duration = Duration::from_secs(30);
 pub const OFF_TEXT: &str =
-    "Computer use is off for this chat. Ask the user to switch it on in MonoCode.";
+    "Computer use is off for this chat. Start the harness with tk run on the Mac, with the daemon running.";
 pub const STOPPED_TEXT: &str =
     "Computer use stopped for this chat. Ask the user before trying again.";
 /// The id prefix of the `initialize` the relay replays after a reconnect.
@@ -44,25 +43,21 @@ const REPLAY_ID: &str = "monocode-relay-init-";
 /// Where to connect, from the variable's value. Loopback only.
 pub fn endpoint(raw: Option<&str>) -> Result<SocketAddr, String> {
     let raw = raw.ok_or(
-        "Computer use is not on for this chat. Switch it on in MonoCode, then start a new turn.",
+        "Computer use is not on for this chat. Start the harness with tk run on the Mac, with the daemon running.",
     )?;
     let address: SocketAddr = raw
         .parse()
-        .map_err(|_| "Bad MonoCode endpoint".to_string())?;
+        .map_err(|_| "Bad computer-use endpoint".to_string())?;
     if !address.ip().is_loopback() {
-        return Err("The MonoCode endpoint must be on this machine.".into());
+        return Err("The computer-use endpoint must be on this machine.".into());
     }
     Ok(address)
 }
 
-pub fn run() -> i32 {
-    serve_stdio(
-        std::env::var(ENDPOINT_ENV).ok().as_deref(),
-        std::env::var(TOKEN_ENV).ok().as_deref(),
-        RETRY,
-        io::stdin(),
-        io::stdout(),
-    )
+/// Serves on this process's stdin and stdout with `endpoint` and `token`
+/// as `relay.rs` found them; `None` answers as an empty server.
+pub fn run_with(endpoint: Option<&str>, token: Option<&str>) -> i32 {
+    serve_stdio(endpoint, token, RETRY, io::stdin(), io::stdout())
 }
 
 type Out = Arc<Mutex<Box<dyn Write + Send>>>;

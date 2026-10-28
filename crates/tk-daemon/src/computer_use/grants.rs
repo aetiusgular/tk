@@ -169,13 +169,6 @@ impl GrantTable {
     }
 
     /// Chats that hold at least one grant now.
-    #[cfg_attr(
-        all(not(target_os = "macos"), not(test)),
-        expect(
-            dead_code,
-            reason = "only Core::stop_all, called from the macOS menu bar, uses it"
-        )
-    )]
     pub fn chats_with_grants(&self, now: i64) -> Vec<String> {
         self.order
             .iter()

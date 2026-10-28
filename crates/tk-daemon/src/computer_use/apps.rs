@@ -90,7 +90,7 @@ impl AppRefusal {
         match self {
             AppRefusal::Invalid => "That is not a bundle id, such as com.apple.calculator.",
             AppRefusal::Never => {
-                "MonoCode never grants itself, its helper, Cua's own app or the login window."
+                "tk never grants MonoCode, its own computer-use helper, Cua's own app or the login window."
             }
         }
     }
