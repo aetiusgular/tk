@@ -1,0 +1,71 @@
+# Proposed workflow: the hourly mirror (lane G, T3.2). Lanes do not edit
+# .github/; integration copies this file to .github/workflows/mirror.yml
+# (plans/parallel/tk_lane_G.md, Requests for integration).
+#
+# What it does: checks out the code at the commit that triggered it, checks
+# out the `mirror/data` branch into ./data, runs one pull (full on Sundays),
+# and commits the folder if anything changed. The branch's history is the
+# drift record. Nothing here reads a secret; the token is GitHub's own,
+# limited to this repository's contents.
+#
+# Pace: one list request a second, under a tenth of the registry's per-IP
+# limit (deploy/pkg/k8s/registry.go:330-336, 403-407 at 9c4a96c); at most
+# 2,000 remote probes per run, each URL at most once a day.
+name: mirror
+
+on:
+  schedule:
+    # Minute 17: off the hour, where scheduled runs queue (GitHub's docs).
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Pull everything, deleted servers included"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror
+  cancel-in-progress: false
+
+jobs:
+  pull:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: npm ci --ignore-scripts
+      - name: check out mirror/data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mirror/data >/dev/null; then
+            git clone --depth 1 --branch mirror/data "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
+          else
+            mkdir data && git -C data init -b mirror/data
+            git -C data remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+      - name: pull
+        run: |
+          set -euo pipefail
+          FULL=""
+          if [ "${{ inputs.full }}" = "true" ] || [ "$(date -u +%u)" = "7" -a "$(date -u +%H)" = "03" ]; then FULL="--full"; fi
+          node --no-warnings library/mirror/cli.ts pull --out data/registry $FULL | tee pull-report.json
+      - name: commit
+        run: |
+          set -euo pipefail
+          cd data
+          git add -A
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git -c user.name="tk mirror" -c user.email="tk-mirror@users.noreply.github.com" \
+            commit -q -m "mirror: $(jq -r '"\(.mode) pull, \(.new) new, \(.changed) changed, \(.probed) probed"' ../pull-report.json)"
+          git push -q origin HEAD:mirror/data
