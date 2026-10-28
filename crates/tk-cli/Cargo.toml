@@ -46,3 +46,8 @@ uuid.workspace = true
 # [lane-C]
 # [lane-D]
 # [lane-J]
+# `tk watch` and `tk status` are tested against the real daemon, started in
+# the test process on a temporary socket (crates/tk-cli/src/watch/live_tests.rs),
+# so the client is held to lane B's server, not to a fake. A path crate of
+# this workspace: no new third-party code.
+tk-daemon = { path = "../tk-daemon" }
