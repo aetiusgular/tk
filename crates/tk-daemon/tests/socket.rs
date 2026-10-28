@@ -340,6 +340,46 @@ fn a_tail_backlog_holds_the_last_copy_per_id() {
 }
 
 #[test]
+fn a_chat_token_cannot_replace_a_gate_decision() {
+    // Integration w1's security finding S9. The hook posts its decision
+    // with the chat token; the agent holds the same token (case 66).
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "claude-code");
+    let (mut hook, _) = Client::hello(&f, &token);
+    let r = hook.ask(event(
+        "claude-code-t1-decision",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny"}),
+    ));
+    assert_eq!(r["ok"], true, "{r}");
+    let (mut agent, _) = Client::hello(&f, &token);
+    for (source, kind) in [
+        ("otel", "approval"),
+        ("adapter", "approval"),
+        ("otel", "tool.call"),
+    ] {
+        let r = agent.ask(event(
+            "claude-code-t1-decision",
+            "c1",
+            source,
+            kind,
+            json!({"decision": "allow"}),
+        ));
+        assert_eq!(r["ok"], false, "{source} {kind}: {r}");
+        assert_eq!(r["error"], "a gate decision is written once", "{r}");
+    }
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let only = t.recv();
+    assert_eq!(only["event"]["kind"], "approval", "{only}");
+    assert_eq!(only["event"]["detail"]["decision"], "deny", "{only}");
+    assert!(t.try_recv(Duration::from_millis(200)).is_none());
+}
+
+#[test]
 fn a_tail_that_falls_behind_is_dropped_and_ingest_never_waits() {
     let f = fixture();
     let mut d = Client::daemon(&f);

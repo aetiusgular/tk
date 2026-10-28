@@ -424,11 +424,28 @@ impl Daemon {
         if store::bound_event(event.clone()).id.is_empty() {
             return error("event id is empty");
         }
+        if matches!(who, Who::Chat { .. }) && self.holds_gate_decision(&event) {
+            self.counters.refused_events.fetch_add(1, Ordering::Relaxed);
+            return error("a gate decision is written once");
+        }
         let id = self.ingest(event);
         Reply {
             id: Some(id),
             ..ok()
         }
+    }
+
+    /// True when the ring holds a gate decision under this event's chat and
+    /// id (S9). Readers keep the first copy whatever is written later
+    /// (`store::may_replace`); this refusal only tells the poster, for a
+    /// decision still in the last `RING_CAPACITY` events.
+    fn holds_gate_decision(&self, event: &Event) -> bool {
+        let id = store::bound_event(event.clone()).id;
+        self.order.lock().is_ok_and(|ring| {
+            ring.iter().rev().any(|old| {
+                old.id == id && old.chat_id == event.chat_id && store::is_gate_decision(old)
+            })
+        })
     }
 
     /// A daemon-scope `run.start` may name the chat's folders

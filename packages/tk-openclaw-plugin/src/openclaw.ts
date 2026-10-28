@@ -21,7 +21,7 @@
 // dist/native-hook-relay-6I61vqHJ.mjs:178-181). Not covered: a higher-priority
 // plugin that already asked for approval froze its own params snapshot.
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { approve, postEvent } from "./core/daemon.ts";
 import { decideCall, inputTextFor, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
@@ -110,7 +110,9 @@ export async function beforeToolCall(event: BeforeEvent, ctx: BeforeCtx, deps: D
       reason = "secret-like value in input that tk cannot rewrite on OpenClaw";
     }
     await deps.postEvent({
-      id: `${HARNESS}-${id ?? "unknown"}-decision`,
+      // A decision is written once per chat and id (the daemon, S9), so
+      // one with no call id gets its own id instead of a shared "unknown".
+      id: `${HARNESS}-${id ?? `unknown-${randomUUID()}`}-decision`,
       chatId: chat ?? "",
       harness: HARNESS,
       kind: "approval",

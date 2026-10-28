@@ -10,7 +10,7 @@
 // - PostToolUse: hookSpecificOutput.updatedToolOutput replaces what Claude
 //   sees, in the tool's own output shape.
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { approve, postEvent } from "./core/daemon.ts";
 import { decideCall, resolveAsk, type GateAnswer, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
@@ -81,7 +81,9 @@ export async function handlePre(input: Record<string, unknown>, deps: Deps): Pro
     else final = { decision: "ask", reason: r.reason };
   }
   await deps.postEvent({
-    id: `${HARNESS}-${call.toolUseId ?? "unknown"}-decision`,
+    // A decision is written once per chat and id (the daemon, S9), so
+    // one with no call id gets its own id instead of a shared "unknown".
+    id: `${HARNESS}-${call.toolUseId ?? `unknown-${randomUUID()}`}-decision`,
     chatId: chat ?? "",
     harness: HARNESS,
     kind: "approval",

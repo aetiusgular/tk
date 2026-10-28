@@ -20,7 +20,7 @@
 //   engines.opencode range its own 7.x version does not satisfy
 //   (plugin/shared.ts:195-206).
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { approve, postEvent } from "./core/daemon.ts";
 import { decideCall, inputTextFor, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
@@ -106,7 +106,9 @@ export async function before(input: BeforeInput, output: BeforeOutput, deps: Dep
       reason = "secret-like value in input that tk cannot rewrite";
     }
     await deps.postEvent({
-      id: `${HARNESS}-${call.toolUseId ?? "unknown"}-decision`,
+      // A decision is written once per chat and id (the daemon, S9), so
+      // one with no call id gets its own id instead of a shared "unknown".
+      id: `${HARNESS}-${call.toolUseId ?? `unknown-${randomUUID()}`}-decision`,
       chatId: chat ?? "",
       harness: HARNESS,
       kind: "approval",
