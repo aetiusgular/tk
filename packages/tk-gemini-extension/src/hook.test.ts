@@ -93,7 +93,7 @@ describe("Gemini BeforeTool", () => {
   it("an allowed call that names Gemini's control files asks (settings.json can switch the hook off)", async () => {
     const noDaemon = { TK_POLICY: policyFile, TK_DAEMON_SOCKET: path.join(root, "absent.sock") };
     for (const input of [
-      { tool: "write_file", args: { file_path: "/home/u/.gemini/settings.json", content: '{"hooks":{"disabled":["tk-gate"]}}' } },
+      { tool: "write_file", args: { file_path: "/home/u/.gemini/settings.json", content: '{"hooksConfig":{"enabled":false}}' } },
       { tool: "run_shell_command", args: { command: "rm -rf extensions/tk", dir_path: "/home/u/.gemini" } },
       { tool: "run_shell_command", args: { command: "cat /etc/gemini-cli/settings.json" } },
       { tool: "run_shell_command", args: { command: "echo x > \"/home/u/.GEMINI/policies/a.toml\"" } },

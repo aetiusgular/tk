@@ -5,9 +5,12 @@
 // core and to tk-core, after which this file can go.
 //
 // Why each one (gemini-cli v0.66.0):
-// - `.gemini/`: settings.json holds `hooks`, `hooks.disabled` (switches a hook
-//   off by name, hookRegistry.ts:256-270), `security.*`; extensions/ holds this
-//   extension and extension-enablement.json; policies/ holds the user tier.
+// - `.gemini/`: settings.json holds `hooks`, `hooksConfig.enabled` (false runs
+//   no hook at all) and `hooksConfig.disabled` (switches a hook off by name;
+//   cli/src/config/settingsSchema.ts:2548-2580, hookRegistry.ts:256-270),
+//   and `security.*`; a project's .gemini/settings.json outranks the user's in
+//   a trusted folder; extensions/ holds this extension and
+//   extension-enablement.json; policies/ holds the user tier.
 // - `gemini-cli/`: /etc/gemini-cli/settings.json and system-defaults.json, the
 //   managed files.
 // - `geminicli/`: the macOS managed folder (/Library/Application Support/GeminiCli).
