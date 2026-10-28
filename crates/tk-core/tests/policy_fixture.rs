@@ -1,6 +1,5 @@
-//! Runs `contracts/fixtures/policy/` against tk-core. The normalizer half
-//! passes at session 0. The matcher half is ignored until lane B replaces
-//! the `evaluate` stub; lane B removes the `#[ignore]` (never weakens it).
+//! Runs `contracts/fixtures/policy/` against tk-core: the normalizer and the
+//! matcher, every case, case 21 (confusable folding) included.
 
 use serde::Deserialize;
 use tk_core::policy::{evaluate, normalize_tool_name, Action, Call, PolicyFile};
@@ -36,10 +35,14 @@ fn load() -> (PolicyFile, Vec<Case>) {
 }
 
 #[test]
-fn fixture_has_ten_rules_and_at_least_twenty_cases() {
+fn fixture_has_twelve_rules_and_at_least_thirty_cases() {
     let (policy, cases) = load();
-    assert_eq!(policy.rules.len(), 10);
-    assert!(cases.len() >= 20, "{}", cases.len());
+    assert_eq!(
+        policy.rules.len(),
+        12,
+        "10 from session 0, 2 added by integration w1"
+    );
+    assert!(cases.len() >= 33, "{}", cases.len());
 }
 
 #[test]
@@ -56,7 +59,6 @@ fn every_case_normalizes_to_the_expected_tool() {
 }
 
 #[test]
-#[ignore = "lane B: tk_core::policy::evaluate is a session 0 stub"]
 fn every_case_gets_the_expected_decision() {
     let (policy, cases) = load();
     for case in cases {

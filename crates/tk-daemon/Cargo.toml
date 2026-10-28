@@ -11,15 +11,18 @@ description = "tk watch: the OTLP receiver, the activity log, the socket server"
 name = "tk-daemon"
 path = "src/main.rs"
 
+# Shared with lane K in wave 2 (scaffolded by integration w1): lane K edits
+# only the lines under its own `# [lane-K]` comment, in any table, and pins
+# every dependency to an exact version. scripts/lane-scope.mjs checks this.
+
 [features]
+# [lane-K]
 default = []
-# The fork's otel_receiver/ and activity/ as copied. They still reference
-# `tauri::` in three files (see NOTICE); lane B replaces those and moves the
-# modules out from behind this flag. `cargo check --features fork-modules`
-# shows what is left.
-fork-modules = []
-# The fork's computer_use/ as copied. Lane K wires it in wave 2.
-computer-use = ["fork-modules"]
+# The fork's computer_use/ as copied. Lane K wires it in wave 2 and may turn
+# it on by default here; it still references `tauri::` in
+# computer_use/mod.rs. activity/ and otel_receiver/ no longer sit behind a
+# flag (lane B, wave 1).
+computer-use = []
 
 [dependencies]
 tk-core = { path = "../tk-core" }
@@ -30,3 +33,17 @@ libc.workspace = true
 uuid.workspace = true
 toml.workspace = true
 base64.workspace = true
+# [lane-K]
+
+# activity/collector.rs's `sm` module (SMAppService) is macOS only. The
+# fork declared these in src-tauri/Cargo.toml:67,69 at 159ef3e (Cargo.lock
+# objc2 0.6.4, objc2-foundation 0.3.2); lane B's copy did not, and nothing
+# compiled the macOS cfg until the Mac test (finding M1). Integration w1's
+# fix pass; the features are the ones the Mac built with.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "=0.6.4"
+objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSString"] }
+# [lane-K]
+
+[dev-dependencies]
+# [lane-K]

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/vercel",
+  "title": "Vercel",
+  "description": "Vercel projects, deployments, logs and documentation through mcp.vercel.com (OAuth).",
+  "version": "2026.10.27",
+  "websiteUrl": "https://vercel.com/docs/mcp/vercel-mcp",
+  "repository": {
+    "url": "https://github.com/vercel/vercel",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.vercel.com"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "remote"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "unknown"
+          }
+        },
+        "entrySkill": "deployments",
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "mcp.vercel.com"
+              ],
+              "allow_port": [
+                443
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

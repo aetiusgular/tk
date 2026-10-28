@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "sets": {
+    "tony-connectors": {
+      "title": "Tony's connectors",
+      "description": "The six connectors in daily use (Exa, Context7, Hugging Face, Granola, Shopify Dev MCP, Vercel) with their entry skills.",
+      "entries": [
+        "exa",
+        "context7",
+        "hugging-face",
+        "granola",
+        "shopify-dev",
+        "vercel",
+        "web-search",
+        "library-docs",
+        "hf-hub",
+        "meeting-notes",
+        "deployments",
+        "tk-connectors"
+      ]
+    },
+    "tk-own": {
+      "title": "tk's own servers",
+      "description": "The servers tk itself provides: the computer-use helper and the Docker MCP gateway.",
+      "entries": [
+        "tk-computer-use",
+        "docker-mcp-gateway"
+      ]
+    }
+  }
+}

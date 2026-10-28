@@ -1,5 +1,5 @@
 {
-  "$comment": "Folder-level ownership for plans/parallel_build_tk.md, sections 2, 6 and 7. A path is owned by the lane whose `owns` prefix matches it and whose `except` list does not. `shared` names files with per-lane sections marked `# [lane-X]`. `noLane` paths no lane edits during a wave. Written by tk session 0; only integration edits it.",
+  "$comment": "Folder-level ownership for plans/parallel_build_tk.md, sections 2, 6 and 7. A path is owned by the lane whose `owns` prefix matches it and whose `except` list does not. `shared` names files with per-lane sections marked `# [lane-X]`. `noLane` paths no lane edits during a wave. Written by tk session 0; only integration edits it. Integration w1 extended it for wave 2: lane I gains tk-kilo-plugin, tk-pi except memory.ts, and tests/cli-contract/checks/I/; tk-daemon's Cargo.toml is shared with lane K.",
   "lanes": {
     "A": { "wave": 1, "owns": ["packages/tk-pi/"], "except": ["packages/tk-pi/extensions/memory.ts"] },
     "B": { "wave": 1, "owns": ["crates/tk-daemon/", "crates/tk-core/"], "except": ["crates/tk-daemon/src/computer_use/", "crates/tk-daemon/src/collector/"] },
@@ -9,13 +9,14 @@
     "F": { "wave": 1, "owns": ["packages/tk-claude-plugin/", "packages/tk-codex-plugin/", "packages/tk-opencode-plugin/", "tests/cli-contract/"], "except": [] },
     "G": { "wave": 2, "owns": ["library/mirror/", "library/publish/"], "except": [] },
     "H": { "wave": 2, "owns": ["library/trust/"], "except": [] },
-    "I": { "wave": 2, "owns": ["packages/tk-gemini-extension/", "packages/tk-hermes-plugin/", "packages/tk-openclaw-plugin/"], "except": [] },
+    "I": { "wave": 2, "owns": ["packages/tk-gemini-extension/", "packages/tk-hermes-plugin/", "packages/tk-openclaw-plugin/", "packages/tk-kilo-plugin/", "packages/tk-pi/", "tests/cli-contract/checks/I/"], "except": ["packages/tk-pi/extensions/memory.ts"] },
     "J": { "wave": 2, "owns": ["crates/tk-cli/src/watch/", "library/site/"], "except": [] },
     "K": { "wave": 2, "owns": ["crates/tk-daemon/src/collector/", "crates/tk-daemon/src/computer_use/", "packages/tk-pi/extensions/memory.ts", "macos/"], "except": [] },
     "M": { "wave": 2, "owns": ["tests/measure/"], "except": [] }
   },
   "shared": {
-    "crates/tk-cli/Cargo.toml": ["C", "D", "J"]
+    "crates/tk-cli/Cargo.toml": ["C", "D", "J"],
+    "crates/tk-daemon/Cargo.toml": ["K"]
   },
   "noLane": [
     "Cargo.toml",

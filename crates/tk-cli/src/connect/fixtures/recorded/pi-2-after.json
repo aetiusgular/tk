@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "fs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "env": {
+        "TOKEN": "${TOKEN}"
+      },
+      "exposure": "deferred"
+    },
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${EXA_KEY}"
+      },
+      "exposure": "deferred"
+    }
+  }
+}

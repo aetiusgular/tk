@@ -1,0 +1,9 @@
+{
+  "name": "tk-openclaw-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "OpenClaw plugin (wave 2, lane I, T2.4); OpenClaw is not in Orca's grid",
+  "engines": { "node": ">=22.19.0" }
+}

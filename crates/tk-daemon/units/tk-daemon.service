@@ -1,0 +1,25 @@
+# systemd user unit for tk-daemon (Linux). Lane B wrote it; the box test
+# installs it. Not run in a build session.
+#
+#   install -D -m 0644 tk-daemon.service ~/.config/systemd/user/tk-daemon.service
+#   install -D -m 0755 <built>/tk-daemon ~/.local/bin/tk-daemon
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now tk-daemon.service
+#
+# The socket is $XDG_RUNTIME_DIR/tk/daemon.sock, the log ~/.local/share/tk
+# (or $XDG_DATA_HOME/tk). The daemon makes no outbound connection.
+# To keep it running after logout: loginctl enable-linger <user>.
+
+[Unit]
+Description=tk daemon: OTLP receiver, activity log and approval socket
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/tk-daemon --foreground
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=default.target

@@ -21,11 +21,6 @@ path = "src/main.rs"
 [features]
 default = []
 # [lane-C]
-# The fork's docker_mcp.rs as copied. It imports `crate::dirs_home` and
-# `crate::harness::{exec_output_with_stdin, gui_search_path}` from the fork's
-# lib.rs and harness.rs, which are not copied. Lane C supplies those (or
-# replaces the calls) and removes this flag.
-fork-docker-mcp = []
 # [lane-D]
 # [lane-J]
 
@@ -33,8 +28,18 @@ fork-docker-mcp = []
 tk-core = { path = "../tk-core" }
 serde.workspace = true
 serde_json.workspace = true
+# Shared by lanes C and D since integration w1 (lane D's request 6).
+libc.workspace = true
 # [lane-C]
+# Format-preserving TOML edits for Codex's config.toml: comments and key
+# order survive a write. Reason and pin in the lane C status doc.
+toml_edit = "=0.25.17"
+sha2.workspace = true
 # [lane-D]
+# `tk run`: the daemon socket client (lane D's own crate) and chat and event
+# ids (uuid, the workspace's exact pin).
+tk-audit-linux = { path = "../tk-audit-linux" }
+uuid.workspace = true
 # [lane-J]
 
 [dev-dependencies]

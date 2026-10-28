@@ -1,0 +1,21 @@
+{
+  "description": "tk policy gate for Codex. Codex fails open when a hook fails or times out, so the hook never crashes on purpose and caps its own waits below this timeout.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node --no-warnings \"${PLUGIN_ROOT}/bin/tk-hook.mjs\" pre", "timeout": 120 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "node --no-warnings \"${PLUGIN_ROOT}/bin/tk-hook.mjs\" post", "timeout": 30 }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "source": "observed 27 Oct 2026 through the claude.ai connector of the same name (tool names as listed to the client); no tools/list was run; the names carry hyphens, which Pi and the policy file spell with underscores",
+  "recordedAt": "2026-10-27",
+  "tools": [
+    {
+      "name": "resolve-library-id",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "query-docs",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ]
+}

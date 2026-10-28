@@ -2,22 +2,25 @@
 //! the Unix socket server from `contracts/daemon-protocol.md`.
 //!
 //! The three module folders are copies from the fork (`NOTICE` at the
-//! repository root names each source commit and path). They are behind
-//! feature flags because `otel_receiver/mod.rs`, `activity/mod.rs`,
-//! `activity/commands.rs` and `computer_use/mod.rs` still reference
-//! `tauri::`. Lane B's first item replaces those references with the socket
-//! and the channel, then removes the `cfg` lines below. Nothing else in the
-//! copied files was changed except the `#[path]` lines that pointed at the
-//! old sibling layout.
+//! repository root names each source commit and path). Lane B took
+//! `activity/` and `otel_receiver/` out of Tauri (each file's header says
+//! what changed); `computer_use/` still references `tauri::` and stays
+//! behind the `computer-use` feature until lane K wires it in wave 2.
+//!
+//! - `daemon`: the state and the protocol's ops.
+//! - `socket`: the Unix socket server.
+//! - `service`: the pid lock, the token and endpoint files, start-up.
+//! - `protocol`: the contract's Rust types.
 
-#[cfg(feature = "fork-modules")]
 pub mod activity;
+pub mod collector;
 #[cfg(feature = "computer-use")]
 pub mod computer_use;
-#[cfg(feature = "fork-modules")]
 pub mod otel_receiver;
 
+pub mod daemon;
 pub mod protocol;
+pub mod service;
 pub mod socket;
 
 /// Where the daemon's socket lives, per OS (contract, section 1). The

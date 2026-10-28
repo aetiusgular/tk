@@ -31,3 +31,16 @@ else. Line counts exclude Cargo.lock files and build output.
 
 contracts/docker-args.md transcribes the argument patterns of the fork's
 src/features/gateway-connectors/model/dockerArgs.ts (not copied).
+
+Third-party data and schemas, added by integration w1 (27 Oct 2026):
+
+| Here | What | Source | Licence |
+|---|---|---|---|
+| packages/tk-pi/src/confusables.ts; packages/tk-claude-plugin/src/core/confusables.ts and its copies in packages/tk-codex-plugin/src/core/ and packages/tk-opencode-plugin/src/core/; crates/tk-core/src/fold_tables.rs (its CONFUSABLES table); contracts/fixtures/policy/fold.json | Mappings derived from Unicode confusables.txt 17.0.0 (2025-07-22), sha256 091c7f82fc39ef208faf8f94d29c244de99254675e09de163160c810d13ef22a | unicode-org/unicodetools at 578f6c0, unicodetools/data/security/17.0.0/confusables.txt | Unicode License V3, LICENSES/Unicode-3.0.txt |
+| crates/tk-core/src/fold_tables.rs (its DECOMP and MARKS tables) | NFKD decompositions and general categories Mn and Me, Unicode 17.0, generated from Node 22.23.4's ICU 78.3 | The Unicode Character Database, through ICU | Unicode License V3, LICENSES/Unicode-3.0.txt |
+| library/schema/server.schema.json | The official MCP registry's server.json schema, version 2025-12-11, byte for byte | modelcontextprotocol/registry at 9c4a96c90fbcd3c3a169cdcd5443419c7a0c39d7, internal/validators/schemas/2025-12-11.json | MIT and Apache-2.0 (that repository's LICENSE); LICENSES/Apache-2.0.txt |
+| library/schema/thv-registry.schema.json, thv-skill.schema.json, thv-plugin.schema.json | ToolHive's registry, skill and plugin schemas, byte for byte | stacklok/toolhive-core main, registry/types/data/, fetched 27 Oct 2026 (sha256 in plans/parallel/tk_lane_E.md) | Apache-2.0, LICENSES/Apache-2.0.txt |
+
+LICENSES/Apache-2.0.txt is the licence text as the serde 1.0.229 crate ships
+it; LICENSES/Unicode-3.0.txt is https://www.unicode.org/license.txt as read
+on 27 Oct 2026.

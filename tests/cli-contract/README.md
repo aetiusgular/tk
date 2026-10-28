@@ -45,6 +45,10 @@ Claude Code reads `CLAUDE.md`, `.claude/CLAUDE.md` and `CLAUDE.local.md` from ev
 | `lib/claudeDriver.mjs` | Starts Claude Code in MonoCode's spawn shape: stream-json in and out, no `-p` |
 | `lib/stubMcp.mjs` | A stdio MCP server with two tools |
 | `codex-mock/` | A fake model for a third Codex home on the Mac, below |
+| `checks/tkClaude.mjs` | tk lane F. `tk-claude-gate`: the tk Claude Code plugin loaded by `--plugin-dir`: deny, ask through a fake tk daemon, input and output redaction, the daemon's records. `tk-claude-failure`: Claude Code's `onFailure: "block"` on a crashing and a hanging PreToolUse hook. `tk-claude-bypass`: whether a hook's ask still prompts under `bypassPermissions` (skipped as root) |
+| `checks/tkCodex.mjs` | tk lane F. `tk-codex-gate`: the tk Codex plugin installed with `codex plugin marketplace add` and `codex plugin add`, hooks trusted by hash in the temp config, then `codex exec`: deny, ask through a fake tk daemon, output and MCP input redaction |
+
+The tk checks import the fake daemon from `packages/tk-claude-plugin/src/testing/fakeDaemon.ts`, so they need Node 22.18 or later (type stripping). The edit-adapter, computer-use and OTel checks are the fork's (MonoCode) and stay as they were copied: the edit-adapter checks need the fork's binary and are skipped here.
 
 ## codex-mock on the Mac
 

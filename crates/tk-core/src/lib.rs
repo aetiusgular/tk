@@ -9,5 +9,7 @@
 //! `contracts/fixtures/policy/cases.json`.
 
 pub mod event;
+#[rustfmt::skip]
+mod fold_tables;
 pub mod policy;
 pub mod token;

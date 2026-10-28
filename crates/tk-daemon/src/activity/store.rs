@@ -231,11 +231,14 @@ pub fn read(
 /// Whether a record written later under an event's id may take its place.
 /// Only telemetry replaces telemetry, and a source replaces its own: a
 /// webview write can never wipe a computer-use or collector record by
-/// reusing its id (review V1).
-fn may_replace(old: &ActivityEvent, new: &ActivityEvent) -> bool {
+/// reusing its id (review V1). And only within one chat: a client holding
+/// one chat's token cannot replace another chat's record by reusing its id
+/// (tk lane B; chat tokens sit in a harness's environment).
+pub fn may_replace(old: &ActivityEvent, new: &ActivityEvent) -> bool {
     use super::types::ActivitySource::{Adapter, Otel};
-    old.source == new.source
-        || (matches!(old.source, Adapter | Otel) && matches!(new.source, Adapter | Otel))
+    old.chat_id == new.chat_id
+        && (old.source == new.source
+            || (matches!(old.source, Adapter | Otel) && matches!(new.source, Adapter | Otel)))
 }
 
 /// `read`, keeping only the new events `keep` accepts, so the cap counts
@@ -255,7 +258,9 @@ fn read_where(
     let mut approvals: HashMap<String, ApprovalRecord> = HashMap::new();
     // An event written again under its id (a telemetry call that an OTel
     // detail joined late, lane A) replaces the earlier copy: last write wins.
-    let mut event_at: HashMap<String, usize> = HashMap::new();
+    // Keyed by chat and id: a record in one chat never shadows another
+    // chat's record under the same id (tk lane B).
+    let mut event_at: HashMap<(String, String), usize> = HashMap::new();
     let first_day = retention::day_of_ms(since_ms);
     let last_day = retention::day_of_ms(until_ms);
     let mut prev_hash: Option<String> = None;
@@ -286,7 +291,8 @@ fn read_where(
                     if let Ok(event) = serde_json::from_value::<ActivityEvent>(link.record) {
                         let in_range = event.at >= since_ms && event.at <= until_ms;
                         if in_range && chat_id.is_none_or(|c| c == event.chat_id) {
-                            if let Some(&slot) = event_at.get(&event.id) {
+                            let key = (event.chat_id.clone(), event.id.clone());
+                            if let Some(&slot) = event_at.get(&key) {
                                 if may_replace(&back.events[slot], &event) {
                                     back.events[slot] = event;
                                 }
@@ -295,7 +301,7 @@ fn read_where(
                             } else if back.events.len() >= limit {
                                 back.truncated = true;
                             } else {
-                                event_at.insert(event.id.clone(), back.events.len());
+                                event_at.insert(key, back.events.len());
                                 back.events.push(event);
                             }
                         }

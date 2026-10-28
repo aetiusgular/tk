@@ -11,3 +11,5 @@ description = "Shared types for the toolkit layer: policy, events, tokens"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+# No Unicode crate: fold_text's tables are generated from the TypeScript
+# gate core's sources (gen/gen-fold-tables.mjs; integration w1).

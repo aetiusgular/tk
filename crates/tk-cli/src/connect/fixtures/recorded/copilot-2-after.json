@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "fs": {
+      "tools": [
+        "*"
+      ],
+      "type": "local",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "env": {
+        "TOKEN": "$TOKEN"
+      }
+    },
+    "exa": {
+      "tools": [
+        "*"
+      ],
+      "type": "http",
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {
+        "X-Key": "$XK"
+      }
+    }
+  }
+}

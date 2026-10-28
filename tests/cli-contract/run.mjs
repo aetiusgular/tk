@@ -10,9 +10,10 @@
 // every check that ran has status pass or info, 1 when one failed or errored,
 // 2 on bad arguments.
 
-import { existsSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runsDir } from "./lib/codexDriver.mjs";
 import { codexChecks } from "./checks/codex.mjs";
 import { claudeChecks } from "./checks/claude.mjs";
@@ -23,9 +24,31 @@ import { claudeTurnEndChecks } from "./checks/claudeTurnEnd.mjs";
 // [w3-b] imports
 // [w3-c] imports
 import { computerUseClaudeChecks as computerUseClaudeChecks_w3c, computerUseCodexChecks as computerUseCodexChecks_w3c } from "./checks/computerUse.mjs";
+// [tk-F] imports: the tk plugin checks (lane F). They import the fake daemon from
+// packages/tk-claude-plugin/src/testing/fakeDaemon.ts, so Node 22.18 or later.
+import { tkClaudeChecks } from "./checks/tkClaude.mjs";
+import { tkCodexChecks } from "./checks/tkCodex.mjs";
+
+// [integration w1] Lane folders. Every .mjs file in checks/<LANE>/ (one
+// capital letter: I in wave 2; L, N, P, R in wave 4) exports `checks`, an
+// array of { id, title, harness, run }. `run({ binPath, version, codexPath,
+// claudePath })` returns { status, finding }. The harness's CLI comes from
+// --cli <harness>=<path>, or --codex / --claude. Lanes add files, not lines.
+async function laneChecks() {
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "checks");
+  const out = [];
+  for (const lane of readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && /^[A-Z]$/.test(d.name)).map((d) => d.name).sort()) {
+    for (const file of readdirSync(path.join(dir, lane)).filter((f) => f.endsWith(".mjs")).sort()) {
+      const mod = await import(pathToFileURL(path.join(dir, lane, file)).href);
+      if (!Array.isArray(mod.checks)) throw new Error(`checks/${lane}/${file} exports no checks array`);
+      for (const c of mod.checks) out.push({ ...c, lane });
+    }
+  }
+  return out;
+}
 
 function parseArgs(argv) {
-  const out = { codex: null, claude: [], only: null, json: null, timeout: 240 };
+  const out = { codex: null, claude: [], cli: {}, only: null, json: null, timeout: 240 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => {
@@ -35,6 +58,12 @@ function parseArgs(argv) {
     };
     if (a === "--codex") out.codex = next();
     else if (a === "--claude") out.claude.push(next());
+    else if (a === "--cli") {
+      const v = next();
+      const eq = v.indexOf("=");
+      if (eq <= 0) throw new Error("--cli takes <harness>=<path>");
+      out.cli[v.slice(0, eq)] = v.slice(eq + 1);
+    }
     else if (a === "--only") out.only = new Set(next().split(","));
     else if (a === "--json") out.json = next();
     else if (a === "--timeout") out.timeout = Number(next());
@@ -74,7 +103,7 @@ async function main() {
     process.exit(2);
   }
   if (args.help) {
-    console.log("node tests/cli-contract/run.mjs --codex <path> --claude <path> [--claude <path>] [--only ids] [--json file] [--timeout s] [--keep] [--edit-adapter bin]");
+    console.log("node tests/cli-contract/run.mjs --codex <path> --claude <path> [--claude <path>] [--cli <harness>=<path> ...] [--only ids] [--json file] [--timeout s] [--keep] [--edit-adapter bin]");
     return;
   }
   // Every temp home of this run goes in one folder, removed at the end
@@ -93,6 +122,8 @@ async function main() {
   // [w3-b] codex-plan
   // [w3-c] codex-plan
   for (const c of computerUseCodexChecks_w3c) plan.push({ ...c, harness: "codex", bin: codexVersion ? args.codex : null, cliVersion: codexVersion });
+  // [tk-F] codex-plan
+  for (const c of tkCodexChecks) plan.push({ ...c, harness: "codex", bin: codexVersion ? args.codex : null, cliVersion: codexVersion });
   const claudes = args.claude.length ? args.claude : [null];
   for (const bin of claudes) {
     const v = bin && existsSync(bin) ? version(bin) : null;
@@ -103,6 +134,14 @@ async function main() {
     // [w3-b] claude-plan
     // [w3-c] claude-plan
     for (const c of computerUseClaudeChecks_w3c) plan.push({ ...c, harness: "claude", bin: v ? bin : null, cliVersion: v, id: v ? `${c.id}@${v.split(" ")[0]}` : c.id, baseId: c.id });
+    // [tk-F] claude-plan
+    for (const c of tkClaudeChecks) plan.push({ ...c, harness: "claude", bin: v ? bin : null, cliVersion: v, id: v ? `${c.id}@${v.split(" ")[0]}` : c.id, baseId: c.id });
+  }
+  // [integration w1] lane folders
+  for (const c of await laneChecks()) {
+    const bin = c.harness === "codex" ? args.codex : c.harness === "claude" ? (args.claude[0] ?? null) : (args.cli[c.harness] ?? null);
+    const v = bin && existsSync(bin) ? version(bin) : null;
+    plan.push({ ...c, bin: v ? bin : null, cliVersion: v, id: v ? `${c.id}@${v.split(" ")[0]}` : c.id, baseId: c.id, lane: c.lane });
   }
 
   const results = [];
@@ -119,7 +158,9 @@ async function main() {
     const started = Date.now();
     try {
       const out = await withTimeout(
-        item.run(item.harness === "codex" ? { codexPath: item.bin } : { claudePath: item.bin, version: item.cliVersion }),
+        item.lane
+          ? item.run({ binPath: item.bin, version: item.cliVersion, codexPath: args.codex, claudePath: args.claude[0] ?? null })
+          : item.run(item.harness === "codex" ? { codexPath: item.bin } : { claudePath: item.bin, version: item.cliVersion }),
         args.timeout,
         item.id,
       );

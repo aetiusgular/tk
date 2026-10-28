@@ -1,0 +1,82 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.aetiusgular/docker-mcp-gateway",
+  "title": "Docker MCP Gateway",
+  "description": "The gateway that runs each connector in its own container behind one stdio or loopback endpoint.",
+  "version": "0.44.1",
+  "websiteUrl": "https://docs.docker.com/ai/mcp-catalog-and-toolkit/mcp-gateway/",
+  "repository": {
+    "url": "https://github.com/docker/mcp-gateway",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "host",
+      "identifier": "docker",
+      "version": "0.44.1",
+      "runtimeHint": "docker",
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        },
+        {
+          "type": "positional",
+          "value": "gateway"
+        },
+        {
+          "type": "positional",
+          "value": "run"
+        },
+        {
+          "type": "named",
+          "name": "--profile",
+          "value": "tk",
+          "description": "The profile tk connect exported (library/export/docker-profile.ts); HTTP mode on the box is --transport streaming with MCP_GATEWAY_AUTH_TOKEN (box plan 5.5), reachable at http://127.0.0.1:8811/mcp, which upstream will not list as a remote (https only)"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "server",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "host",
+          "note": "runs as you"
+        },
+        "exposure": {
+          "default": "deferred"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "not-applicable"
+          }
+        },
+        "permissions": {
+          "network": {
+            "outbound": {
+              "allow_host": [
+                "127.0.0.1"
+              ],
+              "allow_port": [
+                8811
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

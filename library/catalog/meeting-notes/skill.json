@@ -1,0 +1,54 @@
+{
+  "namespace": "io.github.aetiusgular",
+  "name": "meeting-notes",
+  "title": "Meeting notes",
+  "description": "Read meeting notes, transcripts and folders from Granola. Use when a task refers to a past meeting, a decision made in one, or an action item.",
+  "version": "0.1.0",
+  "status": "active",
+  "license": "MIT",
+  "allowedTools": [
+    "granola/list_meetings",
+    "granola/get_meetings",
+    "granola/search_meetings",
+    "granola/get_meeting_transcript"
+  ],
+  "repository": {
+    "url": "https://github.com/aetiusgular/tk",
+    "type": "git"
+  },
+  "packages": [
+    {
+      "registryType": "git",
+      "url": "https://github.com/aetiusgular/tk",
+      "ref": "main",
+      "subfolder": "library/catalog/tk-connectors/skills/meeting-notes"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "skill",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "host",
+          "note": "runs as you"
+        },
+        "exposure": {
+          "default": "direct"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "not-applicable"
+          }
+        }
+      }
+    }
+  }
+}

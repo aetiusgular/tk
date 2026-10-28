@@ -39,10 +39,12 @@ fn is_prompt_text(key: &str) -> bool {
     matches!(key, "prompt" | "prompt_text" | "user_prompt" | "response") || key.ends_with(".prompt")
 }
 
-/// The event name without the harness prefix.
+/// The event name without the harness prefix: `claude_code.`, `codex.`, or
+/// `pi.` (lane A's emitter, `contracts/events.md` section 3).
 pub fn short_name(name: &str) -> &str {
     name.strip_prefix("claude_code.")
         .or_else(|| name.strip_prefix("codex."))
+        .or_else(|| name.strip_prefix("pi."))
         .unwrap_or(name)
 }
 

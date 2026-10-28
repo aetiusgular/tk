@@ -1,0 +1,30 @@
+{
+  "description": "tk policy gate. PreToolUse runs the policy and blocks when the hook fails or times out (onFailure block). PostToolUse redacts secret-like values in the result and records the call.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings \"${CLAUDE_PLUGIN_ROOT}/bin/tk-hook.mjs\" pre",
+            "timeout": 120,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node --no-warnings \"${CLAUDE_PLUGIN_ROOT}/bin/tk-hook.mjs\" post",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

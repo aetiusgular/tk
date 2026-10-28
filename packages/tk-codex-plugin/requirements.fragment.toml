@@ -1,0 +1,19 @@
+# A fragment for an admin's /etc/codex/requirements.toml (Windows:
+# %ProgramData%\OpenAI\Codex\requirements.toml). tk never writes it (rules
+# corner case 65); `tk connect codex --allowlist` prints it.
+# Read in Codex's source at rust-v0.163.0: codex-rs/protocol/src/mcp_policy.rs:11-84,
+# codex-rs/config/src/mcp_requirements.rs:49-89. A server not listed, or whose
+# identity does not match exactly, is disabled with a "Requirements" reason
+# (codex-rs/core/src/config/mod.rs:2224-2246).
+
+[mcp_servers.tk_example.identity]
+command = "docker"
+# For an exact argument list instead of the executable alone:
+# command = { executable = "docker", args = [
+#   { match = "exact", value = "mcp" }, { match = "exact", value = "gateway" },
+#   { match = "exact", value = "run" }, { match = "exact", value = "--profile" },
+#   { match = "exact", value = "tk_example" } ] }
+
+# A remote server is pinned by URL:
+# [mcp_servers.exa.identity]
+# url = "https://mcp.exa.ai/mcp"

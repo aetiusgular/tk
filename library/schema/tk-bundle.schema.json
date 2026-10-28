@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aetiusgular/tk/library/schema/tk-bundle.schema.json",
+  "title": "tk library bundle manifest (.claude-plugin/plugin.json)",
+  "description": "A Claude Code plugin.json (code.claude.com/docs/en/plugins/manifest-reference, read by session 0 on 27 Oct 2026: name is the only required key; metadata is free-form and unread by Claude Code v2.1.222+) carrying tk's entry object at metadata[\"io.github.aetiusgular.tk\"] with kind \"bundle\". Codex reads the same manifest. No JSON Schema is published for this file (not found); `claude plugin validate` in the box test is the authoritative check. This schema requires what the library needs: name, version, description, and the tk metadata. Lane E.",
+  "type": "object",
+  "required": ["name", "version", "description", "metadata"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$", "maxLength": 128 },
+    "displayName": { "type": "string" },
+    "version": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string", "minLength": 1 }, "email": { "type": "string" }, "url": { "type": "string" } }
+    },
+    "homepage": { "type": "string" },
+    "repository": { "type": "string" },
+    "license": { "type": "string" },
+    "keywords": { "type": "array", "items": { "type": "string" } },
+    "metadata": {
+      "type": "object",
+      "required": ["io.github.aetiusgular.tk"],
+      "properties": {
+        "io.github.aetiusgular.tk": {
+          "allOf": [
+            { "$ref": "https://github.com/aetiusgular/tk/contracts/entry.schema.json" },
+            { "type": "object", "properties": { "kind": { "const": "bundle" } } }
+          ]
+        }
+      }
+    },
+    "commands": { "$ref": "#/$defs/pathOrPaths" },
+    "agents": { "$ref": "#/$defs/pathOrPaths" },
+    "skills": { "$ref": "#/$defs/pathOrPaths" },
+    "outputStyles": { "$ref": "#/$defs/pathOrPaths" },
+    "themes": { "$ref": "#/$defs/pathOrPaths" },
+    "hooks": {},
+    "mcpServers": {},
+    "lspServers": {},
+    "userConfig": {},
+    "channels": {}
+  },
+  "$defs": {
+    "path": { "type": "string", "pattern": "^(\\.|\\./(?!.*\\.\\.)[^\\\\]*)$" },
+    "pathOrPaths": { "oneOf": [{ "$ref": "#/$defs/path" }, { "type": "array", "items": { "$ref": "#/$defs/path" } }] }
+  }
+}

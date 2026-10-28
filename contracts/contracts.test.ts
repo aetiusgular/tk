@@ -19,6 +19,7 @@ function validator() {
     "shapes/skill.schema.json",
     "shapes/plugin.schema.json",
     "shapes/marketplace.schema.json",
+    "harness-presets.schema.json",
   ]) {
     ajv.addSchema(read(p) as object);
   }
@@ -94,6 +95,8 @@ describe("harness presets", () => {
     const ids = presets.harnesses.map((h) => h.id);
     expect(ids).toHaveLength(14);
     expect(new Set(ids).size).toBe(14);
+    const planned = (presets as unknown as { planned: { id: string }[] }).planned.map((p) => p.id);
+    expect(new Set([...ids, ...planned]).size).toBe(29);
     for (const id of ["claude-code", "codex", "pi", "opencode", "gemini"]) expect(ids).toContain(id);
   });
 
@@ -114,5 +117,54 @@ describe("daemon exchange", () => {
       expect(["> ", "< "]).toContain(l.slice(0, 2));
       expect(() => JSON.parse(l.slice(2))).not.toThrow();
     }
+  });
+});
+
+// Integration w1: the repository is its own marketplace for tk's plugins, so
+// `claude plugin install tk@tk` and `codex plugin add tk@tk` work from a
+// clone (run with Claude Code 2.1.311 and Codex 0.163.0 on 27 Oct; Claude
+// Code's `plugin validate` passed). The id must stay tk@tk: the managed
+// settings fragment and Codex's hook trust keys name it.
+describe("tk's own marketplaces", () => {
+  const root = join(here, "..");
+  const claude = JSON.parse(readFileSync(join(root, ".claude-plugin", "marketplace.json"), "utf8")) as { name: string; plugins: { name: string; source: string }[] };
+  const codex = JSON.parse(readFileSync(join(root, ".agents", "plugins", "marketplace.json"), "utf8")) as { name: string; plugins: { name: string; source: { source: string; path: string } }[] };
+  it("Claude Code's names tk and points at the Claude Code plugin", () => {
+    expect(check("shapes/marketplace.schema.json", claude)).toEqual([]);
+    expect(claude.name).toBe("tk");
+    expect(claude.plugins).toEqual([expect.objectContaining({ name: "tk", source: "./packages/tk-claude-plugin" })]);
+    const manifest = JSON.parse(readFileSync(join(root, "packages", "tk-claude-plugin", ".claude-plugin", "plugin.json"), "utf8")) as { name: string };
+    expect(manifest.name).toBe("tk");
+  });
+  it("Codex's names tk and points at the Codex plugin", () => {
+    expect(codex.name).toBe("tk");
+    expect(codex.plugins).toEqual([{ name: "tk", source: { source: "local", path: "./packages/tk-codex-plugin" } }]);
+    const manifest = JSON.parse(readFileSync(join(root, "packages", "tk-codex-plugin", ".codex-plugin", "plugin.json"), "utf8")) as { name: string };
+    expect(manifest.name).toBe("tk");
+  });
+  it("the managed settings fragment enables exactly tk@tk", () => {
+    const frag = readFileSync(join(root, "packages", "tk-claude-plugin", "managed-settings.fragment.json"), "utf8");
+    expect(frag).toContain('"tk@tk"');
+  });
+});
+
+// Integration w1: the coverage fields lane J's `tk status` reads (note AQ section 4).
+describe("harness coverage", () => {
+  type Row = { id: string; coverage: { tier: string | null; orcaId: string | null; gate: { status: string } } };
+  const data = read("harness-presets.json") as { harnesses: Row[]; planned: Row[] };
+  it("the file follows harness-presets.schema.json", () => {
+    expect(check("harness-presets.schema.json", data)).toEqual([]);
+  });
+  it("covers Orca's 27 agents with note AQ's tiers: 24 G, 2 A, 1 O", () => {
+    const orca = [...data.harnesses, ...data.planned].filter((r) => r.coverage.orcaId !== null);
+    expect(orca).toHaveLength(27);
+    expect(new Set(orca.map((r) => r.coverage.orcaId)).size).toBe(27);
+    const tiers = { G: 0, A: 0, O: 0 } as Record<string, number>;
+    for (const r of orca) tiers[r.coverage.tier ?? "none"] = (tiers[r.coverage.tier ?? "none"] ?? 0) + 1;
+    expect(tiers).toEqual({ G: 24, A: 2, O: 1 });
+  });
+  it("marks built only the four wave 1 adapters", () => {
+    const built = [...data.harnesses, ...data.planned].filter((r) => r.coverage.gate.status === "built").map((r) => r.id).sort();
+    expect(built).toEqual(["claude-code", "codex", "opencode", "pi"]);
   });
 });

@@ -1,0 +1,12 @@
+{
+  "name": "tk",
+  "owner": { "name": "Aetius Gular" },
+  "description": "tk's own plugins, installed from a clone of this repository: claude plugin marketplace add /abs/path/tk, then claude plugin install tk@tk. Added by integration w1 so the plugin id is tk@tk, as packages/tk-claude-plugin/managed-settings.fragment.json expects.",
+  "plugins": [
+    {
+      "name": "tk",
+      "source": "./packages/tk-claude-plugin",
+      "description": "tk policy gate for Claude Code: PreToolUse checks every tool call against ~/.tk/policy.json and blocks when the hook fails; PostToolUse redacts and records."
+    }
+  ]
+}

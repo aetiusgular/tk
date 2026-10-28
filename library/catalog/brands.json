@@ -1,0 +1,220 @@
+{
+  "$comment": "Seed brand list for the lookalike check (lane E; lane H extends it in wave 2 from Docker's catalog and the Anthropic directory, plan T4.3). namespaces: publisher namespaces that own the name; hosts: the brand's own MCP endpoints; images: image prefixes of the brand's builds; packages: package identifier prefixes. Sources: docker/mcp-registry at 98a203c (servers/exa, context7, granola-remote, hugging-face), vercel.com/blog (mcp.vercel.com), registry.npmjs.org (@shopify/dev-mcp), note AP section 5 (UpGuard: HubSpot). An entry that points only at these is a pointer to the brand, not a lookalike.",
+  "brands": [
+    {
+      "name": "exa",
+      "namespaces": [
+        "io.github.exa-labs"
+      ],
+      "hosts": [
+        "mcp.exa.ai"
+      ],
+      "images": [
+        "mcp/exa"
+      ]
+    },
+    {
+      "name": "context7",
+      "namespaces": [
+        "io.github.upstash"
+      ],
+      "hosts": [
+        "mcp.context7.com"
+      ]
+    },
+    {
+      "name": "hugging-face",
+      "namespaces": [
+        "io.github.huggingface"
+      ],
+      "hosts": [
+        "huggingface.co",
+        "hf.co"
+      ]
+    },
+    {
+      "name": "huggingface",
+      "namespaces": [
+        "io.github.huggingface"
+      ],
+      "hosts": [
+        "huggingface.co",
+        "hf.co"
+      ]
+    },
+    {
+      "name": "granola",
+      "namespaces": [],
+      "hosts": [
+        "mcp.granola.ai"
+      ]
+    },
+    {
+      "name": "shopify",
+      "namespaces": [
+        "io.github.shopify"
+      ],
+      "packages": [
+        "@shopify/"
+      ]
+    },
+    {
+      "name": "vercel",
+      "namespaces": [
+        "io.github.vercel"
+      ],
+      "hosts": [
+        "mcp.vercel.com"
+      ]
+    },
+    {
+      "name": "github",
+      "namespaces": [
+        "io.github.github"
+      ],
+      "hosts": [
+        "api.githubcopilot.com"
+      ],
+      "images": [
+        "mcp/github",
+        "ghcr.io/github/"
+      ]
+    },
+    {
+      "name": "docker",
+      "namespaces": [
+        "io.github.docker"
+      ],
+      "images": [
+        "mcp/",
+        "docker/"
+      ],
+      "packages": [
+        "docker"
+      ]
+    },
+    {
+      "name": "anthropic",
+      "namespaces": [
+        "io.github.anthropics",
+        "com.anthropic"
+      ],
+      "packages": [
+        "@anthropic-ai/",
+        "@modelcontextprotocol/"
+      ]
+    },
+    {
+      "name": "claude",
+      "namespaces": [
+        "io.github.anthropics",
+        "com.anthropic"
+      ]
+    },
+    {
+      "name": "openai",
+      "namespaces": [
+        "io.github.openai",
+        "com.openai"
+      ],
+      "packages": [
+        "@openai/",
+        "openai"
+      ]
+    },
+    {
+      "name": "hubspot",
+      "namespaces": [
+        "io.github.hubspot",
+        "com.hubspot"
+      ],
+      "hosts": [
+        "mcp.hubspot.com"
+      ]
+    },
+    {
+      "name": "slack",
+      "namespaces": [
+        "io.github.slackapi",
+        "com.slack"
+      ]
+    },
+    {
+      "name": "notion",
+      "namespaces": [
+        "io.github.makenotion",
+        "com.notion"
+      ],
+      "hosts": [
+        "mcp.notion.com"
+      ]
+    },
+    {
+      "name": "linear",
+      "namespaces": [
+        "com.linear"
+      ],
+      "hosts": [
+        "mcp.linear.app"
+      ]
+    },
+    {
+      "name": "stripe",
+      "namespaces": [
+        "io.github.stripe",
+        "com.stripe"
+      ],
+      "hosts": [
+        "mcp.stripe.com"
+      ]
+    },
+    {
+      "name": "sentry",
+      "namespaces": [
+        "io.github.getsentry",
+        "io.sentry"
+      ],
+      "hosts": [
+        "mcp.sentry.dev"
+      ]
+    },
+    {
+      "name": "cloudflare",
+      "namespaces": [
+        "io.github.cloudflare",
+        "com.cloudflare"
+      ]
+    },
+    {
+      "name": "atlassian",
+      "namespaces": [
+        "com.atlassian"
+      ],
+      "hosts": [
+        "mcp.atlassian.com"
+      ]
+    },
+    {
+      "name": "postmark",
+      "namespaces": [
+        "io.github.activecampaign",
+        "com.postmarkapp"
+      ]
+    },
+    {
+      "name": "sequential-thinking",
+      "namespaces": [
+        "io.github.modelcontextprotocol"
+      ],
+      "packages": [
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    {
+      "name": "tk",
+      "namespaces": [
+        "io.github.aetiusgular"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "source": "npm @shopify/dev-mcp 1.17.0 README (registry.npmjs.org, read 27 Oct 2026): search_docs, search_docs_chunks, validate, validate_theme (validate_theme only with LIQUID_VALIDATION_MODE=full); no tools/list was run",
+  "recordedAt": "2026-10-27",
+  "tools": [
+    {
+      "name": "search_docs",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "search_docs_chunks",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "validate",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "validate_theme",
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

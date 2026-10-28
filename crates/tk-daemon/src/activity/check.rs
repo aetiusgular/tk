@@ -108,6 +108,16 @@ pub struct CheckInput<'a> {
     pub data_dir: Option<&'a str>,
 }
 
+/// A kernel feed: the Mac collector's `eslogger` events and, on Linux, lane
+/// D's `auditd` events. Both go through the same checks, so an `auditd`
+/// event must carry the collector's kinds and detail keys: kinds `create`,
+/// `write`, `rename`, `unlink`, `truncate`, `link`, `open`, `exec`, `fork`,
+/// `exit`; keys `path`, `dest`, `exe`, `child`, `ppid`, `tier`, and the
+/// event's `pid`.
+pub fn kernel_feed(source: ActivitySource) -> bool {
+    matches!(source, ActivitySource::Eslogger | ActivitySource::Auditd)
+}
+
 fn str_field<'a>(event: &'a ActivityEvent, key: &str) -> Option<&'a str> {
     event.detail.get(key).and_then(Value::as_str)
 }
@@ -322,8 +332,13 @@ fn host_matches(target: &str, host: &str) -> bool {
 }
 
 /// The host an event reached: its own `host`, or the one its OTel detail
-/// named (`detail.otel.host`, lane A's feed keeps it there).
+/// named (`detail.otel.host`, lane A's feed keeps it there). A `run`
+/// record's `host` is the machine the run is on (`contracts/daemon-protocol.md`
+/// section 3), and an approval record reaches nothing: neither has one.
 pub fn event_host(event: &ActivityEvent) -> Option<&str> {
+    if matches!(event.source, ActivitySource::Run | ActivitySource::Approval) {
+        return None;
+    }
     str_field(event, "host").or_else(|| {
         event
             .detail
@@ -368,7 +383,7 @@ fn runtime_spans(events: &[ActivityEvent]) -> HashMap<String, Vec<RuntimeSpan>> 
                 .entry((e.chat_id.clone(), pid))
                 .or_default()
                 .push(e.at),
-            (ActivitySource::Eslogger, "exit") => exits.entry(pid).or_default().push(e.at),
+            (source, "exit") if kernel_feed(*source) => exits.entry(pid).or_default().push(e.at),
             _ => {}
         }
     }
@@ -554,10 +569,7 @@ impl<'a> Tree<'a> {
         let mut forks: Forks = HashMap::new();
         let mut first_seen: HashMap<(String, u32), i64> = HashMap::new();
         let mut lineage: HashMap<(String, u32), Vec<u32>> = HashMap::new();
-        for e in events
-            .iter()
-            .filter(|e| e.source == ActivitySource::Eslogger)
-        {
+        for e in events.iter().filter(|e| kernel_feed(e.source)) {
             let Some(pid) = e.pid else { continue };
             let key = (e.chat_id.clone(), pid);
             first_seen
@@ -1035,7 +1047,11 @@ pub fn run_full(input: &CheckInput) -> CheckOutput {
 
         // An app no grant covered.
         let bundle = str_field(event, "bundleId").or_else(|| str_field(event, "grant"));
-        if flag.is_none() && matches!(event.source, ActivitySource::Cua | ActivitySource::Eslogger)
+        if flag.is_none()
+            && matches!(
+                event.source,
+                ActivitySource::Cua | ActivitySource::Eslogger | ActivitySource::Auditd
+            )
         {
             if let Some(bundle) = bundle {
                 let covered = covering(
@@ -1058,7 +1074,7 @@ pub fn run_full(input: &CheckInput) -> CheckOutput {
 
         // Writes outside the chat's folders.
         if flag.is_none()
-            && event.source == ActivitySource::Eslogger
+            && kernel_feed(event.source)
             && matches!(
                 event.kind.as_str(),
                 "create"
@@ -1131,7 +1147,7 @@ pub fn run_full(input: &CheckInput) -> CheckOutput {
         }
 
         // Sensitive opens.
-        if flag.is_none() && event.source == ActivitySource::Eslogger && event.kind == "open" {
+        if flag.is_none() && kernel_feed(event.source) && event.kind == "open" {
             if let Some(path) = str_field(event, "path") {
                 if !expected_sensitive(path, folders) {
                     flag = Some((
@@ -1174,7 +1190,7 @@ pub fn run_full(input: &CheckInput) -> CheckOutput {
         let Some((reason, summary, mut subject, mut grouped_path)) = flag else {
             continue;
         };
-        let tier = (event.source == ActivitySource::Eslogger).then(|| tree.tier(event));
+        let tier = (kernel_feed(event.source)).then(|| tree.tier(event));
         if let Some(tier) = tier {
             let forked_by_root = event
                 .pid
@@ -1248,11 +1264,7 @@ fn left_running<'e>(
 ) -> Vec<Candidate<'e>> {
     let mut exits: HashMap<u32, Vec<i64>> = HashMap::new();
     let mut by_pid: HashMap<(String, u32), Vec<&'e ActivityEvent>> = HashMap::new();
-    for e in input
-        .events
-        .iter()
-        .filter(|e| e.source == ActivitySource::Eslogger)
-    {
+    for e in input.events.iter().filter(|e| kernel_feed(e.source)) {
         let Some(pid) = e.pid else { continue };
         if e.kind == "exit" {
             exits.entry(pid).or_default().push(e.at);
@@ -1261,11 +1273,7 @@ fn left_running<'e>(
     }
     // (chat, child pid) -> (start time, the event to flag).
     let mut started: HashMap<(String, u32), (i64, &'e ActivityEvent)> = HashMap::new();
-    for e in input
-        .events
-        .iter()
-        .filter(|e| e.source == ActivitySource::Eslogger)
-    {
+    for e in input.events.iter().filter(|e| kernel_feed(e.source)) {
         if e.chat_id.is_empty() {
             continue;
         }

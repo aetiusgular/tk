@@ -1,0 +1,9 @@
+{
+  "name": "tk-hermes-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Hermes Agent plugin: pre_tool_call in Python (wave 2, lane I, T2.4)",
+  "engines": { "node": ">=22.19.0" }
+}

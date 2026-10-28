@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "fs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
+      "env": {
+        "TOKEN": "${TOKEN}"
+      },
+      "exposure": "deferred"
+    },
+    "exa": {
+      "url": "https://mcp.exa.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${EXA_KEY}"
+      },
+      "exposure": "deferred"
+    },
+    "hdr": {
+      "url": "https://x.example/mcp",
+      "headers": {
+        "X-Key": "${XK}"
+      }
+    },
+    "plain": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-time"
+      ]
+    }
+  }
+}

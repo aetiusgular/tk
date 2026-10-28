@@ -1,0 +1,9 @@
+# my settings
+model = "o3" # inline
+
+[profiles.local]
+model = "qwen"
+
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
+bearer_token_env_var = "EXA_KEY"

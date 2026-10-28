@@ -1,0 +1,52 @@
+{
+  "namespace": "io.github.aetiusgular",
+  "name": "library-docs",
+  "title": "Library docs",
+  "description": "Look up version-specific documentation and code examples for a library, framework, SDK or CLI with the Context7 connector. Use before writing code against an API whose current shape you are not sure of.",
+  "version": "0.1.0",
+  "status": "active",
+  "license": "MIT",
+  "allowedTools": [
+    "context7/resolve_library_id",
+    "context7/query_docs"
+  ],
+  "repository": {
+    "url": "https://github.com/aetiusgular/tk",
+    "type": "git"
+  },
+  "packages": [
+    {
+      "registryType": "git",
+      "url": "https://github.com/aetiusgular/tk",
+      "ref": "main",
+      "subfolder": "library/catalog/tk-connectors/skills/library-docs"
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "io.github.aetiusgular.tk": {
+        "kind": "skill",
+        "tier": "own",
+        "status": "active",
+        "runner": {
+          "kind": "host",
+          "note": "runs as you"
+        },
+        "exposure": {
+          "default": "direct"
+        },
+        "trust": {
+          "namespaceProof": "none",
+          "provenance": {
+            "kind": "none"
+          },
+          "contentSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "scans": [],
+          "liveness": {
+            "state": "not-applicable"
+          }
+        }
+      }
+    }
+  }
+}
