@@ -95,7 +95,13 @@ pub fn start(paths: Paths, log_prompts: bool) -> Result<Running, String> {
     if log.dir() != paths.log_dir() {
         return Err("the activity log already runs in another folder".into());
     }
-    let daemon = Daemon::new(&token, log, &paths.data, log_prompts)?;
+    let daemon = Daemon::new_with_state(
+        &token,
+        log,
+        &paths.data,
+        log_prompts,
+        Some(paths.state_file()),
+    )?;
     write_private(&paths.endpoint_file(), &format!("{}\n", daemon.endpoint()))
         .map_err(|e| fail("endpoint file", e))?;
     let listener = socket::bind(&paths.socket).map_err(|e| fail("socket", e))?;

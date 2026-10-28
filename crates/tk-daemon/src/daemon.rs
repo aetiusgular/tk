@@ -47,6 +47,38 @@ pub const MAX_PENDING_APPROVALS: usize = 256;
 /// the rest (each refused one is `no`, never a hang).
 pub const MAX_PENDING_PER_CHAT: usize = 16;
 
+/// A running chat's harness: its pid and, where the OS says, when that
+/// process started, so a reused pid is not taken for it after a restart.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RunPid {
+    pub pid: u32,
+    pub start_time: Option<u64>,
+}
+
+impl RunPid {
+    fn of(pid: u32) -> Self {
+        RunPid {
+            pid,
+            start_time: tk_core::peer::start_time(pid),
+        }
+    }
+
+    /// Still the same process: it runs, and its start time matches when one
+    /// was recorded.
+    fn alive(&self) -> bool {
+        match (self.start_time, tk_core::peer::start_time(self.pid)) {
+            (Some(was), Some(now)) => was == now,
+            (None, Some(_)) => true,
+            (_, None) => false,
+        }
+    }
+}
+
+/// How long a minted token with no `run.start` yet survives a restart.
+pub const UNSTARTED_TOKEN_MS: i64 = 3_600_000;
+/// The state file is read only up to this size.
+const STATE_FILE_MAX: u64 = 1024 * 1024;
+
 /// Who a connection is, after `hello`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Who {
@@ -187,6 +219,10 @@ impl Paths {
     pub fn endpoint_file(&self) -> PathBuf {
         self.runtime_dir().join("otlp.endpoint")
     }
+    /// Running chats kept across a restart (BX8; integration w2).
+    pub fn state_file(&self) -> PathBuf {
+        self.runtime_dir().join("chats.json")
+    }
     pub fn log_dir(&self) -> PathBuf {
         self.data.join("activity")
     }
@@ -226,7 +262,13 @@ pub struct Daemon {
     /// Each running chat's harness pid, from its daemon-scope `run.start`
     /// until its `run.stop` (S2: an approver may not be one of them or run
     /// under one).
-    runs: Mutex<HashMap<String, u32>>,
+    runs: Mutex<HashMap<String, RunPid>>,
+    /// When each live chat token was minted, by its hash (hex), for the
+    /// state file (BX8).
+    minted_at: Mutex<HashMap<String, i64>>,
+    /// `<socket folder>/chats.json` when the daemon keeps its chats across a
+    /// restart (BX8); `None` in tests that build a daemon by hand.
+    state_file: Option<PathBuf>,
     next_conn: AtomicU64,
     pub counters: Counters,
 }
@@ -290,6 +332,29 @@ impl Daemon {
         data_dir: &Path,
         log_prompts: bool,
     ) -> Result<Arc<Self>, String> {
+        Self::new_with_state(token, log, data_dir, log_prompts, None)
+    }
+
+    /// As `new`, keeping running chats across a restart in `state_file`
+    /// (integration w2, box finding BX8): the chat tokens' hashes (never a
+    /// token), each running chat's harness pid and start time, and the OTLP
+    /// port. At start it takes back the tokens of chats whose harness still
+    /// runs, and of tokens minted in the last hour whose chat has not
+    /// started, and binds the old port when it is free. The file is used only
+    /// when it is a regular file of this user's, mode 0600 or tighter.
+    pub fn new_with_state(
+        token: &str,
+        log: &'static ActivityLog,
+        data_dir: &Path,
+        log_prompts: bool,
+        state_file: Option<PathBuf>,
+    ) -> Result<Arc<Self>, String> {
+        let saved = state_file.as_deref().and_then(read_state);
+        let preferred = saved
+            .as_ref()
+            .and_then(|v| v.get("otlpPort"))
+            .and_then(Value::as_u64)
+            .and_then(|p| u16::try_from(p).ok());
         let settings = Arc::new(Mutex::new(Settings {
             enabled: true,
             log_prompts,
@@ -308,7 +373,7 @@ impl Daemon {
                 }
             }
         });
-        let receiver = Receiver::start(settings, sink)?;
+        let receiver = Receiver::start_on(settings, sink, preferred)?;
         let daemon = Arc::new(Daemon {
             token_hash: tk_core::token::hash(token),
             log,
@@ -321,13 +386,136 @@ impl Daemon {
             pending: Mutex::new(HashMap::new()),
             chats: Mutex::new(HashMap::new()),
             runs: Mutex::new(HashMap::new()),
+            minted_at: Mutex::new(HashMap::new()),
+            state_file,
             next_conn: AtomicU64::new(1),
             counters: Counters::default(),
         });
         if let Ok(mut c) = cell.lock() {
             *c = Some(Arc::downgrade(&daemon));
         }
+        if let Some(saved) = saved {
+            daemon.restore_state(&saved);
+        }
+        daemon.save_state();
         Ok(daemon)
+    }
+
+    /// Takes back what `save_state` wrote, keeping only chats that still
+    /// run (BX8). Returns how many tokens came back.
+    fn restore_state(&self, saved: &Value) -> usize {
+        let now = now_ms();
+        let mut runs: HashMap<String, RunPid> = HashMap::new();
+        // Chats that had started, running or not: a started chat comes back
+        // only while its harness runs.
+        let mut started: HashSet<String> = HashSet::new();
+        for r in saved
+            .get("runs")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let (Some(chat), Some(pid)) = (
+                r.get("chat").and_then(Value::as_str),
+                r.get("pid")
+                    .and_then(Value::as_u64)
+                    .and_then(|p| u32::try_from(p).ok()),
+            ) else {
+                continue;
+            };
+            let run = RunPid {
+                pid,
+                start_time: r.get("startTime").and_then(Value::as_u64),
+            };
+            started.insert(chat.to_string());
+            if crate::activity::registry::valid_chat_id(chat) && run.alive() {
+                runs.insert(chat.to_string(), run);
+            }
+        }
+        let mut restored = 0;
+        let mut minted_at = HashMap::new();
+        for t in saved
+            .get("tokens")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            let (Some(sha), Some(chat), Some(harness), Some(at)) = (
+                t.get("sha256").and_then(Value::as_str),
+                t.get("chat").and_then(Value::as_str),
+                t.get("harness")
+                    .and_then(Value::as_str)
+                    .and_then(harness_env::harness_id),
+                t.get("mintedAt").and_then(Value::as_i64),
+            ) else {
+                continue;
+            };
+            let Some(hash) = parse_sha256(sha) else {
+                continue;
+            };
+            let keep = runs.contains_key(chat)
+                || (!started.contains(chat) && now.saturating_sub(at) < UNSTARTED_TOKEN_MS);
+            if keep
+                && crate::activity::registry::valid_chat_id(chat)
+                && self.receiver.restore(hash, chat, harness)
+            {
+                minted_at.insert(sha.to_string(), at);
+                restored += 1;
+            }
+        }
+        if let Ok(mut m) = self.minted_at.lock() {
+            *m = minted_at;
+        }
+        if let Ok(mut r) = self.runs.lock() {
+            *r = runs;
+        }
+        restored
+    }
+
+    /// Writes the state file (BX8): token hashes, running chats, the port.
+    /// Best effort; a failure leaves the old file, and the next change
+    /// writes again.
+    fn save_state(&self) {
+        let Some(path) = self.state_file.as_deref() else {
+            return;
+        };
+        let minted = self.minted_at.lock().map(|m| m.clone()).unwrap_or_default();
+        let tokens: Vec<Value> = self
+            .receiver
+            .holders_snapshot()
+            .into_iter()
+            .filter_map(|(hash, chat, harness)| {
+                let sha = hex(&hash);
+                minted.get(&sha).map(
+                    |at| json!({"sha256": sha, "chat": chat, "harness": harness, "mintedAt": at}),
+                )
+            })
+            .collect();
+        let runs: Vec<Value> = self
+            .runs
+            .lock()
+            .map(|r| {
+                r.iter()
+                    .map(|(chat, run)| {
+                        json!({"chat": chat, "pid": run.pid, "startTime": run.start_time})
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        let port = self
+            .receiver
+            .endpoint()
+            .rsplit(':')
+            .next()
+            .and_then(|p| p.parse::<u16>().ok());
+        let text = json!({
+            "version": 1,
+            "otlpPort": port,
+            "tokens": tokens,
+            "runs": runs,
+        })
+        .to_string();
+        let _ = crate::service::write_private(path, &text);
     }
 
     pub fn endpoint(&self) -> String {
@@ -480,9 +668,10 @@ impl Daemon {
                     self.set_chat_from_run(&event);
                     if let (Some(pid), Ok(mut runs)) = (event.pid, self.runs.lock()) {
                         if runs.len() < 2_048 || runs.contains_key(&event.chat_id) {
-                            runs.insert(event.chat_id.clone(), pid);
+                            runs.insert(event.chat_id.clone(), RunPid::of(pid));
                         }
                     }
+                    self.save_state();
                 }
                 // The run is over: its chat tokens open nothing from now on
                 // (integration w1, lane D's request 2). A connection already
@@ -492,6 +681,7 @@ impl Daemon {
                     if let Ok(mut runs) = self.runs.lock() {
                         runs.remove(&event.chat_id);
                     }
+                    self.save_state();
                 }
             }
         }
@@ -855,7 +1045,8 @@ impl Daemon {
         let mut line = vec![pid];
         line.extend(tk_core::peer::ancestors(pid));
         let runs = self.runs.lock().map(|r| r.clone()).unwrap_or_default();
-        for (chat, harness_pid) in &runs {
+        for (chat, run) in &runs {
+            let harness_pid = &run.pid;
             if line.contains(harness_pid) {
                 return Some(format!(
                     "it runs inside chat {} (harness pid {harness_pid})",
@@ -924,10 +1115,23 @@ impl Daemon {
             return error("unknown harness");
         };
         match self.receiver.mint(chat, harness) {
-            Some(token) => Reply {
-                token: Some(token),
-                ..ok()
-            },
+            Some(token) => {
+                if let Ok(mut m) = self.minted_at.lock() {
+                    let live: HashSet<String> = self
+                        .receiver
+                        .holders_snapshot()
+                        .iter()
+                        .map(|(h, _, _)| hex(h))
+                        .collect();
+                    m.retain(|sha, _| live.contains(sha));
+                    m.insert(hex(&Receiver::token_hash(&token)), now_ms());
+                }
+                self.save_state();
+                Reply {
+                    token: Some(token),
+                    ..ok()
+                }
+            }
             None => error("could not mint a token"),
         }
     }
@@ -949,6 +1153,40 @@ impl Daemon {
         let _guard = self.log.read_lock.lock();
         retention_pass(&self.log_dir, now)
     }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn parse_sha256(text: &str) -> Option<[u8; 32]> {
+    if text.len() != 64 || !text.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    for (i, byte) in out.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&text[i * 2..i * 2 + 2], 16).ok()?;
+    }
+    Some(out)
+}
+
+/// The state file when it is safe to read: a regular file (no link) owned
+/// by this user, no group or other bits, at most 1 MiB, JSON with
+/// `version: 1`. Anything else is ignored, and the daemon starts empty.
+fn read_state(path: &Path) -> Option<Value> {
+    use std::os::unix::fs::MetadataExt;
+    let meta = std::fs::symlink_metadata(path).ok()?;
+    // SAFETY: geteuid has no preconditions and cannot fail.
+    let me = unsafe { libc::geteuid() };
+    if !meta.file_type().is_file()
+        || meta.uid() != me
+        || meta.mode() & 0o077 != 0
+        || meta.len() > STATE_FILE_MAX
+    {
+        return None;
+    }
+    let value: Value = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
+    (value.get("version").and_then(Value::as_u64) == Some(1)).then_some(value)
 }
 
 /// The disk's records and the ring's, as one backlog: one record per chat
@@ -1070,6 +1308,52 @@ mod tests {
             pid: None,
             approval_id: None,
         }
+    }
+
+    /// BX8's state file is taken only when it is this user's own private
+    /// regular file: one others can read or write, or a link, is ignored.
+    #[test]
+    fn a_state_file_that_is_not_private_is_ignored() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = std::env::temp_dir().join(format!(
+            "tkd-state-{}-{}",
+            std::process::id(),
+            &tk_core::token::mint().unwrap()[..12]
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let token = tk_core::token::mint().unwrap();
+        let state = root.join("chats.json");
+        let text = json!({
+            "version": 1,
+            "tokens": [{
+                "sha256": hex(&Receiver::token_hash(&token)),
+                "chat": "chat-x", "harness": "pi", "mintedAt": now_ms()
+            }],
+            "runs": []
+        })
+        .to_string();
+        let start = |path: PathBuf| {
+            let log: &'static ActivityLog = Box::leak(Box::new(ActivityLog::start(
+                root.join(format!("data-{}", uuid::Uuid::new_v4().simple())),
+            )));
+            Daemon::new_with_state(TOKEN, log, &root, false, Some(path)).unwrap()
+        };
+        std::fs::write(&state, &text).unwrap();
+        std::fs::set_permissions(&state, std::fs::Permissions::from_mode(0o644)).unwrap();
+        assert_eq!(start(state.clone()).hello(&token), None, "0644");
+        let link = root.join("link.json");
+        std::fs::write(&state, &text).unwrap();
+        std::fs::set_permissions(&state, std::fs::Permissions::from_mode(0o600)).unwrap();
+        std::os::unix::fs::symlink(&state, &link).unwrap();
+        assert_eq!(start(link).hello(&token), None, "a link");
+        std::fs::write(&state, &text).unwrap();
+        std::fs::set_permissions(&state, std::fs::Permissions::from_mode(0o600)).unwrap();
+        let chat = Some(Who::Chat {
+            chat: "chat-x".into(),
+            harness: "pi".into(),
+        });
+        assert_eq!(start(state).hello(&token), chat, "0600, its own");
+        let _ = std::fs::remove_dir_all(root);
     }
 
     /// Lane K's request 5 (the CI flake `ids_the_daemon_makes_never_repeat`):
