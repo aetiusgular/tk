@@ -1,0 +1,10 @@
+{
+  "$comment": "A fragment for ~/.config/kilo/kilo.json. `plugin` loads the tk gate from your clone (a folder with package.json; Kilo 7.8.18 plugin/shared.ts resolves it to src/plugin.ts); `permission` keeps Kilo's own prompts as a second layer for the tools that run or write (OpenCode's keys, which Kilo inherits). tk never writes a project-level kilo.json.",
+  "plugin": ["file:///abs/path/tk/packages/tk-kilo-plugin"],
+  "permission": {
+    "bash": "ask",
+    "edit": "ask",
+    "webfetch": "ask",
+    "external_directory": "ask"
+  }
+}
