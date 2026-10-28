@@ -4,7 +4,7 @@
 // deferred flags, betas, and the usage the server reported. Bodies are not
 // stored (they hold the prompt); only counts, names and sizes.
 //
-//   node proxy.mjs --listen 8091 --upstream http://127.0.0.1:8080 --state <dir> [--dump <dir>]
+//   node proxy.mjs --listen 8091 --upstream http://127.0.0.1:8080 --state <dir> [--dump <dir>] [--fold-system]
 //
 // Lines go to <dir>/requests.jsonl, tagged with the run id in <dir>/current.
 import { createServer } from "node:http";
@@ -19,6 +19,29 @@ const listen = Number(arg("listen", "8091"));
 const upstream = new URL(arg("upstream", "http://127.0.0.1:8080"));
 const state = arg("state");
 const dump = arg("dump"); // debugging only: save each POST body here
+// --fold-system: for Anthropic Messages requests, move `role: "system"`
+// entries from `messages` to the end of the top-level `system`. Claude Code
+// 2.1.311 sends its environment block as such a message; llama.cpp hands it
+// to the model's chat template, and Qwen3.8's raises "System message must be
+// at the beginning". Off by default; every folded request is marked.
+const fold = process.argv.includes("--fold-system");
+
+function foldSystem(buf) {
+  let j;
+  try {
+    j = JSON.parse(buf.toString("utf8"));
+  } catch {
+    return { buf, folded: 0 };
+  }
+  if (!Array.isArray(j.messages)) return { buf, folded: 0 };
+  const sys = j.messages.filter((m) => m.role === "system");
+  if (!sys.length) return { buf, folded: 0 };
+  j.messages = j.messages.filter((m) => m.role !== "system");
+  const blocks = sys.flatMap((m) => (typeof m.content === "string" ? [{ type: "text", text: m.content }] : m.content.filter((b) => b.type === "text").map((b) => ({ type: "text", text: b.text }))));
+  if (typeof j.system === "string") j.system = [{ type: "text", text: j.system }];
+  j.system = [...(j.system || []), ...blocks];
+  return { buf: Buffer.from(JSON.stringify(j)), folded: sys.length };
+}
 let dumped = 0;
 
 function run() {
@@ -96,12 +119,18 @@ createServer((req, res) => {
       mkdirSync(dump, { recursive: true });
       writeFileSync(join(dump, `${String(++dumped).padStart(4, "0")}.json`), body);
     }
+    let sendBody = body;
+    if (fold && req.method === "POST" && req.url.startsWith("/v1/messages")) {
+      const f = foldSystem(body);
+      sendBody = f.buf;
+      rec.foldedSystem = f.folded;
+    }
     const headers = { ...req.headers, host: upstream.host };
     delete headers["content-length"];
     delete headers["accept-encoding"];
     let up;
     try {
-      up = await fetch(new URL(req.url, upstream), { method: req.method, headers, body: req.method === "GET" || req.method === "HEAD" ? undefined : body, duplex: "half" });
+      up = await fetch(new URL(req.url, upstream), { method: req.method, headers, body: req.method === "GET" || req.method === "HEAD" ? undefined : sendBody, duplex: "half" });
     } catch (e) {
       rec.status = 502;
       rec.error = String(e);
