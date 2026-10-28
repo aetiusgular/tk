@@ -24,7 +24,7 @@ const out = resolve(arg("out", join(here, "results")));
 const conditions = arg("conditions", "pi-deferred,pi-direct").split(",");
 const K = Number(arg("k", "3"));
 const kFrom = Number(arg("k-from", "1"));
-const only = arg("tasks") ? arg("tasks").split(",") : null;
+const only = arg("tasks") && arg("tasks") !== "all" ? arg("tasks").split(",") : null;
 const timeoutMs = Number(arg("timeout", "480")) * 1000;
 const proxy = arg("proxy", "http://127.0.0.1:8091");
 const model = arg("model", "qwen27b-q4");
