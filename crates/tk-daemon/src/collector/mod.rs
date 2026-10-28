@@ -95,6 +95,54 @@ pub fn follow(daemon: &Arc<Daemon>, mut each: impl FnMut(Event)) {
     daemon.forget(out.conn);
 }
 
+/// The collector's install plan for a development build (the fork's
+/// terminal route, `activity/collector.rs` `terminal_plan`, lane B's copy):
+/// the exact commands, the plist and the hashes, for you to read and run
+/// yourself in Terminal (rules, section 5, item 2). Nothing here runs them.
+///
+/// - `binary`: the collector you built (`cargo build --release` in
+///   `macos/activity-collector`), absolute, a regular file. Its SHA-256 goes
+///   into the root shell that installs it, so a swapped file is refused.
+/// - `peer`: the daemon binary the collector will take as its only caller
+///   (`--dev-peer-path`, exact path; PROTOCOL.md "Caller check"). Usually
+///   the running `tk-daemon`.
+///
+/// The plist is staged in `<data>/activity/install/` (0600), as the fork
+/// staged it in the app's data folder. The names are still MonoCode's
+/// (`com.monocode.desktop.activity-collector`) until the toolkit's name is
+/// settled (toolkit plan, section 11, call 1): the collector's own
+/// identifiers and socket paths change with them, in one commit.
+pub fn install_plan(
+    paths: &Paths,
+    binary: &std::path::Path,
+    peer: &std::path::Path,
+) -> Result<crate::activity::collector::InstallPlan, String> {
+    use crate::activity::collector;
+    for (what, path) in [("collector binary", binary), ("daemon binary", peer)] {
+        if !path.is_absolute() {
+            return Err(format!("the {what} needs an absolute path"));
+        }
+        let meta = std::fs::symlink_metadata(path).map_err(|e| format!("{what}: {e}"))?;
+        if !meta.file_type().is_file() {
+            return Err(format!("the {what} is not a regular file"));
+        }
+    }
+    let hash = collector::file_sha256(binary).map_err(|e| format!("collector binary: {e}"))?;
+    let names = collector::Names::current();
+    let stage = paths.data.join("activity").join("install");
+    crate::socket::private_dir(&stage).map_err(|e| format!("stage folder: {e}"))?;
+    let staged = stage.join(format!("{}.plist", names.label));
+    let plan = collector::terminal_plan(
+        &names,
+        &binary.to_string_lossy(),
+        &hash,
+        &staged.to_string_lossy(),
+        &peer.to_string_lossy(),
+    )?;
+    crate::service::write_private(&staged, &plan.plist).map_err(|e| format!("plist: {e}"))?;
+    Ok(plan)
+}
+
 /// Starts what lane K adds to a running daemon. Returns at once.
 pub fn start(daemon: &Arc<Daemon>, paths: &Paths) {
     if cfg!(target_os = "macos") {
@@ -248,6 +296,51 @@ mod tests {
             Some(Registration::Follow { chat, .. }) => assert_eq!(chat, "chat-2"),
             other => panic!("no registration: {other:?}"),
         }
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn the_install_plan_pins_the_binary_and_the_peer_and_stages_the_plist() {
+        let root = std::env::temp_dir().join(format!(
+            "tk-collector-plan-{}",
+            uuid::Uuid::new_v4().simple()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let binary = root.join("monocode-activity-collector");
+        std::fs::write(&binary, b"not really a collector").unwrap();
+        let peer = root.join("tk-daemon");
+        std::fs::write(&peer, b"daemon").unwrap();
+        let paths = Paths {
+            socket: root.join("run/tk/daemon.sock"),
+            data: root.join("data"),
+        };
+        let plan = install_plan(&paths, &binary, &peer).unwrap();
+        assert_eq!(plan.route, "terminal");
+        let hash = crate::activity::collector::file_sha256(&binary).unwrap();
+        assert!(
+            plan.commands.iter().any(|c| c.contains(&hash)),
+            "{:?}",
+            plan.commands
+        );
+        assert!(plan.plist.contains("--dev-peer-path"));
+        assert!(plan.plist.contains(&*peer.to_string_lossy()));
+        let staged = plan.staged_plist.clone().unwrap();
+        assert_eq!(std::fs::read_to_string(&staged).unwrap(), plan.plist);
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&staged).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+        // Every command names its tools by absolute path.
+        assert!(plan
+            .commands
+            .iter()
+            .all(|c| c.starts_with("/usr/bin/sudo /")));
+
+        // A relative path, a link and a missing file are refused.
+        assert!(install_plan(&paths, std::path::Path::new("rel/bin"), &peer).is_err());
+        let link = root.join("link");
+        std::os::unix::fs::symlink(&binary, &link).unwrap();
+        assert!(install_plan(&paths, &link, &peer).is_err());
+        assert!(install_plan(&paths, &root.join("absent"), &peer).is_err());
         let _ = std::fs::remove_dir_all(root);
     }
 }
