@@ -1,0 +1,6 @@
+name: tk
+version: "0.0.0"
+description: "tk policy gate: every tool call is checked against ~/.tk/policy.json before it runs (pre_tool_call), and secret-like values are redacted from results (transform_tool_result)."
+provides_hooks:
+  - pre_tool_call
+  - transform_tool_result
