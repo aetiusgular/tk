@@ -32,7 +32,7 @@ Needs `node` (22.18 or later) on the PATH Hermes runs with. No Python dependenci
 ## Known limits
 
 - **A later plugin's `modify` changes the call after tk decided.** Hermes gives every `pre_tool_call` callback the original args and merges all `modify` returns afterwards (`hermes_cli/plugins.py:1967-1976`). A `block` from tk still wins over everything. Orca's Hermes plugin only observes.
-- One Node process per tool call adds its start time (about 0.1 to 0.3 s) to every call.
+- One Node process per tool call adds its start time to every call: about 0.09 s each, measured in the cloud workspace with Node 22.23.4.
 
 ## Environment
 
