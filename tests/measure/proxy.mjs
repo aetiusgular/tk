@@ -4,11 +4,11 @@
 // deferred flags, betas, and the usage the server reported. Bodies are not
 // stored (they hold the prompt); only counts, names and sizes.
 //
-//   node proxy.mjs --listen 8091 --upstream http://127.0.0.1:8080 --state <dir>
+//   node proxy.mjs --listen 8091 --upstream http://127.0.0.1:8080 --state <dir> [--dump <dir>]
 //
 // Lines go to <dir>/requests.jsonl, tagged with the run id in <dir>/current.
 import { createServer } from "node:http";
-import { appendFileSync, readFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const arg = (k, d) => {
@@ -18,6 +18,8 @@ const arg = (k, d) => {
 const listen = Number(arg("listen", "8091"));
 const upstream = new URL(arg("upstream", "http://127.0.0.1:8080"));
 const state = arg("state");
+const dump = arg("dump"); // debugging only: save each POST body here
+let dumped = 0;
 
 function run() {
   try {
@@ -90,6 +92,10 @@ createServer((req, res) => {
     const started = Date.now();
     const rec = { at: new Date().toISOString(), run: run(), method: req.method, path: req.url, bytes: body.length, beta: req.headers["anthropic-beta"] || null };
     if (req.method === "POST") Object.assign(rec, describe(req.url, body.toString("utf8")));
+    if (dump && req.method === "POST") {
+      mkdirSync(dump, { recursive: true });
+      writeFileSync(join(dump, `${String(++dumped).padStart(4, "0")}.json`), body);
+    }
     const headers = { ...req.headers, host: upstream.host };
     delete headers["content-length"];
     delete headers["accept-encoding"];
