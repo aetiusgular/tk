@@ -659,7 +659,11 @@ mod daemon_tests {
                 let id = request["id"].as_str().unwrap().to_string();
                 answering.handle(
                     &Who::Daemon,
-                    Request::Answer { id, answer: said },
+                    Request::Answer {
+                        id,
+                        answer: said,
+                        chat: None,
+                    },
                     &approver_conn,
                 );
             });

@@ -39,8 +39,15 @@ pub enum Request {
     /// Become an approver: the daemon then sends `approve` lines on this
     /// connection and reads `answer` lines back.
     Approver {},
-    /// An approver's answer to one request.
-    Answer { id: String, answer: Answer },
+    /// An approver's answer to one request. `chat` names the request's chat;
+    /// it may be left out while only one chat waits on that id (integration
+    /// w2, security finding S8).
+    Answer {
+        id: String,
+        answer: Answer,
+        #[serde(default)]
+        chat: Option<String>,
+    },
     /// Mint a chat token. Needs the daemon scope.
     #[serde(rename = "token.mint")]
     TokenMint { chat: String, harness: String },

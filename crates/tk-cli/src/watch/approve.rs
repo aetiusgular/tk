@@ -269,7 +269,9 @@ pub fn serve(
                     .and_then(Value::as_str)
                     .unwrap_or("")
                     .to_string();
-                let line = json!({"op": "answer", "id": id, "answer": word});
+                // The chat too: two chats may wait on one id (S8, integration w2).
+                let chat = w.req.get("chat").and_then(Value::as_str).unwrap_or("");
+                let line = json!({"op": "answer", "id": id, "chat": chat, "answer": word});
                 if writeln!(writer, "{line}").is_err() {
                     return Ended::DaemonGone("the answer could not be sent".into());
                 }
@@ -469,7 +471,7 @@ mod tests {
         let (a, out) = run(vec![req("ap-1", 30), typed("y\n", SETTLE * 2)], 1);
         assert_eq!(
             a,
-            vec![json!({"op": "answer", "id": "ap-1", "answer": "yes"})]
+            vec![json!({"op": "answer", "id": "ap-1", "chat": "tk-c1", "answer": "yes"})]
         );
         assert!(out.contains("Allow this one call? [y/N]"), "{out}");
     }

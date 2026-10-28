@@ -678,9 +678,10 @@ fn one_chat_cannot_hold_every_approval_slot_or_reuse_a_waiting_id() {
     }}));
     assert_eq!(r["answer"], "no");
     assert_eq!(r["by"], "none", "refused at once, never a hang");
-    // The same id while it waits: refused too.
-    let r = d.ask(json!({"op": "approve", "request": {
-        "id": "z-0", "chat": "other", "harness": "pi", "tool": "bash",
+    // The same id while it waits, in the same chat: refused too.
+    let (mut c, _) = Client::hello(&f, &token);
+    let r = c.ask(json!({"op": "approve", "request": {
+        "id": "z-0", "chat": "", "harness": "pi", "tool": "bash",
         "summary": "", "timeoutSeconds": 30
     }}));
     assert_eq!(r["by"], "none");
@@ -700,6 +701,50 @@ fn one_chat_cannot_hold_every_approval_slot_or_reuse_a_waiting_id() {
     for mut c in waiting {
         assert_eq!(c.recv()["answer"], "no");
     }
+}
+
+/// Integration w1's security finding S8: pending approvals were keyed by the
+/// client's id alone, so chat A waiting on an id made chat B's request under
+/// the same id fail at once. They are keyed by (chat, id); an answer names
+/// the chat when two chats wait on one id.
+#[test]
+fn two_chats_may_wait_on_the_same_request_id() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let ta = mint(&mut d, "chat-a", "claude-code");
+    let tb = mint(&mut d, "chat-b", "claude-code");
+    let mut approver = Client::daemon(&f);
+    approver.ask(json!({"op": "approver"}));
+    let ask = |token: String, f: &Fixture| {
+        let (mut c, _) = Client::hello(f, &token);
+        c.send(json!({"op": "approve", "request": {
+            "id": "toolu_1", "chat": "", "harness": "claude-code", "tool": "bash",
+            "summary": "", "timeoutSeconds": 30
+        }}));
+        c
+    };
+    let mut a = ask(ta, &f);
+    let first = approver.recv();
+    assert_eq!(first["approve"]["chat"], "chat-a", "{first}");
+    let mut b = ask(tb, &f);
+    let second = approver.recv();
+    assert_eq!(second["approve"]["chat"], "chat-b", "{second}");
+    assert_eq!(second["approve"]["id"], "toolu_1");
+    // Without the chat the answer is ambiguous and goes nowhere.
+    let r = approver.ask(json!({"op": "answer", "id": "toolu_1", "answer": "yes"}));
+    assert_eq!(r["ok"], false, "{r}");
+    let r =
+        approver.ask(json!({"op": "answer", "id": "toolu_1", "chat": "chat-b", "answer": "yes"}));
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(b.recv()["answer"], "yes");
+    assert!(
+        a.try_recv(Duration::from_millis(200)).is_none(),
+        "chat-a still waits"
+    );
+    // One left: the id alone is enough again.
+    let r = approver.ask(json!({"op": "answer", "id": "toolu_1", "answer": "no"}));
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(a.recv()["answer"], "no");
 }
 
 /// Integration w1, lane D's request 2: a chat token sits in the harness's

@@ -166,7 +166,9 @@ pub struct Daemon {
     order: Mutex<VecDeque<Event>>,
     tails: Mutex<Vec<TailSub>>,
     approvers: Mutex<Vec<Outbox>>,
-    pending: Mutex<HashMap<String, Pending>>,
+    /// Waiting approvals by (chat, request id): two chats may wait on the
+    /// same client id (S8).
+    pending: Mutex<HashMap<(String, String), Pending>>,
     chats: Mutex<HashMap<String, ChatContext>>,
     next_conn: AtomicU64,
     pub counters: Counters,
@@ -380,8 +382,8 @@ impl Daemon {
                     out.send(&ok());
                 }
             }
-            Request::Answer { id, answer } => {
-                out.send(&self.op_answer(out.conn, &id, answer));
+            Request::Answer { id, answer, chat } => {
+                out.send(&self.op_answer(out.conn, &id, chat.as_deref(), answer));
             }
             Request::TokenMint { chat, harness } => {
                 out.send(&self.op_mint(who, &chat, &harness));
@@ -647,15 +649,16 @@ impl Daemon {
             let Ok(mut pending) = self.pending.lock() else {
                 return (Answer::No, AnsweredBy::None);
             };
+            let key = (request.chat.clone(), request.id.clone());
             let this_chat = pending.values().filter(|p| p.chat == request.chat).count();
-            if pending.contains_key(&request.id)
+            if pending.contains_key(&key)
                 || pending.len() >= MAX_PENDING_APPROVALS
                 || this_chat >= MAX_PENDING_PER_CHAT
             {
                 return (Answer::No, AnsweredBy::None);
             }
             pending.insert(
-                request.id.clone(),
+                key,
                 Pending {
                     answer: tx,
                     chat: request.chat.clone(),
@@ -677,12 +680,12 @@ impl Daemon {
             }
         };
         if let Ok(mut pending) = self.pending.lock() {
-            pending.remove(&request.id);
+            pending.remove(&(request.chat.clone(), request.id.clone()));
         }
         outcome
     }
 
-    fn op_answer(&self, conn: u64, id: &str, answer: Answer) -> Reply {
+    fn op_answer(&self, conn: u64, id: &str, chat: Option<&str>, answer: Answer) -> Reply {
         let is_approver = self
             .approvers
             .lock()
@@ -694,14 +697,18 @@ impl Daemon {
         let Ok(pending) = self.pending.lock() else {
             return error("busy");
         };
-        match pending.get(id) {
+        let mut waiting = pending
+            .iter()
+            .filter(|((c, i), _)| i == id && chat.is_none_or(|want| want == c));
+        match (waiting.next(), waiting.next()) {
             // The channel holds one answer: the first wins, the rest fail
             // to send and are told nothing more.
-            Some(p) => {
+            (Some((_, p)), None) => {
                 let _ = p.answer.try_send(answer);
                 ok()
             }
-            None => error("no such request, or it was answered or timed out"),
+            (Some(_), Some(_)) => error("two chats wait on this id: name the chat"),
+            (None, _) => error("no such request, or it was answered or timed out"),
         }
     }
 
