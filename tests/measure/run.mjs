@@ -227,6 +227,9 @@ for (let k = kFrom; k <= K; k++) {
       const expectedTools = Object.keys(task.responses || {});
       const first = reqs[0] || {};
       const sum = (f) => reqs.reduce((a, q) => a + (Number(f(q)) || 0), 0);
+      // Total prompt size of one request: OpenAI-style usage gives it whole;
+      // Anthropic-style splits it into new, cache-read and cache-write parts.
+      const total = (u) => (u?.prompt_tokens != null ? u.prompt_tokens : u?.input_tokens != null ? u.input_tokens + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0) : null);
       const line = {
         run: runId, cond, task: task.id, kind: task.kind, k,
         pass: found.length === task.tokens.length,
@@ -241,13 +244,14 @@ for (let k = kFrom; k <= K; k++) {
         turns: hv.turns,
         modelRequests: reqs.length,
         modelRequestErrors: reqs.filter((q) => q.status >= 400).map((q) => ({ status: q.status, body: q.errorBody })),
-        firstRequest: { tools: first.tools, toolBytes: first.toolBytes, deferred: first.deferred, systemBytes: first.systemBytes, promptTokens: first.usage?.prompt_tokens ?? first.usage?.input_tokens ?? null, promptProcessed: first.usage?.timings?.prompt_n ?? null, beta: first.beta },
+        firstRequest: { tools: first.tools, toolBytes: first.toolBytes, deferred: first.deferred, systemBytes: first.systemBytes, promptTokens: total(first.usage), promptProcessed: first.usage?.timings?.prompt_n ?? null, beta: first.beta },
         maxToolsDeclared: Math.max(0, ...reqs.map((q) => q.tools || 0)),
         maxLoadedTools: Math.max(0, ...reqs.map((q) => (q.loadedNames || []).length)),
-        promptTokensSum: sum((q) => q.usage?.prompt_tokens ?? (q.usage?.input_tokens != null ? q.usage.input_tokens + (q.usage.cache_read_input_tokens || 0) + (q.usage.cache_creation_input_tokens || 0) : 0)),
+        promptTokensSum: sum((q) => total(q.usage)),
         promptProcessedSum: sum((q) => q.usage?.timings?.prompt_n),
         completionTokensSum: sum((q) => q.usage?.completion_tokens ?? q.usage?.output_tokens),
-        maxPromptTokens: Math.max(0, ...reqs.map((q) => q.usage?.prompt_tokens ?? q.usage?.input_tokens ?? 0)),
+        maxPromptTokens: Math.max(0, ...reqs.map((q) => total(q.usage) ?? 0)),
+        foldedSystem: reqs.filter((q) => q.foldedSystem).length,
         ms: r.ms, exit: r.code, signal: r.signal, timedOut: r.timedOut,
         errors: hv.errors.slice(0, 5),
         initTools: hv.initTools ?? null,
