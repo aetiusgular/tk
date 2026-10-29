@@ -227,6 +227,50 @@ describe("pull", () => {
   });
 });
 
+// Box test w2, BW9: probes ran oldest first and URLs the probe refuses
+// (single-label hosts, templated URLs) took 182 of a budget of 200.
+describe("the probe budget (box test w2, BW9)", () => {
+  it("spends the budget only on URLs a probe would dial, and records the refused ones apart", async () => {
+    const reg = new FakeRegistry();
+    reg.publish(remoteServer("io.github.t/aa", "1", "https://intranet/mcp"));
+    reg.publish(remoteServer("io.github.t/bb", "1", "https://{tenant}.example.com/mcp"));
+    reg.publish(remoteServer("io.github.t/cc", "1", "https://z.example.com/mcp"));
+    const out = tmp();
+    const lookup = (_h: string, cb: (e: null, a: { address: string; family: number }[]) => void) => cb(null, [{ address: "10.0.0.5", family: 4 }]);
+    const r = await pull({ out, client: { baseUrl: "https://registry.test", fetchImpl: reg.fetch, ...quiet }, probeBudget: 1, probeOptions: { lookup } });
+    expect(r.probed).toBe(1);
+    expect(r.refused).toBe(2);
+    const live = (new Store(out).read("liveness.json") as { urls: Record<string, { state: string; reason: string }> }).urls;
+    expect(live["https://z.example.com/mcp"]?.reason).not.toMatch(/^not probed/);
+    expect(live["https://intranet/mcp"]).toMatchObject({ state: "unknown", reason: "not probed: a single-label host" });
+    expect(live["https://{tenant}.example.com/mcp"]).toMatchObject({ state: "unknown", reason: "not probed: a templated URL" });
+  });
+});
+
+// Box test w2, BW7: the bulk-publisher flag carried the publisher's day count
+// in every one of its servers' rows, so one more version rewrote all of them.
+describe("the bulk-publisher count (box test w2, BW7)", () => {
+  it("is kept once per publisher and day, so a new version does not rewrite the other servers' rows", async () => {
+    const reg = new FakeRegistry();
+    for (const n of ["aa", "bb", "cc"]) reg.publish(remoteServer(`io.github.bulk/${n}`, "1", `https://${n}.example.com/mcp`));
+    const out = tmp();
+    const run = () => pull({ out, client: { baseUrl: "https://registry.test", fetchImpl: reg.fetch, ...quiet }, probe: false, cap: 2 });
+    await run();
+    const rows = () => (JSON.parse(readFileSync(join(out, "index.json"), "utf8")) as { servers: Record<string, unknown>; bulkPublishers?: Record<string, number> });
+    const before = rows();
+    expect(before.servers["io.github.bulk/aa"]).toMatchObject({ flags: [{ flag: "bulk-publisher", publisher: "io.github.bulk", cap: 2 }] });
+    expect(JSON.stringify(before.servers["io.github.bulk/aa"])).not.toContain("count");
+    const day = Object.keys(before.bulkPublishers ?? {})[0]!;
+    expect(before.bulkPublishers).toEqual({ [day]: 3 });
+    reg.publish(remoteServer("io.github.bulk/cc", "2", "https://cc.example.com/mcp"));
+    await run();
+    const after = rows();
+    expect(after.servers["io.github.bulk/aa"]).toEqual(before.servers["io.github.bulk/aa"]);
+    expect(after.servers["io.github.bulk/bb"]).toEqual(before.servers["io.github.bulk/bb"]);
+    expect(after.bulkPublishers).toEqual({ [day]: 4 });
+  });
+});
+
 describe("mirrored entries", () => {
   const rec = (server: Record<string, unknown> & { name: string; version: string }): ServerRecord => ({ server, _meta: { [OFFICIAL_KEY]: { status: "active", updatedAt: "2026-10-01T00:00:00Z", publishedAt: "2026-10-01T00:00:00Z", isLatest: true } } });
 

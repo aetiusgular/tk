@@ -55,6 +55,9 @@ describe("the library browser", () => {
     expect(policy).toContain(`'sha256-${hashOf(scripts[0] ?? "")}'`);
     expect(policy).toContain(`'sha256-${hashOf(styles[0] ?? "")}'`);
     expect(policy).toMatch(/^default-src 'none'/);
+    // The policy is a <meta>, where frame-ancestors is not supported (CSP3
+    // section 3.3) and Chrome logs an error on every load (Mac test w2, MW7).
+    expect(policy).not.toContain("frame-ancestors");
     expect(html).toContain(esc(policy));
     // No inline handler and no remote resource anywhere.
     expect(html).not.toMatch(/\son[a-z]+=/i);

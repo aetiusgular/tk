@@ -34,8 +34,8 @@ node library/mirror/cli.ts probe <url>
 | `state.json` | the source, the watermark (the greatest `updatedAt` of a finished pull), the last runs, counts |
 | `servers/<name>/<version>.json` | each version as the registry served it: the publisher's `server` and the registry's `_meta[official]` |
 | `entries/<name>.json` | tk's entry for the latest version: the publisher's server.json, any object under tk's own key removed, tk's record (`tier: mirrored`) added |
-| `liveness.json` | the last probe of each remote URL: state, reason, HTTP statuses, era |
-| `index.json` | per server: latest version, version count, status, liveness, flags, `missingUpstream` |
+| `liveness.json` | the last probe of each remote URL: state, reason, HTTP statuses, era; a URL the probe refuses is recorded `unknown`, "not probed: <why>", outside the budget |
+| `index.json` | per server: latest version, version count, status, liveness, flags, `missingUpstream`; and `bulkPublishers`, each over-cap publisher and day with its count, kept once here so one more version does not rewrite every row of that publisher |
 | `skipped.json` | records the last run refused, with the reason |
 
 Names are percent-encoded, upper-case letters included, so names that differ
@@ -61,10 +61,14 @@ server a full pull no longer returns is flagged `missingUpstream`.
   the only one under that key.
 - **Flags, never verdicts:** `duplicate-remote`, `duplicate-description` (across
   publishers), `bulk-publisher` (more than `--cap`, default 20, versions first
-  published by one publisher in one UTC day), `tk-key-removed`, `reject-list`
+  published by one publisher in one UTC day; the row names the publisher, day
+  and cap, the count is in `bulkPublishers`), `tk-key-removed`, `reject-list`
   (the server.json names a key of `contracts/policy.md` section 3.1 or
   install-time execution, as `library/validate/rejects.ts` reads them).
 - **Liveness** uses the contract's states: `alive` when the remote answers
   (a result, a JSON-RPC error, 401 or 403, a 4xx from a legacy server, a
   redirect), `dead` on a network failure, a 5xx, a tunnel's error page or a 404
-  without a JSON-RPC body, `unknown` when not probed.
+  without a JSON-RPC body, `unknown` when not probed. A name with IPv6 and IPv4
+  addresses gets each address in turn (Node's family autoselection), so a
+  broken IPv6 path does not make a live server dead. The budget
+  (`--probe-budget`) goes to URLs a probe would dial, oldest first.

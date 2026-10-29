@@ -9,7 +9,8 @@
 // that embed an IPv4 address, resolved once and pinned so DNS rebinding
 // cannot swap the address between the check and the dial. Here the same
 // rules, plus the other IANA special-purpose IPv4 blocks, through Node's
-// `net.BlockList` and a `lookup` that every connection uses.
+// `net.BlockList` and a `lookup` that every connection uses. Every checked
+// address may be dialled, in turn (box test w2, BW8).
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import { request as httpsRequest } from "node:https";
 import { BlockList, isIP } from "node:net";
@@ -99,9 +100,24 @@ export type GuardedRequest = {
   requestImpl?: typeof httpsRequest;
 };
 
+/** A `lookup` for the dial that answers only with addresses already
+ *  checked, never a second DNS query (no rebinding). With `all` (Node's
+ *  family autoselection asks for it) it gives every one, so a dual-stack
+ *  name whose IPv6 path is broken still reaches its IPv4 address (box test
+ *  w2, BW8; Node 22 `lib/net.js:1387-1403`, `doc/api/net.md` autoSelectFamily:
+ *  the first AAAA, then the first A, then the second AAAA, and so on). */
+export function pinnedLookup(addresses: LookupAddress[]) {
+  const list = addresses.map((a) => ({ address: a.address, family: a.family }));
+  return (_h: string, o: { all?: boolean } | number | undefined, cb: (...a: unknown[]) => void) => {
+    if (typeof o === "object" && o !== null && o.all) cb(null, list.map((a) => ({ ...a })));
+    else cb(null, list[0]!.address, list[0]!.family);
+  };
+}
+
 /** One request. Every address the name resolves to must be public, or none
- *  is dialled; the connection is pinned to the first. Redirects are returned,
- *  never followed. Rejects with a GuardError on refusal, a network error, the
+ *  is dialled; the connection dials only those addresses, each in turn
+ *  until one answers (`pinnedLookup`). Redirects are returned, never
+ *  followed. Rejects with a GuardError on refusal, a network error, the
  *  timeout or a body over `maxBytes` when `truncated` would hide a refusal. */
 export function guardedRequest(url: string, opts: GuardedRequest): Promise<GuardedResponse> {
   const refused = refuseUrl(url);
@@ -131,7 +147,7 @@ export function guardedRequest(url: string, opts: GuardedRequest): Promise<Guard
       if (!addresses.length) return done(new GuardError("dns", "name resolved to no address"));
       const bad = addresses.find((a) => isBlockedAddress(a.address));
       if (bad) return done(new GuardError("private-address", "the name resolves to a private or special-purpose address"));
-      const pinned = addresses[0]!;
+      const pinned = pinnedLookup(addresses);
       req = request(
         {
           protocol: "https:",
@@ -142,11 +158,10 @@ export function guardedRequest(url: string, opts: GuardedRequest): Promise<Guard
           headers: { "user-agent": "tk-library/0 (+https://github.com/aetiusgular/tk)", ...(opts.headers ?? {}) },
           servername: u.hostname,
           agent: false,
-          // Every connection dials the address checked above, never a second lookup.
-          lookup: ((_h: string, o: { all?: boolean }, cb: (...a: unknown[]) => void) => {
-            if (o && o.all) cb(null, [pinned]);
-            else cb(null, pinned.address, pinned.family);
-          }) as never,
+          // Every connection dials the addresses checked above, never a
+          // second lookup; with autoselection on, each in turn.
+          autoSelectFamily: true,
+          lookup: pinned as never,
         },
         (res) => {
           const chunks: Buffer[] = [];

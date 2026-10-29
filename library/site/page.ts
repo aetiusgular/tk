@@ -85,7 +85,10 @@ export function csp(): string {
     "img-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
-    "frame-ancestors 'none'",
+    // No frame-ancestors: in a <meta> it is not supported (W3C CSP3,
+    // section 3.3), and Chrome logs an error for it on every load (Mac test
+    // w2, MW7). It works only as an HTTP header, which a static file served
+    // anywhere does not carry.
   ].join("; ");
 }
 

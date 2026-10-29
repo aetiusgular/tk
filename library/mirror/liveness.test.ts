@@ -1,6 +1,7 @@
 import { createServer, request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { GuardError, guardedRequest, isBlockedAddress, refuseUrl } from "./netguard.ts";
+import { connect } from "node:net";
+import { GuardError, guardedRequest, isBlockedAddress, pinnedLookup, refuseUrl } from "./netguard.ts";
 import { DISCOVER_BODY, classify, combine, probe, rpcIn } from "./liveness.ts";
 
 // The guarded request dials over TLS to a public address. The tests swap in
@@ -62,6 +63,36 @@ describe("netguard", () => {
     handler = (_q, _b, res) => res.end("ok");
     await guardedRequest("https://a.example.com/", { method: "GET", ...local });
     expect(lastPinned).toEqual([{ address: "93.184.215.14", family: 4 }]);
+  });
+
+  // Box test w2, BW8: https://0523.tw/mcp/public resolved to an IPv6 address
+  // the box could not reach and an IPv4 one that answered in 0.6 s; the guard
+  // pinned the first and the server was recorded dead. Every address was
+  // checked, so every one may be dialled, in Node's Happy Eyeballs order
+  // (Node 22 lib/net.js:1387-1403; doc/api/net.md: "connect to all obtained
+  // IPv6 and IPv4 addresses, in sequence").
+  it("offers every checked address of a dual-stack name to the dial, with family autoselection on", async () => {
+    handler = (_q, _b, res) => res.end("ok");
+    const dual = (_h: string, cb: (e: null, a: { address: string; family: number }[]) => void) =>
+      cb(null, [{ address: "2606:4700::1111", family: 6 }, { address: "93.184.215.14", family: 4 }]);
+    let opts: Record<string, unknown> = {};
+    const capture = ((o: Record<string, any>, cb: (res: IncomingMessage) => void) => ((opts = o), (toLocal as any)(o, cb))) as never;
+    await guardedRequest("https://a.example.com/", { method: "GET", lookup: dual, requestImpl: capture });
+    expect(opts["autoSelectFamily"]).toBe(true);
+    expect(lastPinned).toEqual([{ address: "2606:4700::1111", family: 6 }, { address: "93.184.215.14", family: 4 }]);
+  });
+
+  it("a dial falls through an address that does not answer to the next one (a real socket)", async () => {
+    // A listener on 127.0.0.1 only; the first address offered is IPv6, which
+    // refuses or has no route here. The guard never offers these two (both
+    // are blocked); the lookup is tested alone.
+    const lookup = pinnedLookup([{ address: "::1", family: 6 }, { address: "127.0.0.1", family: 4 }]);
+    const ok = await new Promise<boolean>((resolve) => {
+      const s = connect({ host: "dual.example.com", port, lookup: lookup as never, autoSelectFamily: true, autoSelectFamilyAttemptTimeout: 100 });
+      s.once("connect", () => (s.destroy(), resolve(true)));
+      s.once("error", () => resolve(false));
+    });
+    expect(ok).toBe(true);
   });
 
   it("returns a redirect, never follows it", async () => {
