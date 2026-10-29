@@ -822,6 +822,41 @@ fn an_approver_inside_a_running_chat_is_refused() {
     assert_eq!(answered["detail"]["approver"]["pid"], me, "{answered}");
 }
 
+/// Lane K's request 3 (integration w2): computer use's controls are a
+/// daemon-scope op; a chat token, which is the agent's (case 66), may not
+/// stop, read or revoke them. In this test no computer use runs, which the
+/// daemon says.
+#[test]
+fn cu_is_daemon_scope_and_says_when_computer_use_is_not_running() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "chat-cu", "claude-code");
+    let (mut chat, _) = Client::hello(&f, &token);
+    for line in [
+        json!({"op": "cu", "action": "status"}),
+        json!({"op": "cu", "action": "stop", "chat": "chat-cu"}),
+        json!({"op": "cu", "action": "stop-all"}),
+        json!({"op": "cu", "action": "revoke", "chat": "chat-cu", "app": "com.apple.calculator"}),
+    ] {
+        assert_eq!(
+            chat.ask(line.clone())["error"],
+            "cu needs daemon scope",
+            "{line}"
+        );
+        let r = d.ask(line.clone());
+        assert_eq!(r["ok"], false, "{line}: {r}");
+        assert!(
+            r["error"]
+                .as_str()
+                .unwrap()
+                .starts_with("computer use is not"),
+            "{line}: {r}"
+        );
+    }
+    let r = d.ask(json!({"op": "cu", "action": "launch"}));
+    assert_eq!(r["ok"], false, "{r}");
+}
+
 /// Integration w1, lane D's request 2: a chat token sits in the harness's
 /// environment and, under sbx, in the sandbox's saved config. Once its run
 /// stops, the token opens nothing: no new hello, no OTLP post. Only the

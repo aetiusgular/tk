@@ -21,12 +21,14 @@ fn dispatch(args: &[String]) -> u8 {
         Some("connect") => connect::main(&args[1..]),
         Some("run") => run::main(&args[1..]),
         Some("watch") | Some("status") => watch::main(args),
+        // Computer use's controls (toolkit plan T1.5; integration w2).
+        Some("cu") => watch::cu::main(&args[1..]),
         Some("--version") => {
             println!("tk {}", env!("CARGO_PKG_VERSION"));
             0
         }
         _ => {
-            eprintln!("usage: tk <connect|run|watch|status> ...");
+            eprintln!("usage: tk <connect|run|watch|status|cu> ...");
             2
         }
     }
@@ -58,7 +60,7 @@ mod tests {
         // wave 2 (exit 0) and reads the machine's daemon socket and agent
         // config files, which a unit test must not (lane J's request 2,
         // integration w2). `watch::status` has its own tests on fixtures.
-        for cmd in ["connect", "run", "watch"] {
+        for cmd in ["connect", "run", "watch", "cu"] {
             assert_eq!(dispatch(&s(&[cmd])), 2, "{cmd}");
         }
     }

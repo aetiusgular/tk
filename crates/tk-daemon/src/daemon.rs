@@ -26,7 +26,8 @@ use crate::activity::store::{self, ActivityLog, Entry};
 use crate::activity::types::{ApprovalRecord, ApprovalScope, ApprovalSubject};
 use crate::otel_receiver::{self, harness_env, Receiver, Settings};
 use crate::protocol::{
-    Answer, AnsweredBy, ApprovalRequest, DaemonInfo, Push, Reply, Request, Scope, PROTOCOL_VERSION,
+    Answer, AnsweredBy, ApprovalRequest, CuAction, DaemonInfo, Push, Reply, Request, Scope,
+    PROTOCOL_VERSION,
 };
 
 /// Events kept in memory for `tail`'s backlog, beside the log on disk. At
@@ -640,6 +641,9 @@ impl Daemon {
             Request::TokenMint { chat, harness } => {
                 out.send(&self.op_mint(who, &chat, &harness));
             }
+            Request::Cu { action, chat, app } => {
+                out.send(&op_cu(who, action, chat.as_deref(), app.as_deref()));
+            }
         }
         After::Continue
     }
@@ -1152,6 +1156,48 @@ impl Daemon {
     pub fn retention_pass(&self, now: i64) -> usize {
         let _guard = self.log.read_lock.lock();
         retention_pass(&self.log_dir, now)
+    }
+}
+
+/// `cu` (lane K's request 3): computer use's controls, daemon scope only.
+/// A chat token may not stop, read or revoke computer use: it is the
+/// agent's (case 66). Where computer use does not run (not macOS, or the
+/// feature off) the answer says so.
+fn op_cu(who: &Who, action: CuAction, chat: Option<&str>, app: Option<&str>) -> Reply {
+    if *who != Who::Daemon {
+        return error("cu needs daemon scope");
+    }
+    let need = |v: Option<&str>, what: &str| -> Result<String, String> {
+        v.filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .ok_or_else(|| format!("cu {what} is missing"))
+    };
+    #[cfg(feature = "computer-use")]
+    {
+        let Some(service) = crate::computer_use::service::running() else {
+            return error("computer use is not running here (macOS only, started by the daemon)");
+        };
+        let report = match action {
+            CuAction::Status => serde_json::to_value(service.status()).ok(),
+            CuAction::Stop => match need(chat, "chat") {
+                Ok(c) => serde_json::to_value(service.stop(&c)).ok(),
+                Err(e) => return error(e),
+            },
+            CuAction::StopAll => {
+                service.stop_all();
+                Some(json!({"stopped": "all"}))
+            }
+            CuAction::Revoke => match (need(chat, "chat"), need(app, "app")) {
+                (Ok(c), Ok(a)) => Some(json!({"revoked": service.revoke(&c, &a)})),
+                (Err(e), _) | (_, Err(e)) => return error(e),
+            },
+        };
+        Reply { report, ..ok() }
+    }
+    #[cfg(not(feature = "computer-use"))]
+    {
+        let _ = (action, need(chat, "chat"), app);
+        error("computer use is not built into this daemon (feature computer-use off)")
     }
 }
 

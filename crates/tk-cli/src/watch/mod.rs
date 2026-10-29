@@ -15,6 +15,7 @@
 
 mod approve;
 mod conn;
+pub mod cu;
 mod peer;
 mod register;
 mod report;

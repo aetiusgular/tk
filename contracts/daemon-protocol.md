@@ -30,6 +30,7 @@ UTF-8 JSON, one object per line, `\n`-terminated, at most 1 MiB per line (longer
 | `approver` | daemon scope, and a peer that passes the check in rule 3 | none | `ok`, or `approver refused: <why>` | `{"approve": {...}}` per request |
 | `answer` | an approver connection | `id`, `answer`, `chat` (needed only while two chats wait on one id) | `ok` | |
 | `token.mint` | daemon scope | `chat`, `harness` | `token` | |
+| `cu` | daemon scope | `action` (`status`, `stop`, `stop-all`, `revoke`), `chat` for `stop` and `revoke`, `app` (a bundle id) for `revoke` | `report` (the service's status or stop report) | |
 
 Rules:
 
