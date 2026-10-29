@@ -159,8 +159,12 @@ export function guardedRequest(url: string, opts: GuardedRequest): Promise<Guard
           servername: u.hostname,
           agent: false,
           // Every connection dials the addresses checked above, never a
-          // second lookup; with autoselection on, each in turn.
-          autoSelectFamily: true,
+          // second lookup; with autoselection on, each in turn. Node 22's
+          // default is on already (doc/api/net.md: "The default value for
+          // the autoSelectFamily option is now true", v20.0.0); it is set
+          // here so a changed default cannot turn it off. The type of
+          // https.RequestOptions does not list it, so it goes in by spread.
+          ...({ autoSelectFamily: true } as unknown as Record<string, never>),
           lookup: pinned as never,
         },
         (res) => {

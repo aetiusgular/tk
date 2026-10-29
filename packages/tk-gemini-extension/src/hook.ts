@@ -25,7 +25,7 @@
 //   the reason (docs/hooks/reference.md:114-139).
 
 import { createHash } from "node:crypto";
-import { approve, postEvent } from "./core/daemon.ts";
+import { approve, decisionId, postEvent } from "./core/daemon.ts";
 import { decideCall, inputTextFor, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
 import { redactValue } from "./core/redact.ts";
@@ -148,7 +148,7 @@ export async function handleBefore(input: Record<string, unknown>, deps: Deps): 
     reason = r.reason;
   }
   await deps.postEvent({
-    id: recordId(input, "-decision"),
+    id: decisionId(HARNESS, callKey(input)),
     chatId: chat ?? "",
     harness: HARNESS,
     kind: "approval",

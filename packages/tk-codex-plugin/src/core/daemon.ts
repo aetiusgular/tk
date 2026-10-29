@@ -4,6 +4,7 @@
 // is bounded in time; a daemon that is down never blocks a turn longer than
 // the connect timeout. Canonical copy: packages/tk-claude-plugin/src/core/.
 
+import { randomUUID } from "node:crypto";
 import { constants, lstatSync, readFileSync } from "node:fs";
 import net from "node:net";
 import { homedir, platform } from "node:os";
@@ -180,6 +181,21 @@ export async function approve(request: ApproveRequest, env?: NodeJS.ProcessEnv):
   // Only an explicit yes from an approver counts as yes.
   if (answer === "yes" && by !== "approver") return { answer: "no", by };
   return { answer, by };
+}
+
+/**
+ * The id of a gate decision record: `<harness>-<call id>-decision-<128
+ * random bits>`. The agent holds the hook's chat token (case 66) and call ids
+ * count up, so an id it can work out beforehand let it post a forged
+ * decision first (box test w2, BW2; integration w2 review W2-S3). The call id
+ * keeps only the characters the daemon keeps (`clean_id`), cut so the whole
+ * id fits its 128-character cap with the random part whole.
+ */
+export function decisionId(harness: string, callId: string | undefined): string {
+  const nonce = randomUUID().replace(/-/g, "");
+  const call = (callId ?? "unknown").replace(/[^A-Za-z0-9_.:-]/g, "_") || "unknown";
+  const room = 128 - harness.length - "--decision-".length - nonce.length;
+  return `${harness}-${call.slice(0, Math.max(1, room))}-decision-${nonce}`;
 }
 
 export type AdapterEvent = {

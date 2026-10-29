@@ -98,7 +98,8 @@ describe("before_tool_call", () => {
   it("records the decision under the tool call id", async () => {
     const n = daemon.events().length;
     await beforeToolCall({ toolName: "read", params: { path: "a" }, toolCallId: "t-42" }, ctx, deps());
-    expect(daemon.events().slice(n)[0]).toMatchObject({ id: "openclaw-t-42-decision", harness: "openclaw", kind: "approval", chatId: "ses-1" });
+    // The call id and 128 random bits the agent cannot know first (box test w2, BW2).
+    expect(daemon.events().slice(n)[0]).toMatchObject({ id: expect.stringMatching(/^openclaw-t-42-decision-[0-9a-f]{32}$/), harness: "openclaw", kind: "approval", chatId: "ses-1" });
   });
 });
 

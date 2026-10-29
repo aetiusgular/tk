@@ -64,7 +64,8 @@ describe("Claude Code PreToolUse", () => {
     const ids = daemon.events().slice(before).map((e) => String(e.id));
     expect(ids).toHaveLength(2);
     expect(new Set(ids).size).toBe(2);
-    for (const id of ids) expect(id).toMatch(/^claude-code-unknown-[0-9a-f-]{36}-decision$/);
+    // Box test w2, BW2: every decision id ends in 128 random bits.
+    for (const id of ids) expect(id).toMatch(/^claude-code-unknown-decision-[0-9a-f]{32}$/);
   });
 
   it("denies by rule with the reason, and the reject list wins over allow", async () => {

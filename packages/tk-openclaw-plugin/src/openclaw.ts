@@ -22,7 +22,7 @@
 // plugin that already asked for approval froze its own params snapshot.
 
 import { createHash, randomUUID } from "node:crypto";
-import { approve, postEvent } from "./core/daemon.ts";
+import { approve, decisionId, postEvent } from "./core/daemon.ts";
 import { decideCall, inputTextFor, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
 import { redactValue } from "./core/redact.ts";
@@ -112,7 +112,7 @@ export async function beforeToolCall(event: BeforeEvent, ctx: BeforeCtx, deps: D
     await deps.postEvent({
       // A decision is written once per chat and id (the daemon, S9), so
       // one with no call id gets its own id instead of a shared "unknown".
-      id: `${HARNESS}-${id ?? `unknown-${randomUUID()}`}-decision`,
+      id: decisionId(HARNESS, id),
       chatId: chat ?? "",
       harness: HARNESS,
       kind: "approval",

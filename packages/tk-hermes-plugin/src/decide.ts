@@ -21,7 +21,7 @@
 // - a `modify` directive is merged shallowly over the args (plugins.py:1967-1976).
 
 import { createHash, randomUUID } from "node:crypto";
-import { approve, postEvent } from "./core/daemon.ts";
+import { approve, decisionId, postEvent } from "./core/daemon.ts";
 import { decideCall, inputTextFor, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
 import { redactText } from "./core/redact.ts";
@@ -101,7 +101,7 @@ export async function pre(input: Record<string, unknown>, deps: Deps): Promise<P
   await deps.postEvent({
     // A decision is written once per chat and id (the daemon, S9), so
     // one with no call id gets its own id instead of a shared "unknown".
-    id: `${HARNESS}-${id ?? `unknown-${randomUUID()}`}-decision`,
+    id: decisionId(HARNESS, id),
     chatId: chat ?? "",
     harness: HARNESS,
     kind: "approval",

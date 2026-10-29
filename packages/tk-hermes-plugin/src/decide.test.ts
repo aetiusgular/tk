@@ -85,7 +85,8 @@ describe("pre", () => {
   it("records the decision under the call id", async () => {
     const n = daemon.events().length;
     await handle(JSON.stringify({ event: "pre", tool_name: "read_file", args: { path: "a" }, session_id: "s-2", tool_call_id: "call_77" }), deps());
-    expect(daemon.events().slice(n)[0]).toMatchObject({ id: "hermes-call_77-decision", harness: "hermes", kind: "approval", chatId: "s-2" });
+    // The call id and 128 random bits the agent cannot know first (box test w2, BW2).
+    expect(daemon.events().slice(n)[0]).toMatchObject({ id: expect.stringMatching(/^hermes-call_77-decision-[0-9a-f]{32}$/), harness: "hermes", kind: "approval", chatId: "s-2" });
   });
 
   it("anything it cannot read is a deny", async () => {
