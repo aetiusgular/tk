@@ -48,6 +48,9 @@ jobs:
             grep -E -A4 "^test .* FAILED|panicked at" test.log | head -60 | sed 's/^/::error::/'
             exit 1
           }
+      # A CLI's whole process group ends with its check (Mac test w2, MW6,
+      # seen on macOS only); the macOS runner has Node.
+      - run: node tests/cli-contract/lib/procs.selftest.mjs
   node:
     runs-on: ubuntu-24.04
     steps:
@@ -67,6 +70,7 @@ jobs:
       # The Hermes plugin is Python and calls the shared core through Node
       # (lane I); its tests run here (integration w2, lane I's request 4).
       - run: python3 -m unittest discover -s packages/tk-hermes-plugin/tests
+      - run: node tests/cli-contract/lib/procs.selftest.mjs
       # tests/cli-contract needs the real Claude Code and Codex CLIs; it runs
       # when they are installed (integration installs them under /tmp/cli).
       - name: cli contract

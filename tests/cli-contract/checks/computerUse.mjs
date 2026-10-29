@@ -18,6 +18,7 @@
 // a dummy and is never printed.
 
 import { spawn } from "node:child_process";
+import { spawnGroup, stopGroup } from "../lib/procs.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { codexHomeConfig, isolatedEnv, makeTempDirs } from "../lib/codexDriver.mjs";
@@ -89,7 +90,7 @@ async function codexProbe(codexPath, withEnvVars) {
     `mcp_servers.${SERVER}.args=${JSON.stringify([probe, out])}`,
   ];
   if (withEnvVars) args.push("-c", `mcp_servers.${SERVER}.env_vars=${JSON.stringify([TOKEN])}`);
-  const child = spawn(codexPath, args, {
+  const child = spawnGroup(codexPath, args, {
     cwd: dirs.work,
     env: isolatedEnv({ home: dirs.home, extra: { CODEX_HOME: dirs.codexHome, [TOKEN]: FAKE_TOKEN } }),
     stdio: ["pipe", "pipe", "pipe"],
@@ -105,7 +106,8 @@ async function codexProbe(codexPath, withEnvVars) {
     send("thread/start", { cwd: dirs.work });
     return { seen: await waitForFile(out, 20000), stderr };
   } finally {
-    child.kill("SIGTERM");
+    // The whole group, shim and native binary (Mac test w2, MW6).
+    await stopGroup(child, 3000);
     await fake.close?.();
   }
 }

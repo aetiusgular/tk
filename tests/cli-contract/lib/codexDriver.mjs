@@ -6,7 +6,7 @@
 // short PATH and the telemetry switches. Nothing from this workspace's own
 // environment, credentials or Codex home reaches it.
 
-import { spawn } from "node:child_process";
+import { spawnGroup, stopGroup } from "./procs.mjs";
 import { mkdtempSync, mkdirSync, writeFileSync, realpathSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import path from "node:path";
@@ -96,7 +96,9 @@ export class CodexClient {
     this.nextId = 1;
     this.waiters = [];
     this.onServerRequest = onServerRequest ?? (() => ({ decision: "decline" }));
-    this.child = spawn(codexPath, ["app-server", ...args], {
+    // Its own process group, so close() also ends the native binary under
+    // the npm shim (Mac test w2, MW6; lib/procs.mjs).
+    this.child = spawnGroup(codexPath, ["app-server", ...args], {
       cwd: dirs.work,
       env: isolatedEnv({ home: dirs.home, extra: { CODEX_HOME: dirs.codexHome } }),
       stdio: ["pipe", "pipe", "pipe"],
@@ -235,13 +237,8 @@ export class CodexClient {
   }
 
   async close() {
-    try {
-      this.child.stdin.end();
-    } catch {}
-    const timer = setTimeout(() => this.child.kill("SIGKILL"), 3000);
-    this.child.kill("SIGTERM");
+    await stopGroup(this.child, 3000);
     await this.exited;
-    clearTimeout(timer);
   }
 }
 

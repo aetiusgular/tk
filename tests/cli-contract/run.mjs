@@ -175,7 +175,15 @@ async function main() {
   }
   if (args.json) writeFileSync(args.json, `${JSON.stringify(results, null, 2)}\n`);
   if (args.keep) console.log(`Temp homes kept in ${runRoot}`);
-  else rmSync(runRoot, { recursive: true, force: true });
+  else {
+    // A process a check left (Mac test w2, MW6: a `codex app-server` still
+    // writing) must not crash the run after its results: retry, then say so.
+    try {
+      rmSync(runRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (error) {
+      console.log(`Temp homes not removed (${error?.code ?? error}): ${runRoot}. Look for processes still writing there.`);
+    }
+  }
   const bad = results.filter((r) => r.status === "fail" || r.status === "error");
   console.log(`\n${results.length} checks: ${results.filter((r) => r.status === "pass").length} pass, ${results.filter((r) => r.status === "info").length} info, ${bad.length} fail or error, ${results.filter((r) => r.status === "skip").length} skipped`);
   process.exit(bad.length ? 1 : 0);

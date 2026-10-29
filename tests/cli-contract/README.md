@@ -42,6 +42,7 @@ Claude Code reads `CLAUDE.md`, `.claude/CLAUDE.md` and `CLAUDE.local.md` from ev
 | `lib/fakeResponses.mjs` | Fake OpenAI Responses API, streaming |
 | `lib/fakeMessages.mjs` | Fake Anthropic Messages API, streaming |
 | `lib/codexDriver.mjs` | Starts `codex app-server` and speaks its JSON-RPC as MonoCode does |
+| `lib/procs.mjs` | Starts a CLI in its own process group and stops the whole group (SIGTERM, a grace period, SIGKILL), so the native binary under an npm shim never outlives its check (Mac test w2, MW6). `node tests/cli-contract/lib/procs.selftest.mjs` shows the old stop leaving a child running and the new one leaving nothing |
 | `lib/claudeDriver.mjs` | Starts Claude Code in MonoCode's spawn shape: stream-json in and out, no `-p` |
 | `lib/stubMcp.mjs` | A stdio MCP server with two tools |
 | `codex-mock/` | A fake model for a third Codex home on the Mac, below |
