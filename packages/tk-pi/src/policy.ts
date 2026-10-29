@@ -158,9 +158,9 @@ export function normalizeToolName(raw: string, servers: readonly string[], harne
   void harness;
   const lowered = lowerName(raw);
   const slash = lowered.indexOf("/");
-  if (slash >= 0) return `${stripPlugin(lowered.slice(0, slash))}/${lowered.slice(slash + 1)}`;
-  if (lowered.startsWith("mcp__")) return join(splitDoubleThenSingle(lowered.slice(5)));
-  if (lowered.startsWith("mcp_")) return join(splitDoubleThenSingle(lowered.slice(4)));
+  if (slash >= 0) return lowered;
+  if (lowered.startsWith("mcp__")) return join(splitDoubleThenSingle(lowered.slice(5), servers));
+  if (lowered.startsWith("mcp_")) return join(splitDoubleThenSingle(lowered.slice(4), servers));
   const run = splitAtRun(lowered);
   if (run) return join(run);
   let best: string | undefined;
@@ -182,7 +182,24 @@ function splitAtRun(s: string): [string, string] | undefined {
   return [s.slice(0, d), s.slice(e)];
 }
 
-function splitDoubleThenSingle(rest: string): [string, string] {
+/** The longest `servers` entry `rest` starts with, followed by `sep`. */
+function knownServerPrefix(rest: string, servers: readonly string[], sep: string): string | undefined {
+  let best: string | undefined;
+  for (const s of servers.map(lowerName)) {
+    if (s !== "" && rest.startsWith(s + sep) && rest.length > s.length + sep.length && (best === undefined || s.length > best.length)) best = s;
+  }
+  return best;
+}
+
+function splitDoubleThenSingle(rest: string, servers: readonly string[] = []): [string, string] {
+  // A listed server with `_` or `__` in it wins over the first run (the hook
+  // core's rule; integration w2, S5).
+  const known = knownServerPrefix(rest, servers, "__");
+  if (known !== undefined) {
+    let e = known.length;
+    while (e < rest.length && rest[e] === "_") e++;
+    return [known, rest.slice(e)];
+  }
   const run = splitAtRun(rest);
   if (run) return run;
   const s = rest.indexOf("_");
@@ -191,16 +208,55 @@ function splitDoubleThenSingle(rest: string): [string, string] {
 }
 
 function join([server, tool]: [string, string]): string {
-  return server === "" ? tool : `${stripPlugin(server)}/${tool}`;
+  return server === "" ? tool : `${server}/${tool}`;
 }
 
-function stripPlugin(server: string): string {
-  if (server.startsWith("plugin_")) {
-    const rest = server.slice(7);
-    const u = rest.indexOf("_");
-    if (u >= 0 && u + 1 < rest.length) return rest.slice(u + 1);
+/**
+ * Step 7 (integration w2, security finding S5), as the hook core: a Claude
+ * Code plugin's server keeps its whole name; each bare server it could be
+ * (every suffix after a `_`) is a narrowing name.
+ */
+function pluginBareServers(server: string): string[] {
+  if (!server.startsWith("plugin_")) return [];
+  const rest = server.slice("plugin_".length);
+  const out: string[] = [];
+  for (let i = rest.indexOf("_"); i >= 0; i = rest.indexOf("_", i + 1)) {
+    const bare = rest.slice(i + 1);
+    if (bare !== "" && !bare.startsWith("_")) out.push(bare);
   }
-  return server;
+  return out;
+}
+
+/** The call's other names (section 4 step 3a; the hook core's `narrowingNames`). */
+export function narrowingNames(raw: string, servers: readonly string[], harness?: string): { names: string[]; ambiguous: boolean } {
+  const primary = normalizeToolName(raw, servers, harness);
+  const slash = primary.indexOf("/");
+  if (slash < 0) return { names: [], ambiguous: false };
+  const names = new Set<string>();
+  let ambiguous = false;
+  const lowered = lowerName(raw);
+  const prefix = lowered.startsWith("mcp__") ? 5 : lowered.startsWith("mcp_") ? 4 : -1;
+  const primaryServer = primary.slice(0, slash);
+  const splits: Array<[string, string]> = [[primaryServer, primary.slice(slash + 1)]];
+  if (prefix > 0) {
+    const rest = lowered.slice(prefix);
+    for (let d = rest.indexOf("__"); d >= 0; ) {
+      let e = d;
+      while (e < rest.length && rest[e] === "_") e++;
+      const split: [string, string] = [rest.slice(0, d), rest.slice(e)];
+      if (split[0] !== "" && split[1] !== "" && join(split) !== primary) {
+        splits.push(split);
+        if (split[0].length > primaryServer.length) ambiguous = true;
+      }
+      d = rest.indexOf("__", e);
+    }
+  }
+  for (const [server, tool] of splits) {
+    const whole = join([server, tool]);
+    if (whole !== primary) names.add(whole);
+    for (const bare of pluginBareServers(server)) names.add(join([bare, tool]));
+  }
+  return { names: [...names], ambiguous };
 }
 
 // ------------------------------------------------------------ reject list
@@ -396,6 +452,14 @@ export function evaluate(policy: PolicyFile, call: Call, problem?: string): Deci
   const hit = rejectKeyFolded(folded);
   if (hit !== undefined) return { action: "deny", normalizedTool, reason: `reject list: ${hit}` };
 
+  // Section 4 step 3a (S5): rules on the call's other names narrow it, never widen it.
+  const other = narrowingNames(call.tool, policy.servers, call.harness);
+  const applies = (r: Rule) => (r.harness === undefined || r.harness === call.harness) && (r.chat === undefined || r.chat === call.chat);
+  const narrowing = policy.rules.filter((r) => r.tool !== "*" && applies(r) && other.names.some((n) => specificity(r.tool, n) >= 0));
+  const narrowDeny = narrowing.find((r) => r.action === "deny");
+  if (narrowDeny !== undefined) return { action: "deny", normalizedTool, reason: `rule ${narrowDeny.tool} (also names ${normalizedTool})` };
+  const narrowAsk = narrowing.find((r) => r.action === "ask");
+
   let best: { rank: [number, number, number]; rules: Rule[] } | undefined;
   for (const r of policy.rules) {
     const spec = specificity(r.tool, normalizedTool);
@@ -413,6 +477,8 @@ export function evaluate(policy: PolicyFile, call: Call, problem?: string): Deci
   for (const r of best.rules) if (RESTRICTIVENESS[r.action] > RESTRICTIVENESS[winner.action]) winner = r;
 
   if (winner.action !== "allow") return { action: winner.action, normalizedTool, reason: describeRule(winner) };
+  if (narrowAsk !== undefined) return { action: "ask", normalizedTool, reason: `rule ${narrowAsk.tool} (also names ${normalizedTool})` };
+  if (other.ambiguous) return { action: "ask", normalizedTool, reason: "ambiguous server name: list the server in the policy's servers" };
 
   // Every tied allow must hold its pin: one changed description is enough to
   // ask (case 57; tk-core's rule, integration w1 finding S10).

@@ -40,17 +40,17 @@ Every harness spells an MCP tool differently (note AP section 4, note AQ section
 
 1. Trim; ASCII-lowercase; replace every character outside `[a-z0-9_/]` with `_`. The same step normalizes each `servers` entry.
 2. If the name contains `/`, it is already `server/tool`: done (after step 7 on the server part).
-3. `mcp__<rest>`: split `<rest>` at the first run of two or more `_` (the whole run consumed), else at the first `_`. Claude Code, Codex, Pi, OpenClaude, Qwen Code 0.26.1, Hermes, Command Code, Kimi (`mcp__s__t`; note AQ section 9 corrects the earlier attribution of Qwen and Hermes to step 4).
+3. `mcp__<rest>`: when a normalized `servers` entry `<s>` is the longest one `<rest>` starts with followed by `__`, the server is `<s>` (a listed server whose name holds `_` or `__`; integration w2); else split `<rest>` at the first run of two or more `_` (the whole run consumed), else at the first `_`. Claude Code, Codex, Pi, OpenClaude, Qwen Code 0.26.1, Hermes, Command Code, Kimi (`mcp__s__t`; note AQ section 9 corrects the earlier attribution of Qwen and Hermes to step 4).
 4. `mcp_<rest>`: the same split. Gemini, Crush, Kiro's hooks (`mcp_s_t`).
 5. `<a>__<b>`, split at the first run of two or more `_`: server `a`, tool `b`. Grok, Cline, Codebuff, goose, OpenClaw's bridge, MetaMCP (`s__t`), and Droid's binary (`s___t`).
 6. `<a>_<b>` where `a` is the longest normalized entry of `servers` that the name starts with, followed by `_`: server `a`. OpenCode and Kilo (`s_t`), ToolHive vMCP (`{workload}_t`), and Copilot CLI's `<server>-<tool>`, which step 1 turns into `s_t` (note AQ section 9: Copilot is not `mcp__s__t`). A name with no such server is a bare built-in name.
-7. A server named `plugin_<plugin>_<server>` (Claude Code's plugin servers, `mcp__plugin_<plugin>_<server>__<tool>`) becomes `<server>`.
+7. A server named `plugin_<plugin>_<server>` (Claude Code's plugin servers, `mcp__plugin_<plugin>_<server>__<tool>`, read in Claude Code 2.1.311's binary) keeps its whole name: the normalized tool is `plugin_<plugin>_<server>/<tool>`, and only a rule naming that server (`plugin_tk_exa/*`) can allow it. Until integration w2 it became `<server>`, so any plugin shipping a server called `exa` inherited your `exa/*` allow (integration w1, security finding S5). Its bare forms are narrowing names (section 4, step 3a).
 
 Anything else is a built-in tool by its bare lowercased name: `bash`, `read`, `write`, `edit`, `webfetch`.
 
 Known gaps: a server name that itself contains `_` is ambiguous in steps 3 and 4 (Gemini's parser splits at the first underscore too: note AP section 4). Library entries and `tk connect` use server names without `_`. The forms note AQ section 6 lists as unhandled (Auggie's `<tool>_<server>`, Cursor's `MCP:<tool>`, dispatcher and code tools, Kiro's `@s/t`, Vibe's `mcp_s.t`) wait for the per-agent forms of waves 2 and 4.
 
-Source: `normalizeToolName` in the hook core (`packages/tk-claude-plugin/src/core/policy.ts`), `normalize_tool_name_for` in `crates/tk-core/src/policy.rs`, `normalizeToolName` in `packages/tk-pi/src/policy.ts`; fixture cases 1 to 12 and 22 to 25.
+Source: `normalizeToolName` and `narrowingNames` in the hook core (`packages/tk-claude-plugin/src/core/policy.ts`), `normalize_tool_name_for` and `narrowing_names` in `crates/tk-core/src/policy.rs`, `normalizeToolName` and `narrowingNames` in `packages/tk-pi/src/policy.ts`; fixture cases 1 to 12, 22 to 25 and 46 to 51.
 
 ## 3. The reject list
 
@@ -81,6 +81,7 @@ Source: rules section 4, cases 27, 31 and 32, and the session 6 findings that na
 1. Normalize the tool name (section 2).
 2. Run the reject list (section 3). A hit is `deny`; stop.
 3. Collect the rules that match: `tool` equals the normalized name, or is `<server>/*` with the same server, or is `*`; `harness` absent or equal; `chat` absent or equal.
+   a. **Narrowing names** (integration w2, finding S5). The call's other possible names are: for a plugin server `plugin_<rest>`, `<bare>/<tool>` for every suffix `<bare>` of `<rest>` after a `_` (plugin and server names both hold `_` after step 1, so the split is not known); and for an `mcp__` or `mcp_` name, every other split of the remainder at a run of `__` (Claude Code allows a server named `<a>__<b>`, read in its rule hints). A rule (not `*`) that matches one of these, with `harness` and `chat` as above, narrows: a `deny` is the answer at once, reason `rule <tool> (also names <normalized>)`; an `ask` turns an `allow` from the steps below into `ask` with the same reason; an `allow` there counts for nothing. When a split past the primary's server exists (a longer server name no `servers` entry rules out), an `allow` becomes `ask`, reason `ambiguous server name`. Fixture cases 7 and 46 to 51.
 4. None: the answer is `ask`, reason `no rule`.
 5. Rank the matches by, in order: `chat` set beats unset; then `harness` set beats unset; then the tool pattern, exact beats `server/*` beats `*`. The top rank wins. Among rules of equal rank the most restrictive action wins: `deny`, then `ask`, then `allow`. So a rule scoped to a chat overrides everything else for that chat, which is how a chat is locked down.
 6. If the answer is `allow` and any `allow` rule of the top rank has `descriptionSha256`: when the call carries no description, or `sha256(description)` differs from any of those pins, the answer is `ask`, reason `description changed`. Every tied pin must hold (tk-core's rule; the TypeScript matchers took the first rule of a tie until integration w1's security finding S10).

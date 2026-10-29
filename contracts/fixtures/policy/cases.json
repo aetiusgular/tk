@@ -1,6 +1,6 @@
 {
   "policy": "policy.json",
-  "note": "Each case is a call and the expected answer under policy.json. `reasonPrefix` is compared with startsWith. `description` absent means the harness gave none. Case 21 needs confusable folding (policy.md, section 3), which session 0's Rust fold_text does not do yet. Cases 22 to 33 were added by integration w1 to pin what all three matchers agree on (policy.md, sections 2 to 4). Cases 34 to 45 were added by integration w1 after its security pass (findings S1, S4, S7 and S10): quotes, globs, git config files, continued lines and harness folders.",
+  "note": "Each case is a call and the expected answer under policy.json. `reasonPrefix` is compared with startsWith. `description` absent means the harness gave none. Case 21 needs confusable folding (policy.md, section 3), which session 0's Rust fold_text does not do yet. Cases 22 to 33 were added by integration w1 to pin what all three matchers agree on (policy.md, sections 2 to 4). Cases 34 to 45 were added by integration w1 after its security pass (findings S1, S4, S7 and S10): quotes, globs, git config files, continued lines and harness folders. Case 7 changed and cases 46 to 51 were added by integration w2 for finding S5: a Claude Code plugin's server keeps its whole name (plugin_<plugin>_<server>); a rule on a bare server it could be narrows it and never allows it; an mcp__ name with a second run of __ that servers does not settle asks instead of allowing.",
   "cases": [
     { "id": 1, "call": { "tool": "mcp__exa__search", "harness": "pi", "inputText": "{\"query\":\"rust\"}" },
       "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule" } },
@@ -15,7 +15,8 @@
     { "id": 6, "call": { "tool": "mcp__github__get_issue", "harness": "claude-code", "inputText": "" },
       "expect": { "action": "allow", "normalizedTool": "github/get_issue", "reasonPrefix": "rule" } },
     { "id": 7, "call": { "tool": "mcp__plugin_tk_github__get_issue", "harness": "claude-code", "inputText": "" },
-      "expect": { "action": "allow", "normalizedTool": "github/get_issue", "reasonPrefix": "rule" } },
+      "expect": { "action": "ask", "normalizedTool": "plugin_tk_github/get_issue", "reasonPrefix": "no rule" },
+      "note": "a plugin's server keeps its whole name, so github/get_issue's allow does not reach it (integration w2, finding S5)" },
     { "id": 8, "call": { "tool": "Bash", "harness": "claude-code", "inputText": "ls -la" },
       "expect": { "action": "allow", "normalizedTool": "bash", "reasonPrefix": "rule" } },
     { "id": 9, "call": { "tool": "bash", "harness": "codex", "inputText": "ls" },
@@ -116,6 +117,24 @@
       "note": "a line that ends in a backslash continues the git context on the next line, in every matcher (integration w1, finding S10)" },
     { "id": 45, "call": { "tool": "Read", "harness": "claude-code", "inputText": "/repo/.claude/commands/deploy.md" },
       "expect": { "action": "ask", "normalizedTool": "read", "reasonPrefix": "input names a control file" },
-      "note": "a harness's whole project folder (.claude/, .codex/, .pi/) holds settings, hooks and instructions it loads; a shell workdir there is caught the same way (integration w1, finding S7)" }
+      "note": "a harness's whole project folder (.claude/, .codex/, .pi/) holds settings, hooks and instructions it loads; a shell workdir there is caught the same way (integration w1, finding S7)" },
+    { "id": 46, "call": { "tool": "mcp__plugin_evil_exa__search", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "plugin_evil_exa/search", "reasonPrefix": "no rule" },
+      "note": "exa/*'s allow does not reach a plugin's server called exa (S5)" },
+    { "id": 47, "call": { "tool": "mcp__plugin_evil_exa__delete_index", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "deny", "normalizedTool": "plugin_evil_exa/delete_index", "reasonPrefix": "rule exa/delete_index" },
+      "note": "a deny on the bare server reaches the plugin's copy (S5)" },
+    { "id": 48, "call": { "tool": "mcp__plugin_evil_my_server__x", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "deny", "normalizedTool": "plugin_evil_my_server/x", "reasonPrefix": "rule my_server/*" },
+      "note": "every bare server the plugin's could be narrows it: evil_my_server, my_server, server (S5)" },
+    { "id": 49, "call": { "tool": "mcp__plugin_tk_exa__search", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "allow", "normalizedTool": "plugin_tk_exa/search", "reasonPrefix": "rule plugin_tk_exa/*" },
+      "note": "a rule naming the plugin's server allows it (S5)" },
+    { "id": 50, "call": { "tool": "mcp__plugin_tk_exa__delete_index", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "deny", "normalizedTool": "plugin_tk_exa/delete_index", "reasonPrefix": "rule exa/delete_index" },
+      "note": "the plugin's own allow does not outrank a deny on the bare server (S5)" },
+    { "id": 51, "call": { "tool": "mcp__exa__x__search", "harness": "pi", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/x__search", "reasonPrefix": "ambiguous server name" },
+      "note": "Claude Code allows a server named exa__x; with no servers entry to settle the split, an allow asks (S5)" }
   ]
 }

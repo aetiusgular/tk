@@ -126,19 +126,19 @@ pub fn normalize_tool_name(raw: &str, servers: &[String]) -> String {
 pub fn normalize_tool_name_for(raw: &str, servers: &[String], harness: &str) -> String {
     let _ = harness;
     let lowered = lower_name(raw);
-    if let Some((server, tool)) = lowered.split_once('/') {
-        return format!("{}/{}", strip_plugin(server), tool);
+    let known: Vec<String> = servers.iter().map(|s| lower_name(s)).collect();
+    if lowered.contains('/') {
+        return lowered;
     }
     if let Some(rest) = lowered.strip_prefix("mcp__") {
-        return join(split_at_double_then_single(rest));
+        return join(split_at_double_then_single(rest, &known));
     }
     if let Some(rest) = lowered.strip_prefix("mcp_") {
-        return join(split_at_double_then_single(rest));
+        return join(split_at_double_then_single(rest, &known));
     }
     if let Some(parts) = split_at_run(&lowered) {
         return join(parts);
     }
-    let known: Vec<String> = servers.iter().map(|s| lower_name(s)).collect();
     // `{server}_{tool}` (OpenCode, ToolHive vMCP): the longest known server
     // that is a prefix followed by `_` wins.
     let mut best: Option<&str> = None;
@@ -165,7 +165,27 @@ fn split_at_run(s: &str) -> Option<(&str, &str)> {
     Some((&s[..d], &s[end..]))
 }
 
-fn split_at_double_then_single(rest: &str) -> (&str, &str) {
+/// The longest known server `rest` starts with, followed by `sep`.
+fn known_server_prefix<'a>(rest: &str, known: &'a [String], sep: &str) -> Option<&'a str> {
+    known
+        .iter()
+        .filter(|s| {
+            !s.is_empty()
+                && rest.len() > s.len() + sep.len()
+                && rest.starts_with(s.as_str())
+                && rest[s.len()..].starts_with(sep)
+        })
+        .max_by_key(|s| s.len())
+        .map(String::as_str)
+}
+
+fn split_at_double_then_single<'a>(rest: &'a str, known: &[String]) -> (&'a str, &'a str) {
+    // A listed server with `_` or `__` in it wins over the first run (the
+    // hook core's rule; integration w2, security finding S5).
+    if let Some(s) = known_server_prefix(rest, known, "__") {
+        let end = s.len() + rest[s.len()..].bytes().take_while(|&b| b == b'_').count();
+        return (&rest[..s.len()], &rest[end..]);
+    }
     if let Some(p) = split_at_run(rest) {
         p
     } else if let Some(p) = rest.split_once('_') {
@@ -179,20 +199,70 @@ fn join((server, tool): (&str, &str)) -> String {
     if server.is_empty() {
         tool.to_string()
     } else {
-        format!("{}/{}", strip_plugin(server), tool)
+        format!("{server}/{tool}")
     }
 }
 
-/// `plugin_<plugin>_<server>` (Claude Code plugin servers) becomes `<server>`.
-fn strip_plugin(server: &str) -> &str {
-    if let Some(rest) = server.strip_prefix("plugin_") {
-        if let Some((_, s)) = rest.split_once('_') {
-            if !s.is_empty() {
-                return s;
+/// Step 7 (integration w2, security finding S5): a Claude Code plugin's
+/// server (`plugin_<plugin>_<server>`, Claude Code 2.1.311 names its tools
+/// `mcp__plugin_<plugin>_<server>__<tool>`, read in its binary) keeps its
+/// whole name. Each bare server it could be, every suffix after a `_`, is a
+/// narrowing name: a deny or an ask there reaches the plugin's copy.
+fn plugin_bare_servers(server: &str) -> Vec<&str> {
+    let Some(rest) = server.strip_prefix("plugin_") else {
+        return Vec::new();
+    };
+    rest.match_indices('_')
+        .map(|(i, _)| &rest[i + 1..])
+        .filter(|bare| !bare.is_empty() && !bare.starts_with('_'))
+        .collect()
+}
+
+/// The call's other names (contract section 4, step 3a; the hook core's
+/// `narrowingNames`): a plugin server's bare forms, and for an `mcp__` name
+/// every other split at a run of `__`. `ambiguous` is true when a split past
+/// the primary's exists, which no `servers` entry can rule out.
+pub fn narrowing_names(raw: &str, servers: &[String], harness: &str) -> (Vec<String>, bool) {
+    let primary = normalize_tool_name_for(raw, servers, harness);
+    let Some((primary_server, primary_tool)) = primary.split_once('/') else {
+        return (Vec::new(), false);
+    };
+    let lowered = lower_name(raw);
+    let mut splits: Vec<(String, String)> =
+        vec![(primary_server.to_string(), primary_tool.to_string())];
+    let mut ambiguous = false;
+    let rest = lowered
+        .strip_prefix("mcp__")
+        .or_else(|| lowered.strip_prefix("mcp_"));
+    if let Some(rest) = rest {
+        let mut from = 0;
+        while let Some(off) = rest[from..].find("__") {
+            let d = from + off;
+            let end = d + rest[d..].bytes().take_while(|&b| b == b'_').count();
+            let (server, tool) = (&rest[..d], &rest[end..]);
+            if !server.is_empty() && !tool.is_empty() && join((server, tool)) != primary {
+                if server.len() > primary_server.len() {
+                    ambiguous = true;
+                }
+                splits.push((server.to_string(), tool.to_string()));
+            }
+            from = end;
+        }
+    }
+    let mut names: Vec<String> = Vec::new();
+    for (server, tool) in &splits {
+        let whole = join((server, tool));
+        if whole != primary && !names.contains(&whole) {
+            names.push(whole);
+        }
+        for bare in plugin_bare_servers(server) {
+            let n = join((bare, tool));
+            if !names.contains(&n) {
+                names.push(n);
             }
         }
     }
-    server
+    (names, ambiguous)
 }
 
 /// The Unicode version of `fold_text`'s tables (Node's ICU when they were
@@ -605,6 +675,32 @@ pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
         return decide(Action::Deny, format!("reject list: {key}"));
     }
     let harness = call.harness.trim().to_ascii_lowercase();
+    let applies = |rule: &Rule| {
+        rule.harness
+            .as_ref()
+            .is_none_or(|h| h.trim().to_ascii_lowercase() == harness)
+            && rule
+                .chat
+                .as_ref()
+                .is_none_or(|c| call.chat.as_deref() == Some(c.as_str()))
+    };
+    // Section 4 step 3a (S5): rules on the call's other names narrow it and
+    // never widen it. `*` rules already matched the call itself.
+    let (other, ambiguous) = narrowing_names(&call.tool, &policy.servers, &call.harness);
+    let narrowing: Vec<&Rule> = policy
+        .rules
+        .iter()
+        .filter(|r| {
+            r.tool != "*" && applies(r) && other.iter().any(|n| tool_rank(&r.tool, n).is_some())
+        })
+        .collect();
+    if let Some(r) = narrowing.iter().find(|r| r.action == Action::Deny) {
+        return decide(
+            Action::Deny,
+            format!("rule {} (also names {normalized})", r.tool),
+        );
+    }
+    let narrow_ask = narrowing.iter().find(|r| r.action == Action::Ask);
     // (chat set, harness set, tool rank) for every matching rule.
     let mut matches: Vec<((u8, u8, u8), &Rule)> = Vec::new();
     for rule in &policy.rules {
@@ -645,6 +741,18 @@ pub fn evaluate(policy: &PolicyFile, call: &Call) -> Decision {
     };
     if winner.action != Action::Allow {
         return decide(winner.action, rule_reason(winner));
+    }
+    if let Some(r) = narrow_ask {
+        return decide(
+            Action::Ask,
+            format!("rule {} (also names {normalized})", r.tool),
+        );
+    }
+    if ambiguous {
+        return decide(
+            Action::Ask,
+            "ambiguous server name: list the server in the policy's servers".to_string(),
+        );
     }
     // Every tied `allow` must hold its pin: one changed description is enough
     // to ask (case 57).
@@ -860,8 +968,10 @@ mod tests {
     }
 
     #[test]
-    fn claude_plugin_servers_drop_the_plugin_name() {
-        assert_eq!(n("mcp__plugin_tk_exa__search"), "exa/search");
+    fn claude_plugin_servers_keep_their_whole_name() {
+        // Integration w2, security finding S5: a rule for exa must not allow
+        // a plugin's server that is also called exa.
+        assert_eq!(n("mcp__plugin_tk_exa__search"), "plugin_tk_exa/search");
     }
 
     #[test]
