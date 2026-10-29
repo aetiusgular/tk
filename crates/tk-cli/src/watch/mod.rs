@@ -1,6 +1,6 @@
 //! `tk watch` and `tk status` (lane J, wave 2; toolkit plan T5). Views on
 //! the daemon (`contracts/daemon-protocol.md`) and on the preset table
-//! (`contracts/harness-presets.json`):
+//! (`crates/tk-cli/src/connect/presets/`):
 //!
 //! - `tk watch tail`: the feed, live, one line per event.
 //! - `tk watch report`: counts, approvals and the check's flags over a window.

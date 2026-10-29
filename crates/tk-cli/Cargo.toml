@@ -1,4 +1,5 @@
-# This manifest is shared by lanes C and D in wave 1 and lane J in wave 2.
+# This manifest is shared by lanes C and D in wave 1, lane J in wave 2, and
+# lanes Q and R in wave 4 (sections added by integration w2).
 # Each lane edits only the lines under its own `# [lane-X]` comment, in any
 # table, and pins every dependency to an exact version
 # (plans/parallel_build_tk.md, section 2, point 5). A section ends at the
@@ -23,6 +24,8 @@ default = []
 # [lane-C]
 # [lane-D]
 # [lane-J]
+# [lane-Q]
+# [lane-R]
 
 [dependencies]
 tk-core = { path = "../tk-core" }
@@ -41,11 +44,15 @@ sha2.workspace = true
 tk-audit-linux = { path = "../tk-audit-linux" }
 uuid.workspace = true
 # [lane-J]
+# [lane-Q]
+# [lane-R]
 
 [dev-dependencies]
 # [lane-C]
 # [lane-D]
 # [lane-J]
+# [lane-Q]
+# [lane-R]
 # `tk watch` and `tk status` are tested against the real daemon, started in
 # the test process on a temporary socket (crates/tk-cli/src/watch/live_tests.rs),
 # so the client is held to lane B's server, not to a fake. A path crate of

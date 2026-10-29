@@ -1,6 +1,8 @@
-// A fake OpenAI chat-completions server for lane I's checks (Kilo, Hermes,
-// oh-my-pi), loopback only. A `.js` file, so run.mjs does not load it as a
-// check. It answers POST <any>/chat/completions, streamed (SSE chunks, then
+// A fake OpenAI chat-completions server, loopback only. Written by lane I for
+// its checks (Kilo, Hermes, oh-my-pi, OpenClaw) as checks/I/fakeChat.js;
+// moved here by integration w2 for wave 4's lanes (OpenClaude through
+// OPENAI_BASE_URL, Mistral Vibe, Crush, Cline, Kimi and others with an
+// OpenAI-compatible route; note AQ section 4b). It answers POST <any>/chat/completions, streamed (SSE chunks, then
 // [DONE]) when the request asks for a stream, else one JSON completion; and
 // GET <any>/models with one model. A request that offers tools is a turn,
 // answered from `script(body, n)`: `{ text }` or `{ tool: name, args }`. A

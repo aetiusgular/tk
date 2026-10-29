@@ -1,0 +1,79 @@
+{
+  "id": "opencode",
+  "name": "OpenCode",
+  "cli": "opencode",
+  "configFiles": {
+    "user": {
+      "macos": "~/.config/opencode/opencode.json",
+      "linux": "~/.config/opencode/opencode.json"
+    },
+    "project": "<project>/opencode.json"
+  },
+  "xdgConfig": true,
+  "format": "jsonc",
+  "entryShape": "json:mcp",
+  "entryPath": [
+    "mcp"
+  ],
+  "entryStyle": "opencode",
+  "trailingNewline": false,
+  "write": "write",
+  "envRef": "{env:VAR}",
+  "entryExample": {
+    "mcp": {
+      "<name>": {
+        "type": "local",
+        "command": [
+          "<cmd>"
+        ],
+        "enabled": true
+      }
+    }
+  },
+  "enableKey": "enabled",
+  "addCommand": [
+    "opencode",
+    "mcp",
+    "add",
+    "<name>",
+    "--",
+    "<cmd>"
+  ],
+  "toolNameForm": "<server>_<tool>",
+  "nameMangling": "sanitize(server) + _ + sanitize(tool), where sanitize turns [^a-zA-Z0-9_-] into _; no prefix and no length cap (V, mcp/catalog.ts#L117-L119 at v1.19.4)",
+  "managedFiles": {
+    "macos": [
+      "/Library/Application Support/opencode/opencode.json",
+      "/Library/Application Support/opencode/opencode.jsonc"
+    ],
+    "linux": [
+      "/etc/opencode/opencode.json",
+      "/etc/opencode/opencode.jsonc"
+    ]
+  },
+  "inHarnessGate": "tool.execute.before plugin (lane F)",
+  "listChanged": "handled, re-lists and publishes ToolsChanged (V, mcp/index.ts#L462)",
+  "sources": [
+    "github.com/sst/opencode at v1.19.4: packages/core/src/global.ts, packages/opencode/src/config/config.ts, config/paths.ts, config/parse.ts, config/variable.ts, config/managed.ts, cli/cmd/mcp.ts, mcp/catalog.ts, packages/core/src/v1/config/mcp.ts (lane C research, batch 1, 27 Oct 2026)",
+    "note AP section 4 (opencode.ai/docs/mcp-servers/, /plugins/)"
+  ],
+  "verified": "2026-10-27",
+  "notes": "Files in ~/.config/opencode (XDG_CONFIG_HOME) merge config.json, then opencode.json, then opencode.jsonc; `opencode mcp add` writes opencode.json by default, and the loader seeds opencode.jsonc with only $schema on first run (V, config/config.ts#L141-L148, #L259-L276; cli/cmd/mcp.ts#L394-L410). tk writes opencode.json too. JSONC with trailing commas (jsonc-parser). Entry: local {type, command as one argv array, cwd, environment, enabled, timeout ms} or remote {type, url, headers, oauth, enabled, timeout}; no SSE value (V, packages/core/src/v1/config/mcp.ts#L6-L62). {env:VAR} and {file:path} are substituted in the raw file text before parsing, and a missing variable becomes empty (V, config/variable.ts#L33-L38), so tk refuses both forms in entry values. `opencode mcp add` edits with jsonc-parser modify, keeps comments and appends no newline (V). The macOS plist domain ai.opencode.managed is managed too.",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "opencode",
+    "gate": {
+      "family": "plugin",
+      "where": "plugin tool.execute.before",
+      "status": "built",
+      "wave": 1,
+      "lane": "F",
+      "package": "packages/tk-opencode-plugin"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "1.19.4, source"
+  }
+}

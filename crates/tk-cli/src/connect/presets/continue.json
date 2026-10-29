@@ -1,0 +1,25 @@
+{
+  "id": "continue",
+  "name": "Continue",
+  "cli": "TODO",
+  "mcpFile": "~/.continue/config.yaml mcpServers",
+  "toolNameForm": "the bare tool name",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "A",
+    "orcaId": "continue",
+    "gate": {
+      "family": "rules",
+      "where": "~/.continue/permissions.yaml",
+      "status": "planned",
+      "wave": 4,
+      "lane": "Q"
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "1.5.47, bundle",
+    "note": "headless -p allows every tool unless a rule says otherwise"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "id": "pi",
+  "name": "Pi",
+  "cli": "pi",
+  "configFiles": {
+    "user": {
+      "macos": "~/.pi/agent/mcp.json",
+      "linux": "~/.pi/agent/mcp.json"
+    },
+    "project": "<project>/.pi/mcp.json"
+  },
+  "format": "json",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "pi",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": "${VAR}",
+  "entryExample": {
+    "mcpServers": {
+      "<name>": {
+        "command": "<cmd>",
+        "args": [],
+        "exposure": "deferred"
+      }
+    }
+  },
+  "enableKey": "enabled",
+  "addCommand": [
+    "pi",
+    "mcp",
+    "add",
+    "<name>",
+    "--",
+    "<cmd>"
+  ],
+  "toolNameForm": "mcp__<server>__<tool>",
+  "nameMangling": "mcp__<server>__<tool> with everything outside [A-Za-z0-9_] replaced by _; over 64 characters or on a collision, cut and suffixed _ plus 8 hex of SHA-256 (V, extensions/mcp/tools.ts#L48-L93). Server names ^[A-Za-z0-9_-]+$, and names differing only in - versus _ clash (V)",
+  "managedFiles": null,
+  "inHarnessGate": "tool_call extension (lane A)",
+  "listChanged": "handled, calls refreshTools (V, extensions/mcp/runtime.ts#L380 at v1.4.0)",
+  "notes": "pi mcp add (1.4.0) writes command, args, env, cwd, exposure or url, headers, exposure; `--bearer-token-env-var N` becomes headers.Authorization \"Bearer ${N}\"; it keeps the file's indentation but rewrites the whole file, ends it with a newline, refuses a file with comments, and replaces an existing name (V, recorded). Probe run 27 Oct (`pi mcp list` starting a stdio server): ${TOKEN} expands in env and stays literal in args (V); an entry with no exposure loads as codemode (V, `pi mcp list` output). `--oauth-client-secret` may be `!command` (pi mcp add --help), so tk refuses any value starting with `!`. Project files are skipped in RPC mode until the project is trusted (rules case 47). Source (v1.4.0): ${VAR} and $VAR expand in env, headers and oauth.clientSecret, `$$` escapes `$`, and a whole value `!cmd` runs a shell command (V, core/resolve-config-value.ts#L140-L151); SSE is rejected; a project entry with no command or url is an override of enabled/exposure only (V). PI_CODING_AGENT_DIR replaces ~/.pi/agent (V, src/config.ts#L584-L611).",
+  "sources": [
+    "recorded: pi 1.4.0 (@earendil-works/pi-coding-agent) `mcp add` and `mcp add --help` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/pi-*.json)",
+    "note AP section 4 (pi.dev/docs/latest/mcp)",
+    "note AI section 1.2",
+    "github.com/earendil-works/pi at v1.4.0: packages/coding-agent/src/core/mcp-servers.ts, extensions/mcp/config.ts, cli.ts, tools.ts, runtime.ts, core/resolve-config-value.ts, docs/mcp.md (lane C research, batch 1, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "homeEnv": "PI_CODING_AGENT_DIR",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "pi",
+    "gate": {
+      "family": "pi-extension",
+      "where": "tk-pi package, tool_call",
+      "status": "built",
+      "wave": 1,
+      "lane": "A",
+      "package": "packages/tk-pi"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "1.4.0, run"
+  }
+}

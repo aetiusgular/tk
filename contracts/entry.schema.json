@@ -18,7 +18,7 @@
     },
     "runner": { "$ref": "#/$defs/runner" },
     "exposure": {
-      "description": "How each harness should load this entry's tools. Keys are harness ids from contracts/harness-presets.json; `default` applies to any harness not named. Pi's own values (docs/mcp.md at 1.4.0).",
+      "description": "How each harness should load this entry's tools. Keys are harness ids from the preset table (crates/tk-cli/src/connect/presets/); `default` applies to any harness not named. Pi's own values (docs/mcp.md at 1.4.0).",
       "type": "object",
       "required": ["default"],
       "properties": { "default": { "enum": ["codemode", "deferred", "direct", "hidden"] } },

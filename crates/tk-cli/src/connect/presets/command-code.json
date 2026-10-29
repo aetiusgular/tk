@@ -1,0 +1,27 @@
+{
+  "id": "command-code",
+  "name": "Command Code",
+  "cli": "cmd",
+  "mcpFile": "~/.commandcode/mcp.json",
+  "toolNameForm": "mcp__s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "command-code",
+    "gate": {
+      "family": "command-hook",
+      "where": "~/.commandcode/settings.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "failClosed: true",
+    "ask": "approver-or-deny",
+    "shellAliases": [
+      "shell_command"
+    ],
+    "verifiedAt": "1.88.0, bundle",
+    "note": "strips secret-named variables from the hook's environment: the chat token comes from TK_CHAT_TOKEN_FILE"
+  }
+}

@@ -16,7 +16,8 @@
 pub const TOKEN_HEADER: &str = "x-tk-token";
 
 /// Harness ids a chat token may be minted for: the ids of
-/// `contracts/harness-presets.json` (14 rows at session 0's base).
+/// the preset table's `harnesses` list (`crates/tk-cli/src/connect/presets/`;
+/// 14 rows at session 0's base).
 pub const HARNESS_IDS: &[&str] = &[
     "claude-code",
     "codex",

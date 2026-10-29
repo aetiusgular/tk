@@ -1,0 +1,54 @@
+{
+  "id": "crush",
+  "name": "Crush",
+  "cli": "crush",
+  "configFiles": {
+    "user": {
+      "macos": "~/.config/crush/crush.json",
+      "linux": "~/.config/crush/crush.json"
+    },
+    "project": "<project>/.crush.json"
+  },
+  "homeEnv": "CRUSH_GLOBAL_CONFIG",
+  "xdgConfig": true,
+  "format": "json",
+  "entryShape": "json:mcp",
+  "entryPath": [
+    "mcp"
+  ],
+  "entryStyle": "crush",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": "$VAR",
+  "enableKey": "disabled",
+  "addCommand": null,
+  "toolNameForm": "mcp_<server>_<tool>",
+  "nameMangling": "none found (NF); single underscores, no length cap (V, internal/agent/tools/mcp-tools.go#L58-L60)",
+  "managedFiles": {
+    "macos": "/etc/crush/crush.json",
+    "linux": "/etc/crush/crush.json"
+  },
+  "inHarnessGate": null,
+  "listChanged": "yes, through ToolListChangedHandler, off for sessionless servers (V, internal/agent/tools/mcp/init.go#L1072-L1078)",
+  "notes": "Since v0.98 the primary config is crushrc (Bash, run by a built-in interpreter, with `mcp add` builtins); crush.json is deprecated but still loaded, strict JSON (json.Valid, no comments) (V, internal/config/load.go#L968; README.md#L253-L303). tk writes crush.json, which crushrc in the same folder overrides (I, load order). Entry: type (required, stdio|sse|http), command, args, env, url, headers, disabled, timeout. Values get $VAR and $(cmd) shell expansion at load (V), so tk refuses $( and backticks in every value.",
+  "sources": [
+    "github.com/charmbracelet/crush at v0.98.2: README.md, docs/config/README.md, internal/config/load.go, internal/config/config.go#L209-L265, internal/shellconfig/mcp.go, internal/agent/tools/mcp-tools.go (lane C research, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "crush",
+    "gate": {
+      "family": "command-hook",
+      "where": "hooks in ~/.config/crush/crush.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "0.98.2, source"
+  }
+}

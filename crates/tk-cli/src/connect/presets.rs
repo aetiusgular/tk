@@ -1,13 +1,102 @@
 //! The per-harness table: where each harness keeps its MCP servers, in
-//! what shape, and what tk must never write. It is
-//! `contracts/harness-presets.json`, embedded at build time: lane C verified
-//! it, and integration w1 made the contract the one copy (lane C's request).
+//! what shape, and what tk must never write. Lane C verified it,
+//! integration w1 made it the one copy, and integration w2 split it into one
+//! file per agent under `presets/` with `presets/index.json` naming the lists
+//! and their order, so each wave 4 lane edits only its own agents' files
+//! (`plans/parallel_build_tk.md`, section 7a). The files are embedded at
+//! build time and assembled once; `table_json()` is the whole table in the
+//! shape `contracts/harness-presets.schema.json` describes.
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-pub const PRESETS_JSON: &str = include_str!("../../../../contracts/harness-presets.json");
+const INDEX: &str = include_str!("presets/index.json");
+
+/// Every row file, by id. A file in the folder that is not listed here, or
+/// listed here and not in the index, fails `the_folder_index_and_rows_agree`.
+const ROWS: &[(&str, &str)] = &[
+    ("claude-code", include_str!("presets/claude-code.json")),
+    ("codex", include_str!("presets/codex.json")),
+    ("pi", include_str!("presets/pi.json")),
+    ("opencode", include_str!("presets/opencode.json")),
+    ("gemini", include_str!("presets/gemini.json")),
+    ("cursor", include_str!("presets/cursor.json")),
+    ("hermes", include_str!("presets/hermes.json")),
+    ("openclaw", include_str!("presets/openclaw.json")),
+    ("goose", include_str!("presets/goose.json")),
+    ("qwen-code", include_str!("presets/qwen-code.json")),
+    ("copilot-cli", include_str!("presets/copilot-cli.json")),
+    ("amp", include_str!("presets/amp.json")),
+    ("crush", include_str!("presets/crush.json")),
+    ("zed", include_str!("presets/zed.json")),
+    ("grok", include_str!("presets/grok.json")),
+    ("antigravity", include_str!("presets/antigravity.json")),
+    ("openclaude", include_str!("presets/openclaude.json")),
+    ("oh-my-pi", include_str!("presets/oh-my-pi.json")),
+    ("auggie", include_str!("presets/auggie.json")),
+    ("cline", include_str!("presets/cline.json")),
+    ("codebuff", include_str!("presets/codebuff.json")),
+    ("command-code", include_str!("presets/command-code.json")),
+    ("continue", include_str!("presets/continue.json")),
+    ("droid", include_str!("presets/droid.json")),
+    ("kilo", include_str!("presets/kilo.json")),
+    ("kimi", include_str!("presets/kimi.json")),
+    ("kiro", include_str!("presets/kiro.json")),
+    ("mistral-vibe", include_str!("presets/mistral-vibe.json")),
+    ("rovo-dev", include_str!("presets/rovo-dev.json")),
+];
+
+/// The assembled table as JSON text: `{"$comment", "version", "harnesses",
+/// "planned"}`, rows in the index's order.
+pub fn table_json() -> &'static str {
+    static TABLE: OnceLock<String> = OnceLock::new();
+    TABLE.get_or_init(|| assemble(INDEX, ROWS).expect("presets/ is checked by its tests"))
+}
+
+fn assemble(index: &str, rows: &[(&str, &str)]) -> Result<String, String> {
+    use serde_json::{Map, Value};
+    let index: Value = serde_json::from_str(index).map_err(|e| format!("index.json: {e}"))?;
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Map::new();
+    if let Some(c) = index.get("$comment") {
+        out.insert("$comment".into(), c.clone());
+    }
+    out.insert(
+        "version".into(),
+        index.get("version").cloned().unwrap_or(Value::Null),
+    );
+    for list in ["harnesses", "planned"] {
+        let ids = index
+            .get(list)
+            .and_then(Value::as_array)
+            .ok_or(format!("index.json: no {list} list"))?;
+        let mut items = Vec::new();
+        for id in ids {
+            let id = id
+                .as_str()
+                .ok_or(format!("index.json: {list} holds a non-string"))?;
+            if !seen.insert(id.to_string()) {
+                return Err(format!("index.json: {id} listed twice"));
+            }
+            let (_, text) = rows
+                .iter()
+                .find(|(r, _)| *r == id)
+                .ok_or(format!("index.json names {id}, which has no row file"))?;
+            let row: Value = serde_json::from_str(text).map_err(|e| format!("{id}.json: {e}"))?;
+            if row.get("id").and_then(Value::as_str) != Some(id) {
+                return Err(format!("{id}.json: its id is not {id}"));
+            }
+            items.push(row);
+        }
+        out.insert(list.into(), Value::Array(items));
+    }
+    if let Some((id, _)) = rows.iter().find(|(id, _)| !seen.contains(*id)) {
+        return Err(format!("{id}.json is in no list of index.json"));
+    }
+    serde_json::to_string(&Value::Object(out)).map_err(|e| e.to_string())
+}
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -111,8 +200,7 @@ pub struct Table {
 }
 
 pub fn table() -> Table {
-    let t: Table =
-        serde_json::from_str(PRESETS_JSON).expect("presets.json is checked by its tests");
+    let t: Table = serde_json::from_str(table_json()).expect("presets/ is checked by its tests");
     assert_eq!(t.version, 1, "presets.json version");
     t
 }
@@ -212,11 +300,45 @@ mod tests {
         }
     }
 
-    const CONTRACT: &str = include_str!("../../../../contracts/harness-presets.json");
+    #[test]
+    fn the_folder_index_and_rows_agree() {
+        // Every *.json in presets/ but the index is a row and is in ROWS.
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/connect/presets");
+        let mut files: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|e| e.unwrap().file_name().into_string().unwrap())
+            .filter(|n| n.ends_with(".json") && n != "index.json")
+            .map(|n| n.trim_end_matches(".json").to_string())
+            .collect();
+        files.sort();
+        let mut listed: Vec<String> = ROWS.iter().map(|(id, _)| id.to_string()).collect();
+        listed.sort();
+        assert_eq!(files, listed, "every row file is embedded, and only those");
+        assemble(INDEX, ROWS).unwrap();
+    }
+
+    #[test]
+    fn assembly_refuses_a_bad_folder() {
+        let index = r#"{"version":1,"harnesses":["a"],"planned":[]}"#;
+        assert!(assemble(index, &[("a", r#"{"id":"a"}"#)]).is_ok());
+        assert!(assemble(index, &[("a", r#"{"id":"b"}"#)])
+            .unwrap_err()
+            .contains("its id"));
+        assert!(assemble(index, &[]).unwrap_err().contains("no row file"));
+        assert!(
+            assemble(index, &[("a", r#"{"id":"a"}"#), ("c", r#"{"id":"c"}"#)])
+                .unwrap_err()
+                .contains("in no list")
+        );
+        let twice = r#"{"version":1,"harnesses":["a"],"planned":["a"]}"#;
+        assert!(assemble(twice, &[("a", r#"{"id":"a"}"#)])
+            .unwrap_err()
+            .contains("twice"));
+    }
 
     #[test]
     fn every_contract_harness_is_here_and_verified() {
-        let contract: serde_json::Value = serde_json::from_str(CONTRACT).unwrap();
+        let contract: serde_json::Value = serde_json::from_str(table_json()).unwrap();
         let ids: Vec<String> = contract["harnesses"]
             .as_array()
             .unwrap()
@@ -226,10 +348,7 @@ mod tests {
         let t = table();
         assert_eq!(t.version, 1);
         let mine: Vec<String> = t.harnesses.iter().map(|p| p.id.clone()).collect();
-        assert_eq!(
-            mine, ids,
-            "same harnesses, same order as the contract skeleton"
-        );
+        assert_eq!(mine, ids, "same harnesses, same order as the index");
         for p in &t.harnesses {
             assert!(
                 p.verified.starts_with("2026-"),

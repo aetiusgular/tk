@@ -1,0 +1,27 @@
+{
+  "id": "cline",
+  "name": "Cline CLI",
+  "cli": "cline",
+  "mcpFile": "~/.cline/data/settings/cline_mcp_settings.json",
+  "toolNameForm": "s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "cline",
+    "gate": {
+      "family": "plugin",
+      "where": "the approval-file callback (CLINE_TOOL_APPROVAL_MODE=desktop, --auto-approve false)",
+      "status": "planned",
+      "wave": 4,
+      "lane": "P"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [
+      "run_commands"
+    ],
+    "verifiedAt": "3.0.74, source",
+    "note": "Orca launches it with --auto-approve true, which skips the approval file"
+  }
+}

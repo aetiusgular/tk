@@ -1,0 +1,50 @@
+{
+  "id": "cursor",
+  "name": "Cursor",
+  "cli": null,
+  "configFiles": {
+    "user": {
+      "macos": "~/.cursor/mcp.json",
+      "linux": "~/.cursor/mcp.json"
+    },
+    "project": "<project>/.cursor/mcp.json"
+  },
+  "format": "jsonc",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "cursor",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": "${env:VAR}",
+  "enableKey": null,
+  "addCommand": null,
+  "toolNameForm": "not documented (NF)",
+  "nameMangling": "not documented (NF); the CLI doc says names with spaces work (V)",
+  "managedFiles": "Team MCP servers and the Enterprise MCP allowlist live in the dashboard, not a local file (V)",
+  "inHarnessGate": null,
+  "listChanged": "not documented (NF)",
+  "notes": "Stdio entry: type, command, args, env, envFile; the field table marks type required and the examples omit it (V, docs disagree with themselves; tk writes type). Remote entry: url, headers, auth; transport auto-detected. ${env:NAME}, ${userHome}, ${workspaceFolder} resolve in command, args, env, url and headers (V). Comments: the docs' own example has one (I: tolerated); tk parses as JSONC and keeps them. Enable/disable is an approved list outside mcp.json (V). No CLI that adds a server (NF).",
+  "sources": [
+    "cursor.com/docs/context/mcp and cursor.com/docs/cli/mcp, read through Exa 27 Oct 2026 (no version stamp)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "cursor",
+    "gate": {
+      "family": "command-hook",
+      "where": "~/.cursor/hooks.json version 1: preToolUse, beforeShellExecution, beforeMCPExecution",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "failClosed: true",
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "2026.10.22, docs",
+    "note": "needs an account: fixtures only unless call 8 buys a seat"
+  }
+}

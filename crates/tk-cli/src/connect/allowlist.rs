@@ -34,7 +34,7 @@ pub fn fragment(preset: &Preset, spec: &ServerSpec, macos: bool) -> Result<Strin
     match preset.id.as_str() {
         // Claude Code managed settings: `allowedMcpServers` entries match by
         // `serverName`, `serverCommand` (the exact argv) or `serverUrl`
-        // (wildcards allowed). Sources in contracts/harness-presets.json.
+        // (wildcards allowed). Sources in presets/claude-code.json.
         "claude-code" => {
             let entry = match &spec.transport {
                 Transport::Stdio { command, args } => {

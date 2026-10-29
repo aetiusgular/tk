@@ -1,10 +1,13 @@
 //! `tk`: the command line. `main.rs` only dispatches; each subcommand lives
 //! in its own folder and is owned by one lane (plans/parallel_build_tk.md,
 //! section 2, point 5): `connect/` lane C, `run/` lane D, `watch/` lane J in
-//! wave 2. No lane edits this file during a wave; a new subcommand is a
-//! request for integration.
+//! wave 2; in wave 4 `connect/` is lane Q's, `run/`, `watch/`, `acp/` and
+//! `doctor/` lane R's (section 7a). No lane edits this file during a wave; a
+//! new subcommand is a request for integration.
 
+mod acp;
 mod connect;
+mod doctor;
 mod run;
 mod watch;
 
@@ -23,12 +26,15 @@ fn dispatch(args: &[String]) -> u8 {
         Some("watch") | Some("status") => watch::main(args),
         // Computer use's controls (toolkit plan T1.5; integration w2).
         Some("cu") => watch::cu::main(&args[1..]),
+        // Wave 4 lane R (integration w2's scaffold).
+        Some("acp") => acp::main(&args[1..]),
+        Some("doctor") => doctor::main(&args[1..]),
         Some("--version") => {
             println!("tk {}", env!("CARGO_PKG_VERSION"));
             0
         }
         _ => {
-            eprintln!("usage: tk <connect|run|watch|status|cu> ...");
+            eprintln!("usage: tk <connect|run|watch|status|cu|acp|doctor> ...");
             2
         }
     }
@@ -60,7 +66,7 @@ mod tests {
         // wave 2 (exit 0) and reads the machine's daemon socket and agent
         // config files, which a unit test must not (lane J's request 2,
         // integration w2). `watch::status` has its own tests on fixtures.
-        for cmd in ["connect", "run", "watch", "cu"] {
+        for cmd in ["connect", "run", "watch", "cu", "acp", "doctor"] {
             assert_eq!(dispatch(&s(&[cmd])), 2, "{cmd}");
         }
     }

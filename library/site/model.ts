@@ -1,15 +1,14 @@
 // The library browser's data (lane J, T5): one card per catalog entry, built
-// from library/catalog/ and contracts/harness-presets.json at build time.
+// from library/catalog/ and the preset table (crates/tk-cli/src/connect/presets/,
+// assembled by contracts/presets.ts) at build time.
 // Everything a card shows is computed here, as plain strings, so the page
 // (page.ts) only escapes and lays them out and the browser runs no logic on
 // entry text. An entry is a stranger's text once the mirror (lane G) fills
 // the catalog: links are kept only when they are https, and nothing here is
 // ever written as markup.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { Catalog, Finding, LoadedEntry } from "../validate/index.ts";
 import { getMeta } from "../validate/types.ts";
-import { REPO_ROOT } from "../validate/schemas.ts";
+import { PRESETS_DIR, loadPresetTable } from "../../contracts/presets.ts";
 
 export type Harness = { id: string; name: string; write: "write" | "print" };
 
@@ -48,11 +47,10 @@ export type Site = {
 };
 
 const ZERO_HASH = "0".repeat(64);
-const PRESETS = join(REPO_ROOT, "contracts", "harness-presets.json");
 
 /** The harnesses `tk connect` knows, in the preset table's order. */
-export function loadHarnesses(path = PRESETS): Harness[] {
-  const t = JSON.parse(readFileSync(path, "utf8")) as { harnesses: { id: string; name: string; write: string }[] };
+export function loadHarnesses(dir: string = PRESETS_DIR): Harness[] {
+  const t = loadPresetTable(dir) as unknown as { harnesses: { id: string; name: string; write: string }[] };
   return t.harnesses.map((h) => ({ id: h.id, name: h.name, write: h.write === "print" ? "print" : "write" }));
 }
 

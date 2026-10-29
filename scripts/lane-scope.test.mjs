@@ -49,6 +49,9 @@ for (const [p, t] of Object.entries({
   "packages/tk-pi/extensions/gate.ts": "// a\n",
   "packages/tk-pi/extensions/memory.ts": "// k\n",
   "library/src/validate.ts": "// e\n",
+  "crates/tk-cli/src/connect/presets/droid.json": "{}\n",
+  "crates/tk-cli/src/connect/presets/continue.json": "{}\n",
+  "packages/tk-hooks-claude-compat/src/core/policy.ts": "// core\n",
   "contracts/policy.md": "# p\n",
   "package.json": "{}\n",
   "README.md": "# r\n",
@@ -71,6 +74,12 @@ const cases = [
   ["no-lane file: root package.json", "E", () => write("package.json", "{\"x\":1}\n"), 1, "no lane edits this"],
   ["no-lane file: main.rs", "C", () => write("crates/tk-cli/src/main.rs", "fn main() { }\n"), 1, "no lane edits this"],
   ["deleted file of another lane", "A", () => unlinkSync(join(repo, "library/src/validate.ts")), 1, "owned by lane E"],
+  // Wave 4 (integration w2): a lane's preset files are its own by name, and
+  // `except` takes them out of lane Q's connect/ folder.
+  ["preset file of lane L edited by L", "L", () => write("crates/tk-cli/src/connect/presets/droid.json", "{\"id\":\"droid\"}\n"), 0, "clean"],
+  ["preset file of lane L edited by Q", "Q", () => write("crates/tk-cli/src/connect/presets/droid.json", "{\"id\":\"droid\"}\n"), 1, "owned by lane C, L"],
+  ["lane Q's own preset file", "Q", () => write("crates/tk-cli/src/connect/presets/continue.json", "{\"id\":\"continue\"}\n"), 0, "clean"],
+  ["synced core copy edited by its package's lane", "L", () => write("packages/tk-hooks-claude-compat/src/core/policy.ts", "// changed\n"), 1, "owned by no lane"],
   ["shared Cargo.toml, own section (C)", "C", () => write("crates/tk-cli/Cargo.toml", cargo.replace("# [lane-C]\n# [lane-D]\n\n[dev", "# [lane-C]\nregex = \"=1.11.1\"\n# [lane-D]\n\n[dev")), 0, "clean"],
   ["shared Cargo.toml, C drops its feature flag", "C", () => write("crates/tk-cli/Cargo.toml", cargo.replace("fork-docker-mcp = []\n", "")), 0, "clean"],
   ["shared Cargo.toml, D drops C's feature flag", "D", () => write("crates/tk-cli/Cargo.toml", cargo.replace("fork-docker-mcp = []\n", "")), 1, "lane C's section changed"],

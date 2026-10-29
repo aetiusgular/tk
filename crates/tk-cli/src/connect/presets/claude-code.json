@@ -1,0 +1,87 @@
+{
+  "id": "claude-code",
+  "name": "Claude Code",
+  "cli": "claude",
+  "configFiles": {
+    "user": {
+      "macos": "~/.claude.json",
+      "linux": "~/.claude.json"
+    },
+    "project": "<project>/.mcp.json"
+  },
+  "format": "json",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "claude-code",
+  "trailingNewline": false,
+  "write": "write",
+  "envRef": "${VAR}",
+  "entryExample": {
+    "mcpServers": {
+      "<name>": {
+        "type": "stdio",
+        "command": "<cmd>",
+        "args": [],
+        "env": {
+          "KEY": "${KEY}"
+        }
+      }
+    }
+  },
+  "enableKey": null,
+  "addCommand": [
+    "claude",
+    "mcp",
+    "add-json",
+    "-s",
+    "user",
+    "<name>",
+    "<json>"
+  ],
+  "toolNameForm": "mcp__<server>__<tool>",
+  "nameMangling": "plugin servers: mcp__plugin_<plugin>_<server>__<tool>",
+  "managedFiles": {
+    "macos": [
+      "/Library/Application Support/ClaudeCode/managed-mcp.json",
+      "/Library/Application Support/ClaudeCode/managed-settings.json"
+    ],
+    "linux": [
+      "/etc/claude-code/managed-mcp.json",
+      "/etc/claude-code/managed-settings.json"
+    ]
+  },
+  "reservedNames": [
+    "workspace",
+    "claude-in-chrome",
+    "computer-use"
+  ],
+  "inHarnessGate": "PreToolUse hook (lane F)",
+  "listChanged": "interactive sessions refetch; -p and SDK refresh the list only",
+  "allowlist": "managed settings: allowedMcpServers entries {serverUrl} (exact or * wildcards) or {serverCommand} (the exact argv, env not compared); a serverName entry is not a security control; allowManagedMcpServersOnly: true makes the managed list the only one (V, managed-mcp docs)",
+  "notes": "${VAR} and ${VAR:-default} expand in command, args, env, url and headers, user scope included; an unset variable stays literal with a warning in claude mcp list; some credential variable names read as empty in a remote server's url and headers (V, code.claude.com/docs/en/mcp, read 27 Oct). Reserved server names are skipped at load (V, same page). Probe run 27 Oct (2.1.311, `claude mcp get` starting a stdio server with TOKEN set): ${TOKEN} expanded in env and in args (V). add-json writes the object as given, appends the key at the end of mcpServers, rewrites the whole file with JSON.stringify(_, null, 2) and no final newline, and refuses an existing name with exit 1 (V, recorded with 2.1.311). tk keeps the rest of the file byte for byte; Claude Code would re-indent a file not in its own format.",
+  "sources": [
+    "recorded: claude 2.1.311 `mcp add-json -s user` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/claude-*.json)",
+    "code.claude.com/docs/en/mcp and code.claude.com/docs/en/managed-mcp, read 27 Oct 2026 (managed-mcp.json paths, allowedMcpServers shapes, env expansion, reserved names, list_changed)",
+    "Claude Code 2.1.311 binary strings: the managed folder holds managed-settings.json, managed-settings.d/ and managed-mcp.json; allowedMcpServers entries take exactly one of serverName (^[a-zA-Z0-9_-]+$), serverCommand, serverUrl (lane C research, batch 1, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "claude",
+    "gate": {
+      "family": "command-hook",
+      "where": "plugin hooks/hooks.json, PreToolUse",
+      "status": "built",
+      "wave": 1,
+      "lane": "F",
+      "package": "packages/tk-claude-plugin"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "onFailure: \"block\" (tk sets it)",
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "2.1.311, run"
+  }
+}

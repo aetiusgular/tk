@@ -1,0 +1,25 @@
+{
+  "id": "codebuff",
+  "name": "Codebuff",
+  "cli": "TODO",
+  "mcpFile": "~/.agents/mcp.json",
+  "toolNameForm": "s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "O",
+    "orcaId": "codebuff",
+    "gate": {
+      "family": "none",
+      "where": "none: tk run and tk watch only",
+      "status": "planned",
+      "wave": 4,
+      "lane": "R"
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "unknown",
+    "shellAliases": [],
+    "verifiedAt": "1.0.688, source",
+    "note": "needs an account"
+  }
+}

@@ -21,7 +21,7 @@
 //! managed file (case 65), and a harness that is not installed gets the
 //! entry printed and nothing written (case 54).
 //!
-//! Reads: `contracts/harness-presets.json` (the verified table, embedded),
+//! Reads: `presets/` (the verified table, one file per agent, embedded),
 //! `contracts/docker-args.md`,
 //! `contracts/entry.schema.json`, `contracts/policy.md` section 3.
 
@@ -31,7 +31,7 @@ mod allowlist;
 mod diff;
 mod json;
 mod log;
-mod presets;
+pub(crate) mod presets;
 mod redact;
 mod render;
 mod spec;

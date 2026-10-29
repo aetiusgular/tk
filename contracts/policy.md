@@ -29,7 +29,7 @@ Schema: `contracts/policy.schema.json`. Fixtures: `fixtures/policy/policy.json` 
 | `askTimeoutSeconds` | How long an `ask` waits before it becomes `deny`. 1 to 3600, default 60 |
 | `servers` | MCP server names the user connected, normalized by section 2, step 1 before use (so `my-server` matches `my-server_fetch`). Used only to split `{server}_{tool}` names (section 2, step 6) |
 | `rules[].tool` | A normalized name (`server/tool` or a bare built-in), `server/*`, or `*` |
-| `rules[].harness` | Optional. A harness id from `contracts/harness-presets.json` |
+| `rules[].harness` | Optional. A harness id from the preset table (`crates/tk-cli/src/connect/presets/`) |
 | `rules[].chat` | Optional. A chat id as the harness or `tk run` reports it |
 | `rules[].action` | `allow`, `ask` or `deny` |
 | `rules[].descriptionSha256` | Optional. SHA-256 hex of the approved tool description (case 57) |

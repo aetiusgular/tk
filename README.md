@@ -62,6 +62,6 @@ How tk attaches to each agent in Orca's list. Tier G: tk registers a gate that r
 | Codebuff | O | `tk run`, the MCP file | Planned, wave 4 |
 | Any other CLI agent | O | `tk run -- <command>` | Planned, wave 4 |
 
-Orca's ids differ for three agents: Orca says `claude`, `copilot` and `aug`; tk says `claude-code`, `copilot-cli` and (wave 4) Auggie's own id. The machine-readable form of this table is `contracts/harness-presets.json` (the `coverage` field on each row, and the `planned` rows).
+Orca's ids differ for three agents: Orca says `claude`, `copilot` and `aug`; tk says `claude-code`, `copilot-cli` and (wave 4) Auggie's own id. The machine-readable form of this table is the preset table, one file per agent in `crates/tk-cli/src/connect/presets/` (the `coverage` field on each row; `index.json` lists the `harnesses` and the `planned` rows).
 
 MIT. See `NOTICE` for what was copied from where.

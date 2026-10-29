@@ -1,0 +1,27 @@
+{
+  "id": "droid",
+  "name": "Droid",
+  "cli": "droid",
+  "mcpFile": "~/.factory/mcp.json",
+  "toolNameForm": "s___t (binary), mcp__s__t (docs)",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "droid",
+    "gate": {
+      "family": "command-hook",
+      "where": "hooks in ~/.factory/settings.json beside Orca's entry; never create ~/.factory/hooks.json",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [
+      "execute"
+    ],
+    "verifiedAt": "0.250.0, binary strings",
+    "note": "needs an account: fixtures only unless call 8 buys a seat"
+  }
+}

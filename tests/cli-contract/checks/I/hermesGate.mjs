@@ -17,7 +17,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startFakeChat, toolResults } from "./fakeChat.js";
+import { startFakeChat, toolResults } from "../../lib/fakeChat.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN = path.resolve(HERE, "..", "..", "..", "..", "packages", "tk-hermes-plugin");

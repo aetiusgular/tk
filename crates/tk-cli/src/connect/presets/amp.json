@@ -1,0 +1,60 @@
+{
+  "id": "amp",
+  "name": "Amp",
+  "cli": "amp",
+  "configFiles": {
+    "user": {
+      "macos": "~/.config/amp/settings.json",
+      "linux": "~/.config/amp/settings.json"
+    },
+    "project": "<project>/.amp/settings.json"
+  },
+  "format": "jsonc",
+  "entryShape": "json:amp.mcpServers",
+  "entryPath": [
+    "amp.mcpServers"
+  ],
+  "entryStyle": "amp",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": "${VAR}",
+  "enableKey": null,
+  "addCommand": [
+    "amp",
+    "mcp",
+    "add",
+    "<name>",
+    "--",
+    "<cmd>"
+  ],
+  "toolNameForm": "not documented for local servers (NF); remote definitions become code_exec modules (V)",
+  "nameMangling": "not documented (NF)",
+  "managedFiles": {
+    "macos": "/Library/Application Support/ampcode/managed-settings.json",
+    "linux": "/etc/ampcode/managed-settings.json"
+  },
+  "inHarnessGate": null,
+  "listChanged": "not documented (NF)",
+  "notes": "`amp.mcpServers` is one flat key, not a nested path. Schema (ampcode.com/cli-settings.schema.json): stdio {command (required), args, env}; HTTP {url (required), headers, transport: http|sse|http-first, oauth}; additionalProperties false, so no type, enabled or disabled (V). The user file may also be settings.jsonc; tk writes settings.json only (I). Workspace servers need `amp mcp approve`. XDG behaviour NF.",
+  "sources": [
+    "ampcode.com/docs/customize/mcp, ampcode.com/docs/cli/settings and ampcode.com/cli-settings.schema.json, read through Exa 27 Oct 2026 (no version stamp)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "amp",
+    "gate": {
+      "family": "plugin",
+      "where": "Bun plugin ~/.config/amp/plugins/<tk>.ts, tool.call",
+      "status": "planned",
+      "wave": 4,
+      "lane": "P"
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "0.0.1793104576, types",
+    "note": "needs an account: fixtures only unless call 8 buys a seat"
+  }
+}

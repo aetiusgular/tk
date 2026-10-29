@@ -1,0 +1,27 @@
+{
+  "id": "grok",
+  "name": "Grok Build",
+  "cli": "grok",
+  "mcpFile": "~/.grok/config.toml [mcp_servers.<n>]",
+  "toolNameForm": "s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "grok",
+    "gate": {
+      "family": "command-hook",
+      "where": "own file ~/.grok/hooks/<tk>.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "failClosed: true",
+    "ask": "own-prompt",
+    "shellAliases": [
+      "run_terminal_command"
+    ],
+    "verifiedAt": "1.0.71, embedded docs",
+    "note": "also reads Claude Code's and Cursor's hook files: turn its compat imports off"
+  }
+}

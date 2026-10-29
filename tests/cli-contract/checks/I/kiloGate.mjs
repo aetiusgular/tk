@@ -1,6 +1,6 @@
 // Lane I: contract checks for the tk Kilo plugin (T2.4) against the real
 // Kilo CLI, driven by `kilo run --format json` against a fake OpenAI
-// chat-completions server (./fakeChat.js) with a fake tk daemon. Kilo's own
+// chat-completions server (../../lib/fakeChat.mjs) with a fake tk daemon. Kilo's own
 // permission for bash is `allow` in every run, so tk's gate is the only check
 // (Orca has no full-access entry for Kilo, note AQ section 8; this is the
 // closest).
@@ -12,7 +12,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { startFakeChat, toolResults } from "./fakeChat.js";
+import { startFakeChat, toolResults } from "../../lib/fakeChat.mjs";
 import { startFakeDaemon } from "../../../../packages/tk-claude-plugin/src/testing/fakeDaemon.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));

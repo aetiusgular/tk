@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { Ajv2020 } from "ajv/dist/2020.js";
+import { loadPresetTable } from "./presets.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (p: string): unknown => JSON.parse(readFileSync(join(here, p), "utf8"));
@@ -89,7 +90,7 @@ describe("entry contract", () => {
 });
 
 describe("harness presets", () => {
-  const presets = read("harness-presets.json") as { harnesses: { id: string; verified: string; sources: string[] }[] };
+  const presets = loadPresetTable() as unknown as { harnesses: { id: string; verified: string; sources: string[] }[] };
 
   it("lists the fourteen harnesses of note AP section 4 with unique ids", () => {
     const ids = presets.harnesses.map((h) => h.id);
@@ -151,8 +152,8 @@ describe("tk's own marketplaces", () => {
 // Integration w1: the coverage fields lane J's `tk status` reads (note AQ section 4).
 describe("harness coverage", () => {
   type Row = { id: string; coverage: { tier: string | null; orcaId: string | null; gate: { status: string } } };
-  const data = read("harness-presets.json") as { harnesses: Row[]; planned: Row[] };
-  it("the file follows harness-presets.schema.json", () => {
+  const data = loadPresetTable() as unknown as { harnesses: Row[]; planned: Row[] };
+  it("the assembled table follows harness-presets.schema.json", () => {
     expect(check("harness-presets.schema.json", data)).toEqual([]);
   });
   it("covers Orca's 27 agents with note AQ's tiers: 24 G, 2 A, 1 O", () => {

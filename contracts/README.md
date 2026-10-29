@@ -7,7 +7,7 @@ Written by tk session 0 on 27 Oct 2026. Lanes build against these and their fixt
 | `policy.md`, `policy.schema.json` | `fixtures/policy/` (10 rules, 21 cases) | B (Rust), A (TypeScript) | A, B, C, F |
 | `daemon-protocol.md` | `fixtures/daemon/exchange.jsonl` | B | A, D, F; J in wave 2 |
 | `entry.schema.json`, `shapes/` | `fixtures/entry/` (one per kind, plus a marketplace) | E | C, E; G, H in wave 2 |
-| `harness-presets.json` | itself | C | A, C, D, E, F |
+| `harness-presets.schema.json` (the table is one file per agent in `crates/tk-cli/src/connect/presets/`, assembled by `presets.ts` and `presets.rs`; integration w2) | the table itself | C; wave 4 lanes L, N, P, Q by file | A, C, D, E, F, J; R in wave 4 |
 | `events.md` | `tests/fixtures/otlp/` | A emits, B decodes | A, B |
 | `docker-args.md` | the copied `docker_mcp.rs` | C | A (the redactor), C |
 

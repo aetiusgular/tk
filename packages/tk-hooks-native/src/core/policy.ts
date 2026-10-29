@@ -1,0 +1,614 @@
+// The policy file and the matcher, lane F's TypeScript reader of
+// contracts/policy.md (sections 1 to 4). Tested against
+// contracts/fixtures/policy/. Canonical copy: packages/tk-claude-plugin/src/core/.
+
+import { createHash } from "node:crypto";
+import { closeSync, fstatSync, openSync, readSync, realpathSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
+import { decodeEscapes, fold } from "./fold.ts";
+
+export type Action = "allow" | "ask" | "deny";
+
+export type Rule = {
+  tool: string;
+  harness?: string;
+  chat?: string;
+  action: Action;
+  descriptionSha256?: string;
+};
+
+export type PolicyFile = {
+  version: 1;
+  askTimeoutSeconds: number;
+  servers: string[];
+  rules: Rule[];
+};
+
+export type LoadedPolicy = {
+  policy: PolicyFile;
+  /** Set when the file was missing or bad; the reason of a `no rule` answer names it. */
+  problem?: string;
+};
+
+export type Call = {
+  tool: string;
+  harness: string;
+  chat?: string;
+  description?: string;
+  inputText: string;
+};
+
+export type Decision = {
+  action: Action;
+  normalizedTool: string;
+  reason: string;
+};
+
+export const DEFAULT_ASK_TIMEOUT_SECONDS = 60;
+const MAX_POLICY_BYTES = 1024 * 1024;
+
+export function emptyPolicy(): PolicyFile {
+  return { version: 1, askTimeoutSeconds: DEFAULT_ASK_TIMEOUT_SECONDS, servers: [], rules: [] };
+}
+
+/** `$TK_POLICY` if set, else `~/.tk/policy.json` (contract, section 1). */
+export function policyPath(env: NodeJS.ProcessEnv = process.env): string {
+  const fromEnv = env.TK_POLICY;
+  if (fromEnv && fromEnv.trim() !== "") return fromEnv;
+  return path.join(homedir(), ".tk", "policy.json");
+}
+
+/** The real path of `p`, following links on every part that exists; a missing tail is appended as written. */
+function realish(p: string): string {
+  const abs = path.resolve(p);
+  let head = abs;
+  const tail: string[] = [];
+  for (;;) {
+    try {
+      return path.join(realpathSync(head), ...tail.reverse());
+    } catch {
+      const parent = path.dirname(head);
+      if (parent === head) return abs;
+      tail.push(path.basename(head));
+      head = parent;
+    }
+  }
+}
+
+/** True when `file` is `folder` or lies under it, after links are followed. */
+export function insideFolder(file: string, folder: string): boolean {
+  const rel = path.relative(realish(folder), realish(file));
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+/**
+ * Loads the policy for a hook. A `TK_POLICY` that points inside the session
+ * folder is refused: a project's settings file (Claude Code's
+ * `.claude/settings.json` `env`) or a cloned repository can set it there, and
+ * the file would then be the project's, not yours. The default
+ * `~/.tk/policy.json` is never refused this way (a session may start in HOME).
+ */
+export function loadPolicyFrom(env: NodeJS.ProcessEnv = process.env, cwd: string = process.cwd()): LoadedPolicy {
+  const fromEnv = env.TK_POLICY?.trim();
+  if (fromEnv && path.isAbsolute(fromEnv) && insideFolder(fromEnv, cwd)) {
+    return { policy: emptyPolicy(), problem: "TK_POLICY is inside the session folder, which a project can set; not used" };
+  }
+  return loadPolicy(policyPath(env));
+}
+
+const TOOL_PATTERN = /^(\*|[a-z0-9_]+\/(\*|[a-z0-9_]+)|[a-z0-9_]+)$/;
+const HARNESS_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const SERVER_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
+const SHA_PATTERN = /^[0-9a-f]{64}$/;
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+/**
+ * Validates parsed JSON against contracts/policy.schema.json by hand (the hook
+ * has no dependencies). Returns the policy or the first problem found.
+ */
+export function parsePolicy(value: unknown): PolicyFile | string {
+  if (!isPlainObject(value)) return "not an object";
+  for (const key of Object.keys(value)) {
+    if (!["version", "askTimeoutSeconds", "servers", "rules"].includes(key)) return `unknown field ${key}`;
+  }
+  if (value.version !== 1) return "version is not 1";
+  let askTimeoutSeconds = DEFAULT_ASK_TIMEOUT_SECONDS;
+  if (value.askTimeoutSeconds !== undefined) {
+    const t = value.askTimeoutSeconds;
+    if (typeof t !== "number" || !Number.isInteger(t) || t < 1 || t > 3600) return "askTimeoutSeconds out of range";
+    askTimeoutSeconds = t;
+  }
+  const servers: string[] = [];
+  if (value.servers !== undefined) {
+    if (!Array.isArray(value.servers)) return "servers is not an array";
+    for (const s of value.servers) {
+      if (typeof s !== "string" || !SERVER_PATTERN.test(s)) return "bad server name";
+      if (servers.includes(s)) return "duplicate server name";
+      servers.push(s);
+    }
+  }
+  const rules: Rule[] = [];
+  if (value.rules !== undefined) {
+    if (!Array.isArray(value.rules)) return "rules is not an array";
+    if (value.rules.length > 1000) return "more than 1000 rules";
+    for (const [i, r] of value.rules.entries()) {
+      if (!isPlainObject(r)) return `rule ${i} is not an object`;
+      for (const key of Object.keys(r)) {
+        if (!["tool", "harness", "chat", "action", "descriptionSha256"].includes(key)) return `rule ${i}: unknown field ${key}`;
+      }
+      if (typeof r.tool !== "string" || !TOOL_PATTERN.test(r.tool)) return `rule ${i}: bad tool`;
+      if (r.action !== "allow" && r.action !== "ask" && r.action !== "deny") return `rule ${i}: bad action`;
+      const rule: Rule = { tool: r.tool, action: r.action };
+      if (r.harness !== undefined) {
+        if (typeof r.harness !== "string" || !HARNESS_PATTERN.test(r.harness)) return `rule ${i}: bad harness`;
+        rule.harness = r.harness;
+      }
+      if (r.chat !== undefined) {
+        if (typeof r.chat !== "string" || r.chat.length < 1 || r.chat.length > 200) return `rule ${i}: bad chat`;
+        rule.chat = r.chat;
+      }
+      if (r.descriptionSha256 !== undefined) {
+        if (typeof r.descriptionSha256 !== "string" || !SHA_PATTERN.test(r.descriptionSha256)) return `rule ${i}: bad descriptionSha256`;
+        rule.descriptionSha256 = r.descriptionSha256;
+      }
+      rules.push(rule);
+    }
+  }
+  return { version: 1, askTimeoutSeconds, servers, rules };
+}
+
+/**
+ * Reads the policy file. Called on the first tool call, never at load (case
+ * 46). Missing, unreadable, too large, not JSON, or failing the schema: the
+ * empty policy, with the problem named (contract, section 1). Nothing fails open.
+ */
+export function loadPolicy(file: string = policyPath()): LoadedPolicy {
+  // A relative path would resolve inside the project, which an agent can write.
+  if (!path.isAbsolute(file)) return { policy: emptyPolicy(), problem: "policy path is not absolute" };
+  let fd: number | undefined;
+  try {
+    fd = openSync(file, "r");
+    const st = fstatSync(fd);
+    if (!st.isFile()) return { policy: emptyPolicy(), problem: "policy file is not a regular file" };
+    if (typeof process.getuid === "function" && st.uid !== process.getuid()) return { policy: emptyPolicy(), problem: "policy file owned by another user" };
+    if ((st.mode & 0o022) !== 0) return { policy: emptyPolicy(), problem: "policy file writable by group or others" };
+    // A folder others can write (such as /tmp) lets them swap the file.
+    const dir = statSync(path.dirname(file));
+    if ((dir.mode & 0o022) !== 0) return { policy: emptyPolicy(), problem: "policy folder writable by group or others" };
+    if (st.size > MAX_POLICY_BYTES) return { policy: emptyPolicy(), problem: "policy file too large" };
+    const buf = Buffer.alloc(st.size);
+    let read = 0;
+    while (read < st.size) {
+      const n = readSync(fd, buf, read, st.size - read, read);
+      if (n === 0) break;
+      read += n;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(buf.subarray(0, read).toString("utf8"));
+    } catch {
+      return { policy: emptyPolicy(), problem: "policy file is not JSON" };
+    }
+    const result = parsePolicy(parsed);
+    if (typeof result === "string") return { policy: emptyPolicy(), problem: `policy file invalid: ${result}` };
+    return { policy: result };
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException)?.code;
+    return { policy: emptyPolicy(), problem: code === "ENOENT" ? "no policy file" : "policy file unreadable" };
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+}
+
+// ---------------------------------------------------------------- names
+
+/**
+ * Step 7 (integration w2, security finding S5): a Claude Code plugin's
+ * server, `plugin_<plugin>_<server>` (Claude Code 2.1.311 names its tools
+ * `mcp__plugin_<plugin>_<server>__<tool>`, read in its binary), keeps its
+ * whole name, so a rule for `exa/*` does not allow a plugin's server that is
+ * also called `exa`. Every bare server it could be (each suffix after a `_`,
+ * since plugin and server names both hold `_` after step 1) is a narrowing
+ * name: a deny or an ask there still reaches the plugin's copy.
+ */
+function pluginBareServers(server: string): string[] {
+  if (!server.startsWith("plugin_")) return [];
+  const rest = server.slice("plugin_".length);
+  const out: string[] = [];
+  for (let i = rest.indexOf("_"); i >= 0; i = rest.indexOf("_", i + 1)) {
+    const bare = rest.slice(i + 1);
+    if (bare !== "" && !bare.startsWith("_")) out.push(bare);
+  }
+  return out;
+}
+
+function join(server: string, tool: string): string {
+  return server === "" ? tool : `${server}/${tool}`;
+}
+
+/** Splits at the first run of two or more `_`, the whole run consumed (Droid's `s___t`; note AQ section 6). */
+function splitAtRun(s: string): [string, string] | undefined {
+  const d = s.indexOf("__");
+  if (d < 0) return undefined;
+  let e = d;
+  while (e < s.length && s[e] === "_") e++;
+  return [s.slice(0, d), s.slice(e)];
+}
+
+/** The longest `servers` entry `rest` starts with, followed by `sep`. */
+function knownServerPrefix(rest: string, servers: readonly string[], sep: string): string | undefined {
+  let best: string | undefined;
+  for (const s0 of servers) {
+    const s = lowerName(s0);
+    if (s !== "" && rest.startsWith(s + sep) && rest.length > s.length + sep.length && (best === undefined || s.length > best.length)) best = s;
+  }
+  return best;
+}
+
+function splitDoubleThenSingle(rest: string, servers: readonly string[] = []): [string, string] {
+  // A server the policy names, with `_` or `__` in it, wins over the first
+  // run (Claude Code allows a server named `<a>__<b>`; integration w2, S5).
+  const known = knownServerPrefix(rest, servers, "__");
+  if (known !== undefined) {
+    let e = known.length;
+    while (e < rest.length && rest[e] === "_") e++;
+    return [known, rest.slice(e)];
+  }
+  const run = splitAtRun(rest);
+  if (run) return run;
+  const s = rest.indexOf("_");
+  if (s >= 0) return [rest.slice(0, s), rest.slice(s + 1)];
+  return ["", rest];
+}
+
+/** Step 1: trim, ASCII-lowercase, every character outside `[a-z0-9_/]` to `_`. Also applied to each `servers` entry. */
+export function lowerName(raw: string): string {
+  let lowered = "";
+  for (const ch of raw.trim()) {
+    const c = ch.length === 1 && ch <= "\x7f" ? ch.toLowerCase() : ch;
+    lowered += /^[a-z0-9_/]$/.test(c) ? c : "_";
+  }
+  return lowered;
+}
+
+/**
+ * contracts/policy.md section 2, the same steps as tk-core's
+ * normalize_tool_name. `harness` is the agent's id: later waves apply the
+ * agent's declared name form from its preset row before the generic steps
+ * (note AQ section 6). No wave 1 agent declares one, so it is unused here.
+ */
+export function normalizeToolName(raw: string, servers: readonly string[], harness?: string): string {
+  void harness;
+  const lowered = lowerName(raw);
+  const slash = lowered.indexOf("/");
+  if (slash >= 0) return lowered;
+  if (lowered.startsWith("mcp__")) return join(...splitDoubleThenSingle(lowered.slice(5), servers));
+  if (lowered.startsWith("mcp_")) return join(...splitDoubleThenSingle(lowered.slice(4), servers));
+  const run = splitAtRun(lowered);
+  if (run) return join(run[0], run[1]);
+  let best: string | undefined;
+  for (const s0 of servers) {
+    const s = lowerName(s0);
+    if (lowered.length > s.length + 1 && lowered.startsWith(s) && lowered[s.length] === "_" && (best === undefined || s.length > best.length)) {
+      best = s;
+    }
+  }
+  if (best !== undefined) return join(best, lowered.slice(best.length + 1));
+  return lowered;
+}
+
+/**
+ * Other names the same call could have (integration w2, security finding
+ * S5): a plugin server's bare forms (step 7), and, for an `mcp__` name whose
+ * tool part still holds a run of `__` that `servers` does not settle, every
+ * other split at a run. A rule on one of these may narrow the answer (a deny,
+ * an ask) and never widen it. `ambiguous` is true when the split itself
+ * could be wrong, which turns an allow into an ask.
+ */
+export function narrowingNames(raw: string, servers: readonly string[], harness?: string): { names: string[]; ambiguous: boolean } {
+  const primary = normalizeToolName(raw, servers, harness);
+  const slash = primary.indexOf("/");
+  if (slash < 0) return { names: [], ambiguous: false };
+  const names = new Set<string>();
+  let ambiguous = false;
+  const lowered = lowerName(raw);
+  const prefix = lowered.startsWith("mcp__") ? 5 : lowered.startsWith("mcp_") ? 4 : -1;
+  const primaryServer = primary.slice(0, slash);
+  const splits: Array<[string, string]> = [[primaryServer, primary.slice(slash + 1)]];
+  if (prefix > 0) {
+    // Every split at a run of `__`. A server the policy lists picks the
+    // primary split; it does not prove that no longer server exists, so a
+    // split past the primary's still makes the name ambiguous.
+    const rest = lowered.slice(prefix);
+    for (let d = rest.indexOf("__"); d >= 0; ) {
+      let e = d;
+      while (e < rest.length && rest[e] === "_") e++;
+      const split: [string, string] = [rest.slice(0, d), rest.slice(e)];
+      if (split[0] !== "" && split[1] !== "" && join(...split) !== primary) {
+        splits.push(split);
+        if (split[0].length > primaryServer.length) ambiguous = true;
+      }
+      d = rest.indexOf("__", e);
+    }
+  }
+  for (const [server, tool] of splits) {
+    const whole = join(server, tool);
+    if (whole !== primary) names.add(whole);
+    for (const bare of pluginBareServers(server)) names.add(join(bare, tool));
+  }
+  return { names: [...names], ambiguous };
+}
+
+// ---------------------------------------------------------------- reject list
+
+export const ENDPOINT_KEYS = [
+  "anthropic_base_url",
+  "chatgpt_base_url",
+  "dangerouslydisablesandbox",
+  "approval_policy",
+  "--dangerously-",
+  "settings.local.json",
+] as const;
+
+export const GIT_CONFIG_KEYS = [
+  "core.fsmonitor",
+  "core.hookspath",
+  "core.sshcommand",
+  "core.pager",
+  "core.editor",
+  "core.askpass",
+  "core.gitproxy",
+  "core.attributesfile",
+  "sequence.editor",
+  "pager.",
+  "alias.",
+  "gpg.program",
+  "gpg.ssh.program",
+  "credential.helper",
+  "include.path",
+  "includeif.",
+  "filter.",
+  ".driver",
+  ".textconv",
+  "diff.external",
+  "uploadpack",
+  "receivepack",
+  ".insteadof",
+  ".pushinsteadof",
+  "protocol.",
+  "ext::",
+  "fd::",
+  "git_allow_protocol",
+  "git_ssh",
+  "git_proxy_command",
+  "git_askpass",
+  "git_external_diff",
+  "git_config_parameters",
+  "git_config_count",
+] as const;
+
+export const GIT_CONTEXT_PATHS = [".git/", ".gitmodules", ".gitattributes", ".gitconfig", "git_config"] as const;
+
+// `powershell` is not in the contract's list; lane A added it (Pi 1.4.0 has the tool). A request for integration.
+export const SHELL_TOOLS = ["bash", "shell", "exec_command", "local_shell", "run_shell_command", "user_bash", "terminal", "powershell"] as const;
+
+/**
+ * Files that control tk or a harness's hooks. An `allow` whose folded input
+ * names one becomes `ask`, so an allowed tool cannot quietly rewrite the
+ * policy or switch the gate off (for example `disableAllHooks` in Claude
+ * Code's settings, or the plugin entry in Codex's config). Lane A's list
+ * plus each harness's own files. Narrowing only; not in the contract.
+ */
+export const CONTROL_PATHS = [
+  ".tk/",
+  "tk/daemon.",
+  "tk/otlp.endpoint",
+  "tk_policy",
+  "tk_chat_token",
+  ".pi/agent/",
+  ".claude/settings",
+  ".claude.json",
+  ".claude/plugins",
+  "disableallhooks",
+  "managed-settings",
+  ".codex/config.toml",
+  ".codex/hooks.json",
+  ".codex/plugins",
+  "requirements.toml",
+  "opencode.json",
+  ".config/opencode/",
+  ".cache/opencode/",
+  // Git's own config and hooks name programs git runs later (rules cases 27,
+  // 31; integration w1 security finding S4). The reject list catches dotted
+  // keys such as core.fsmonitor; these catch the INI form and hook scripts.
+  ".git/config",
+  ".git/hooks/",
+  ".gitconfig",
+  ".config/git/",
+  ".gitmodules",
+  // A harness's whole project or home folder: settings, hooks, plugins,
+  // commands and skills it loads (integration w1, finding S7).
+  ".claude/",
+  ".codex/",
+  ".pi/",
+  // Wave 2's agents (lane I's request 2, folded in by integration w2): each
+  // one's config and plugin folders and the variables that move them or switch
+  // its hooks off. Sources per agent in each adapter's src/control.ts and in
+  // plans/parallel/tk_lane_I.md.
+  ".gemini/",
+  "gemini-cli/",
+  "geminicli/",
+  "gemini_cli_system",
+  ".config/kilo/",
+  ".kilo/",
+  ".kilocode/",
+  "kilo.json",
+  "kilo_config",
+  "kilo_pure",
+  ".hermes/",
+  "hermes_home",
+  "hermes_safe_mode",
+  "hermes_yolo_mode",
+  "hermes_enable_project_plugins",
+  "hermes_accept_hooks",
+  ".openclaw/",
+  "openclaw.json",
+  "openclaw_config_path",
+  "openclaw_state_dir",
+  "openclaw_home",
+  ".omp/",
+  "pi_coding_agent_dir",
+  "pi_config_dir",
+  "tk_pi_freeze_input",
+] as const;
+
+/**
+ * Shell text the matcher cannot read: expansions, history, braces, tilde,
+ * zsh glob qualifiers, a backslash, and (integration w1, finding S1) the glob
+ * characters `*`, `?` and `[`, which name files the matcher never sees.
+ */
+export const UNREADABLE_SHELL_TOKENS = ["$", "`", "!", "{", "}", "~", "(e:", "(+", "(-", "\\", "*", "?", "["] as const;
+
+/**
+ * The reason names the first token found (in the list's order), and calls a
+ * glob one, so a user can tell why `ls *.md` asks (Mac test w1, finding M9).
+ * Starts with the contract's reason, which the fixtures match as a prefix.
+ * tk-pi and tk-core write the same text.
+ */
+export function unreadableReason(token: string): string {
+  const glob = token === "*" || token === "?" || token === "[";
+  return `shell text the matcher cannot read: \`${token}\`${glob ? " (a glob)" : ""}`;
+}
+
+/**
+ * The text with every quote removed. The shell joins `ANTHROPIC_"BASE_URL"`
+ * and `g''it` into one word, so the reject list and the control files are
+ * also read this way (integration w1, finding S1). Only adds matches.
+ */
+export function unquote(text: string): string {
+  return text.replace(/["']/g, "");
+}
+
+const GIT_WORD = /(?<![a-z0-9_])git(?![a-z0-9_])/g;
+
+/** contracts/policy.md section 3.2: is folded text a git context? */
+export function isGitContext(folded: string): boolean {
+  if (GIT_CONTEXT_PATHS.some((p) => folded.includes(p))) return true;
+  // A line that ends in `\` continues on the next, as the shell reads it
+  // (tk-core's `git_context`; integration w1, finding S10).
+  for (const line of folded.replace(/\\\r?\n/g, " ").split(/\r\n|\n|\r/)) {
+    GIT_WORD.lastIndex = 0;
+    const m = GIT_WORD.exec(line);
+    if (!m) continue;
+    const after = line.slice(m.index + 3);
+    if (after.includes("-c") || after.includes("config") || after.includes("--config-env")) return true;
+  }
+  return false;
+}
+
+/** The first reject-list key the text holds, or undefined. */
+export function rejectKey(inputText: string): string | undefined {
+  const folded = fold(decodeEscapes(inputText));
+  for (const text of [folded, unquote(folded)]) {
+    for (const k of ENDPOINT_KEYS) if (text.includes(k)) return k;
+    if (isGitContext(text)) for (const k of GIT_CONFIG_KEYS) if (text.includes(k)) return k;
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------- matching
+
+function rankOf(rule: Rule): [number, number, number] {
+  const tool = rule.tool === "*" ? 0 : rule.tool.endsWith("/*") ? 1 : 2;
+  return [rule.chat !== undefined ? 1 : 0, rule.harness !== undefined ? 1 : 0, tool];
+}
+
+function compareRank(a: [number, number, number], b: [number, number, number]): number {
+  for (let i = 0; i < 3; i++) {
+    const d = (a[i] ?? 0) - (b[i] ?? 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+const SEVERITY: Record<Action, number> = { allow: 0, ask: 1, deny: 2 };
+
+function toolMatches(pattern: string, normalized: string): boolean {
+  if (pattern === "*") return true;
+  if (pattern === normalized) return true;
+  if (pattern.endsWith("/*")) {
+    const slash = normalized.indexOf("/");
+    return slash >= 0 && normalized.slice(0, slash) === pattern.slice(0, -2);
+  }
+  return false;
+}
+
+export function isShellTool(normalized: string): boolean {
+  return (SHELL_TOOLS as readonly string[]).includes(normalized);
+}
+
+export function sha256Hex(text: string): string {
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+/** contracts/policy.md section 4, steps 1 to 7. Step 8 (the wait) is the caller's. */
+export function evaluate(loaded: LoadedPolicy, call: Call): Decision {
+  const { policy } = loaded;
+  const normalizedTool = normalizeToolName(call.tool, policy.servers, call.harness);
+  const key = rejectKey(call.inputText);
+  if (key !== undefined) return { action: "deny", normalizedTool, reason: `reject list: ${key}` };
+
+  const applies = (r: Rule) => (r.harness === undefined || r.harness === call.harness) && (r.chat === undefined || r.chat === call.chat);
+  const matches = policy.rules.filter((r) => toolMatches(r.tool, normalizedTool) && applies(r));
+  // Section 4 step 3a (S5): rules on the call's other names narrow it. A
+  // deny there is a deny; an ask turns an allow into an ask; an allow there
+  // counts for nothing. `*` rules already matched the call itself.
+  const other = narrowingNames(call.tool, policy.servers, call.harness);
+  const narrowing = policy.rules.filter((r) => r.tool !== "*" && applies(r) && other.names.some((n) => toolMatches(r.tool, n)));
+  const narrowDeny = narrowing.find((r) => r.action === "deny");
+  if (narrowDeny !== undefined) return { action: "deny", normalizedTool, reason: `rule ${narrowDeny.tool} (also names ${normalizedTool})` };
+  const narrowAsk = narrowing.find((r) => r.action === "ask");
+  if (matches.length === 0) {
+    return { action: "ask", normalizedTool, reason: loaded.problem ? `no rule (${loaded.problem})` : "no rule" };
+  }
+  let top = matches[0] as Rule;
+  for (const r of matches.slice(1)) {
+    const c = compareRank(rankOf(r), rankOf(top));
+    if (c > 0 || (c === 0 && SEVERITY[r.action] > SEVERITY[top.action])) top = r;
+  }
+  const reason = `rule ${top.tool}${top.harness ? ` harness=${top.harness}` : ""}${top.chat ? " chat" : ""}`;
+  if (top.action === "allow" && narrowAsk !== undefined) {
+    return { action: "ask", normalizedTool, reason: `rule ${narrowAsk.tool} (also names ${normalizedTool})` };
+  }
+  if (top.action === "allow" && other.ambiguous) {
+    return { action: "ask", normalizedTool, reason: "ambiguous server name: list the server in the policy's servers" };
+  }
+  if (top.action === "allow") {
+    // Every tied allow must hold its pin: one changed description is enough
+    // to ask (case 57; tk-core's rule, integration w1 finding S10).
+    const pins = matches
+      .filter((r) => compareRank(rankOf(r), rankOf(top)) === 0 && r.descriptionSha256 !== undefined)
+      .map((r) => (r.descriptionSha256 as string).toLowerCase());
+    if (pins.length > 0) {
+      const current = call.description === undefined ? undefined : sha256Hex(call.description);
+      if (current === undefined || pins.some((p) => p !== current)) {
+        return { action: "ask", normalizedTool, reason: "description changed" };
+      }
+    }
+  }
+  if (top.action === "allow") {
+    const folded = fold(decodeEscapes(call.inputText));
+    const unquoted = unquote(folded);
+    const control = CONTROL_PATHS.find((p) => folded.includes(p) || unquoted.includes(p));
+    if (control !== undefined) return { action: "ask", normalizedTool, reason: `input names a control file (${control})` };
+    // On the folded text, so `＄HOME` asks: stricter than the raw input, the
+    // side that fails safe (integration w1; tk-core and tk-pi do the same).
+    const token = isShellTool(normalizedTool) ? UNREADABLE_SHELL_TOKENS.find((t) => folded.includes(t)) : undefined;
+    if (token !== undefined) return { action: "ask", normalizedTool, reason: unreadableReason(token) };
+  }
+  return { action: top.action, normalizedTool, reason };
+}

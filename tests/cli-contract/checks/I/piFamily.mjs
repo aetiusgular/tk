@@ -10,7 +10,7 @@
 // oh-my-pi: the package installed as a user would (`omp install <path>`,
 // which links it under ~/.omp/plugins and loads it from `pi.extensions`),
 // with omp's default approval mode (`yolo`), so tk's gate is the only check,
-// against a fake chat-completions server (./fakeChat.js) set up in models.yml.
+// against a fake chat-completions server (../../lib/fakeChat.mjs) set up in models.yml.
 //
 //   node tests/cli-contract/run.mjs --cli pi=<pi> --cli oh-my-pi=<omp>
 
@@ -20,7 +20,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startFakeMessages, toolUse, textBlock } from "../../lib/fakeMessages.mjs";
-import { startFakeChat, toolResults } from "./fakeChat.js";
+import { startFakeChat, toolResults } from "../../lib/fakeChat.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE = path.resolve(HERE, "..", "..", "..", "..", "packages", "tk-pi");

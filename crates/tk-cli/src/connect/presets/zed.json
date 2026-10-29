@@ -1,0 +1,51 @@
+{
+  "id": "zed",
+  "name": "Zed",
+  "cli": "zed",
+  "configFiles": {
+    "user": {
+      "macos": "~/.config/zed/settings.json",
+      "linux": "~/.config/zed/settings.json"
+    },
+    "project": "<project>/.zed/settings.json"
+  },
+  "xdgConfig": true,
+  "format": "jsonc",
+  "entryShape": "json:context_servers",
+  "entryPath": [
+    "context_servers"
+  ],
+  "entryStyle": "zed",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": null,
+  "enableKey": "enabled",
+  "addCommand": null,
+  "toolNameForm": "bare tool names, sanitized to [A-Za-z0-9_-] and cut to 64; <server_id>_ prefixed only on a collision",
+  "nameMangling": "anything outside [A-Za-z0-9_-] becomes _, truncated to 64 (V, crates/agent/src/thread.rs#L76-L98, #L4323-L4342)",
+  "managedFiles": null,
+  "inHarnessGate": null,
+  "listChanged": "yes, reload_tools_for_server (V, crates/agent/src/tools/context_server_registry.rs#L142-L155)",
+  "notes": "settings.json is JSONC (parse_json_with_comments). context_servers is untagged: stdio {command, args, env, timeout, enabled}, HTTP {url, headers, timeout, oauth, enabled}; no type and no source key (V, crates/settings_content/src/project.rs#L506-L604). The macOS path is ~/.config/zed, not ~/Library (V, crates/paths/src/paths.rs#L122-L140). No env-reference expansion was found (NF), so tk refuses an entry that needs a variable for Zed.",
+  "sources": [
+    "github.com/zed-industries/zed at v1.25.3: crates/paths/src/paths.rs, crates/settings_content/src/project.rs and settings_content.rs, crates/agent/src/thread.rs, docs/src/ai/mcp.md (lane C research, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": null,
+    "orcaId": null,
+    "gate": {
+      "family": "none",
+      "where": "none: tk connect writes its MCP file only",
+      "status": "none",
+      "wave": null,
+      "lane": null
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "unknown",
+    "shellAliases": [],
+    "verifiedAt": "NF",
+    "note": "not in Orca's grid"
+  }
+}

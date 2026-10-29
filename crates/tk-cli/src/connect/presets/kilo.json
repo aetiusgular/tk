@@ -1,0 +1,26 @@
+{
+  "id": "kilo",
+  "name": "Kilo Code CLI",
+  "cli": "kilo",
+  "mcpFile": "~/.config/kilo/kilo.json mcp",
+  "toolNameForm": "<server>_<tool>",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "kilo",
+    "gate": {
+      "family": "plugin",
+      "where": "~/.config/kilo/kilo.json plugin array (a file: URL), or ~/.config/kilo/plugin/tk.ts; tool.execute.before",
+      "status": "built",
+      "wave": 2,
+      "lane": "I",
+      "package": "packages/tk-kilo-plugin"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "7.8.18, run",
+    "note": "a throw stops the call (run); Kilo never fires permission.ask, so an ask is the daemon approver or deny; - stays in server names; XDG_CONFIG_HOME moves the folder and KILO_CONFIG_CONTENT replaces the config; npm plugins whose engines.opencode does not match are skipped, so the package declares none (lane I, applied by integration w2)"
+  }
+}

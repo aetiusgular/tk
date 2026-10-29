@@ -1,0 +1,54 @@
+{
+  "id": "goose",
+  "name": "goose",
+  "cli": "goose",
+  "configFiles": {
+    "user": {
+      "macos": "~/.config/goose/config.yaml",
+      "linux": "~/.config/goose/config.yaml"
+    },
+    "project": null
+  },
+  "xdgConfig": true,
+  "format": "yaml",
+  "entryShape": "yaml:extensions",
+  "entryPath": [
+    "extensions"
+  ],
+  "entryStyle": "goose",
+  "write": "print",
+  "writeNote": "tk has no YAML writer; paste the fragment or use `goose configure`. goose itself rewrites the whole file with serde_yaml, so comments go when goose writes",
+  "envRef": null,
+  "enableKey": "enabled",
+  "addCommand": null,
+  "toolNameForm": "<key>__<tool>",
+  "nameMangling": "name_to_key keeps [A-Za-z0-9_-], drops whitespace, turns the rest into _, lowercases; no length cap (V, crates/goose/src/config/extensions.rs#L22-L31)",
+  "managedFiles": {
+    "macos": "/etc/goose/config.yaml",
+    "linux": "/etc/goose/config.yaml"
+  },
+  "inHarnessGate": null,
+  "listChanged": "yes, on_tool_list_changed bumps tools_version (V, mcp_client.rs#L208-L210)",
+  "notes": "Stdio: type stdio, name, cmd, args, envs, env_keys, timeout; HTTP: type streamable_http, uri (not url), headers. No SSE variant in v1.56.0; an entry that fails to parse is skipped with an info log (V). $VAR and ${VAR} substitute only from the entry's envs and env_keys, and only in uri, header values, socket, client_id and cwd, never in cmd or args (V, extension.rs#L382-L519). goose drops LD_PRELOAD, NODE_OPTIONS, PYTHONPATH and similar env keys (V). The user folder is $GOOSE_PATH_ROOT/config, else the XDG strategy (~/.config/goose) on macOS too (I, strong: etcetera 0.11.0). GOOSE_ADDITIONAL_CONFIG_FILES are read-only layers.",
+  "sources": [
+    "github.com/block/goose at v1.56.0: crates/goose/src/config/base.rs, config/paths.rs, config/extensions.rs, agents/extension.rs, mcp_client.rs; lunacookies/etcetera v0.11.0 src/app_strategy.rs (lane C research, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "goose",
+    "gate": {
+      "family": "plugin",
+      "where": "plugin ~/.agents/plugins/<tk>/hooks/hooks.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "on_failure: \"block\"",
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "1.56.0, source",
+    "note": "Auto mode, the default, asks nothing; tk run sets GOOSE_MODE=approve when the policy has asks"
+  }
+}

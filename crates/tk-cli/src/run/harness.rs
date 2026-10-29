@@ -1,6 +1,6 @@
 //! What `tk run` needs to know per harness: the command it starts, how sbx
 //! runs it, and the folders it keeps its own state in. Ids and commands are
-//! `contracts/harness-presets.json` (`id`, `cli`).
+//! the preset table (`crates/tk-cli/src/connect/presets/`, `id`, `cli`).
 //!
 //! sbx: the built-in agents of `sbx run` are claude, codex, copilot, cursor,
 //! devin, docker-agent, droid, gemini, kiro, opencode, shell
@@ -102,7 +102,7 @@ pub const HARNESSES: &[Harness] = &[
         credential: None,
     },
     // Hermes: lane C verified the CLI `hermes` and the folder `~/.hermes`
-    // (HERMES_HOME; contracts/harness-presets.json). Added by integration
+    // (HERMES_HOME; its preset row). Added by integration
     // w1; sbx has no Hermes agent, and its credential file is not read (NF).
     Harness {
         id: "hermes",
@@ -162,11 +162,10 @@ pub fn find(id: &str) -> Option<&'static Harness> {
 mod tests {
     use super::*;
 
-    const PRESETS: &str = include_str!("../../../../contracts/harness-presets.json");
-
     #[test]
     fn every_preset_with_a_cli_is_here_with_the_same_command() {
-        let v: serde_json::Value = serde_json::from_str(PRESETS).unwrap();
+        let v: serde_json::Value =
+            serde_json::from_str(crate::connect::presets::table_json()).unwrap();
         let rows = v["harnesses"].as_array().unwrap();
         assert_eq!(rows.len(), HARNESSES.len() + NOT_RUN.len());
         for row in rows {

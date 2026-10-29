@@ -62,7 +62,7 @@ Variables `tk run` sets in the harness (lane D, integration w1), each removed fr
 | `id` | Unique per record. A second record with the same id replaces the first; the daemon keeps the last copy and never reuses an id after a restart (case 35) |
 | `at` | Milliseconds since the epoch, stamped by the daemon on receipt. A harness's own time goes in `detail.harnessAt` (case 35) |
 | `chatId` | `""` when not attributed |
-| `harness` | A harness id from `contracts/harness-presets.json`, or `""` |
+| `harness` | A harness id from the preset table (`crates/tk-cli/src/connect/presets/`), or `""` |
 | `source` | `otel`, `adapter`, `eslogger`, `auditd`, `cua`, `approval`, `run` |
 | `kind` | `tool.call`, `approval`, `model.request`, `model.error`, `prompt`, `session.start`, `message`, `run.start`, `run.stop`, `net.connect`, `config.write`, or `otel.<name>` for an unknown OTel event; and for the kernel feeds (`eslogger`, `auditd`) the macOS collector's kinds, which the daemon's check reads: `exec`, `fork`, `exit`, `write`, `create`, `open`, `truncate`, `rename`, `unlink`, `link`. `fs.write` and `exec` as session 0 named them are not what the check reads (lane B, lane D) |
 | `summary` | One line, at most 200 characters |

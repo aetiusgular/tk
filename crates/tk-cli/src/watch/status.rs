@@ -1,6 +1,6 @@
 //! `tk status`: what covers each agent, and what the daemon sees.
 //!
-//! Per agent, from its row in `contracts/harness-presets.json` (the
+//! Per agent, from its row in the preset table (`crates/tk-cli/src/connect/presets/`, the
 //! `coverage` fields integration w1 added, note AQ section 4): its tier
 //! (G gate, A rule files only, O outside shape only), whether tk's gate is
 //! built or planned and by which wave, whether a crash or a timeout of the
@@ -34,8 +34,6 @@ pub const USAGE: &str = "usage: tk status [--json] [--probe] [--socket <path>]
 
   --probe   also run `<agent> --version` for each agent found on PATH
             (each runs as you; some agents check for updates when they do)";
-
-const PRESETS: &str = include_str!("../../../../contracts/harness-presets.json");
 
 /// How long `--probe` waits for one `--version`.
 pub const PROBE_TIMEOUT: Duration = Duration::from_secs(5);
@@ -105,7 +103,8 @@ impl Env {
 /// One row per agent: the 14 rows tk connect writes for, then the planned
 /// ones, in the table's order.
 pub fn agents(env: &Env, probe: bool) -> Vec<Value> {
-    let table: Value = serde_json::from_str(PRESETS).unwrap_or(Value::Null);
+    let table: Value =
+        serde_json::from_str(crate::connect::presets::table_json()).unwrap_or(Value::Null);
     let mut out = Vec::new();
     for (list, planned) in [("harnesses", false), ("planned", true)] {
         for row in table
@@ -565,7 +564,7 @@ mod tests {
 
     #[test]
     fn every_preset_row_has_a_status_row() {
-        let table: Value = serde_json::from_str(PRESETS).unwrap();
+        let table: Value = serde_json::from_str(crate::connect::presets::table_json()).unwrap();
         let n = table["harnesses"].as_array().unwrap().len()
             + table["planned"].as_array().unwrap().len();
         let dir = std::env::temp_dir().join(format!("tk-status-{}", std::process::id()));

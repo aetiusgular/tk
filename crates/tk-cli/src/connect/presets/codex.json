@@ -1,0 +1,74 @@
+{
+  "id": "codex",
+  "name": "Codex CLI",
+  "cli": "codex",
+  "configFiles": {
+    "user": {
+      "macos": "~/.codex/config.toml",
+      "linux": "~/.codex/config.toml"
+    },
+    "project": "<project>/.codex/config.toml"
+  },
+  "homeEnv": "CODEX_HOME",
+  "format": "toml",
+  "entryShape": "toml:mcp_servers",
+  "entryPath": [
+    "mcp_servers"
+  ],
+  "entryStyle": "codex",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": null,
+  "entryExample": "[mcp_servers.<name>]\ncommand = \"<cmd>\"\nargs = []",
+  "enableKey": "enabled",
+  "addCommand": [
+    "codex",
+    "mcp",
+    "add",
+    "<name>",
+    "--",
+    "<cmd>"
+  ],
+  "toolNameForm": "each server is one Responses API namespace `mcp__<server>` holding function tools named by the tool; hooks still see the flat `mcp__<server>__<tool>` (V, rust-v0.164.0 core/src/tools/handlers/mcp.rs#L145, #L565; PR #17404, commit 0df7e9a8, 15 Apr 2026). Rules case 21",
+  "nameMangling": "server and tool names: every character outside [A-Za-z0-9_] becomes _; collisions get _ plus 12 hex of SHA-1; namespace + name capped at 128 bytes (V, codex-mcp/src/tools.rs#L113-L237). Server names in config allow [A-Za-z0-9-_:@/.] (V, cli/src/mcp_cmd.rs#L1144)",
+  "managedFiles": {
+    "macos": [
+      "/etc/codex/requirements.toml",
+      "/etc/codex/config.toml",
+      "/etc/codex/managed_config.toml"
+    ],
+    "linux": [
+      "/etc/codex/requirements.toml",
+      "/etc/codex/config.toml",
+      "/etc/codex/managed_config.toml"
+    ]
+  },
+  "inHarnessGate": "PreToolUse hook, deny only (lane F)",
+  "listChanged": "behind feature mcp_tool_list_changed, under development and off by default: tools do not refresh (V, features/src/lib.rs#L1598 at rust-v0.164.0)",
+  "notes": "codex mcp add (0.163.0) appends `[mcp_servers.<name>]` with a blank line before it, keeps comments and other keys, and silently replaces an existing name (V, recorded). `--env K=V` writes the value literally into `[mcp_servers.<name>.env]`, so tk passes variables by name instead: `env_vars = [\"NAME\"]`, and `env_http_headers` / `http_headers` tables for headers; `codex mcp get` (0.163.0) reads all three back (V, run 27 Oct). Codex ignores unknown keys in an entry silently (V, run), so a misspelt key fails open; tk writes only these keys. An entry can also carry `http_headers_helper`, a program Codex runs; tk never writes it. At rust-v0.164.0 the source has deny_unknown_fields on RawMcpServerConfig (config/src/mcp_types.rs#L373), which disagrees with the 0.163.0 run that accepted an unknown key; tk writes only known keys either way. CODEX_HOME must name an existing folder (utils/home-dir/src/lib.rs#L5-L17). No ${VAR} interpolation exists in Codex config (NF); variables are named through env_vars, bearer_token_env_var and env_http_headers (V). When Codex rewrites the file it sorts env and header tables by key and replaces a non-inline server table whole (V, core/src/config/edit/document_helpers.rs).",
+  "sources": [
+    "recorded: codex-cli 0.163.0 `mcp add` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/codex-*.toml)",
+    "note AP section 4 (learn.chatgpt.com/docs/extend/mcp, managed-configuration)",
+    "github.com/openai/codex at rust-v0.164.0 (6aaac69): codex-rs/config/src/mcp_types.rs, core/src/config/edit.rs, cli/src/mcp_cmd.rs, codex-mcp/src/tools.rs, config/src/config_requirements.rs, config/src/loader/mod.rs (lane C research, batch 1, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "allowlist": "requirements.toml: once [mcp_servers] exists it is an allowlist; [mcp_servers.<name>.identity] command = \"<cmd>\" matches the command string only, url = \"<url>\" matches exactly, and a matcher form pins executable and every arg; an unlisted server is forced to enabled=false (V, config/src/mcp_requirements.rs#L50-L89, core/src/config/mod.rs#L2248-L2271). macOS also reads MDM preferences com.openai.codex (requirements_toml_base64)",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "codex",
+    "gate": {
+      "family": "command-hook",
+      "where": "plugin hooks/hooks.json, PreToolUse, exit 2",
+      "status": "built",
+      "wave": 1,
+      "lane": "F",
+      "package": "packages/tk-codex-plugin"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "0.163.0, run",
+    "note": "Codex's sandbox, approvals and requirements.toml are the lock; the hook is best-effort"
+  }
+}
