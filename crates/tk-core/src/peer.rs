@@ -380,6 +380,68 @@ mod tests {
         assert_eq!(tk_run_ancestor(std::process::id()), None);
     }
 
+    /// Mac test w2, MW1: the macOS halves of `start_time` and
+    /// `tk_run_ancestor` had no test (Mac test 3.2 ran them first). These two
+    /// run on both systems; CI's `rust-macos` job runs them on macOS.
+    #[test]
+    fn a_child_under_a_program_named_tk_is_found_on_either_system() {
+        // A copy of sh named `tk` starts a sleep and prints its pid; no /proc.
+        use std::io::BufRead;
+        let dir = std::env::temp_dir().join(format!("tk-peer-any-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let fake_tk = dir.join("tk");
+        std::fs::copy("/bin/sh", &fake_tk).unwrap();
+        let mut child = None;
+        for _ in 0..100 {
+            match std::process::Command::new(&fake_tk)
+                .args(["-c", "sleep 5 & echo $!; wait"])
+                .stdout(std::process::Stdio::piped())
+                .spawn()
+            {
+                Ok(c) => {
+                    child = Some(c);
+                    break;
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy => {
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                Err(e) => panic!("{e}"),
+            }
+        }
+        let mut child = child.expect("the copy of sh could be started");
+        let tk_pid = child.id();
+        let mut line = String::new();
+        std::io::BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut line)
+            .unwrap();
+        let sleep_pid: u32 = line.trim().parse().unwrap();
+        let found = tk_run_ancestor(sleep_pid);
+        let named = program(tk_pid);
+        let _ = child.kill();
+        let _ = child.wait();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(found, Some(tk_pid), "program of the parent: {named:?}");
+        assert_eq!(tk_run_ancestor(std::process::id()), None);
+    }
+
+    #[test]
+    fn a_start_time_is_steady_while_a_process_runs_and_gone_once_it_was_reaped() {
+        let mut child = std::process::Command::new("sleep")
+            .arg("5")
+            .spawn()
+            .unwrap();
+        let first = start_time(child.id());
+        assert!(first.is_some());
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        assert_eq!(start_time(child.id()), first);
+        let mine = start_time(std::process::id()).unwrap();
+        assert!(first.unwrap() >= mine, "a child starts after its parent");
+        child.kill().unwrap();
+        child.wait().unwrap();
+        assert_eq!(start_time(child.id()), None);
+    }
+
     #[cfg(target_os = "linux")]
     #[test]
     fn a_pidfd_answers_while_its_process_lives_and_not_once_it_was_reaped() {

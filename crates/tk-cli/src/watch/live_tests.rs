@@ -349,3 +349,47 @@ fn status_sees_the_daemon_its_server_and_an_open_chat() {
         "{text}"
     );
 }
+
+#[test]
+fn status_finds_an_open_chat_between_two_floods_of_events() {
+    // Box test w2, BW3: `tk status` read running chats from the tail's
+    // backlog, which stops at 5,000 events from the oldest; a chat started
+    // between two floods was not listed while it ran.
+    let l = live("status-busy");
+    let mut c = Conn::open(&l.socket, "test").unwrap();
+    for i in 0..5_100 {
+        let r = c
+            .request(&json!({"op": "event", "event": ev(&format!("noise-{i}"), "tk-noise", "adapter", "tool.call", "x")}))
+            .unwrap();
+        assert_eq!(r["ok"], true, "{r}");
+    }
+    let mut child = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .unwrap();
+    post(
+        &l,
+        json!({"id": "run-tk-chat-late-1", "at": 0, "chatId": "tk-chat-late", "harness": "opencode",
+            "source": "run", "kind": "run.start", "summary": "opencode under none",
+            "detail": {"boundary": "none", "argv": ["opencode"], "dangerousFlags": []}, "pid": child.id()}),
+    );
+    // And as many after it, past the daemon's ring of 4,096: the backlog
+    // keeps the newest 5,000 of what it read (as the box's 2.7 load test).
+    for i in 0..5_100 {
+        let r = c
+            .request(&json!({"op": "event", "event": ev(&format!("noise-after-{i}"), "tk-noise", "adapter", "tool.call", "x")}))
+            .unwrap();
+        assert_eq!(r["ok"], true, "{r}");
+    }
+    let d = status::daemon_state(&l.socket);
+    let _ = child.kill();
+    let _ = child.wait();
+    let chats = d["chats"].as_array().cloned().unwrap_or_default();
+    assert!(
+        chats.iter().any(|c| c["chat"] == "tk-chat-late"
+            && c["harness"] == "opencode"
+            && c["boundary"] == "none"
+            && c["alive"] == true),
+        "{d}"
+    );
+}

@@ -141,6 +141,51 @@ fn claude(env: &Env, home: &Path) -> Registered {
         Ok(v) => v.and_then(|v| v.get("plugins").and_then(|p| p.get("tk@tk")).cloned()),
         Err(e) => return Registered::Unknown(e),
     };
+    // Claude Code uses a `project` or `local` install record only when its
+    // projectPath is the folder it started in, or that folder by its real
+    // path; `user` and `managed` records apply everywhere (2.1.311's binary,
+    // function `WO`: `if(e.scope==="user"||e.scope==="managed")return!0;let
+    // n=ke();if(e.projectPath===n)return!0;...zM(e.projectPath)===r`, where
+    // `ke()` is the session's original working folder; Mac test w2, MW3).
+    // A record list with scoped entries and none that applies here is not a
+    // registration in this folder.
+    if let Some(Value::Array(installs)) = &record {
+        let scoped: Vec<&str> = installs
+            .iter()
+            .filter(|r| {
+                matches!(
+                    r.get("scope").and_then(Value::as_str),
+                    Some("project" | "local")
+                )
+            })
+            .filter_map(|r| r.get("projectPath").and_then(Value::as_str))
+            .collect();
+        let anywhere = installs.iter().any(|r| {
+            matches!(
+                r.get("scope").and_then(Value::as_str),
+                Some("user" | "managed")
+            )
+        });
+        let here = scoped
+            .iter()
+            .any(|p| same_folder(Path::new(p), env.cwd.as_deref()));
+        if !anywhere && !scoped.is_empty() && !here {
+            let first: String = scoped[0].chars().take(200).collect();
+            return Registered::No(format!(
+                "tk@tk is installed for {}{} only (project or local scope); Claude Code loads it only when started there, and tk status runs in {}",
+                first,
+                if scoped.len() > 1 {
+                    format!(" and {} other folder(s)", scoped.len() - 1)
+                } else {
+                    String::new()
+                },
+                env.cwd
+                    .as_deref()
+                    .map(|c| c.display().to_string())
+                    .unwrap_or_else(|| "an unknown folder".into())
+            ));
+        }
+    }
     match (enabled, record) {
         (Some(Value::Bool(true)), Some(_)) => Registered::Yes(format!(
             "tk@tk installed and on in {}; a project or managed settings file can still turn it off",
@@ -162,6 +207,20 @@ fn claude(env: &Env, home: &Path) -> Registered {
             "enabledPlugins[\"tk@tk\"] in {} is {other}, not true or false",
             settings.display()
         )),
+    }
+}
+
+/// Whether `recorded` names the folder `cwd`, as written or by real path.
+fn same_folder(recorded: &Path, cwd: Option<&Path>) -> bool {
+    let Some(cwd) = cwd else {
+        return false;
+    };
+    if recorded == cwd {
+        return true;
+    }
+    match (std::fs::canonicalize(recorded), std::fs::canonicalize(cwd)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
     }
 }
 
@@ -462,6 +521,7 @@ mod tests {
             home: Some(dir.clone()),
             path: String::new(),
             vars: Vec::new(),
+            cwd: None,
         };
         (Home(dir), env)
     }
@@ -493,6 +553,49 @@ mod tests {
             &h.0.join(".claude/settings.json"),
             r#"{"enabledPlugins":{"tk@tk":true}}"#,
         );
+        assert_eq!(check("claude-code", &env).word(), "yes");
+    }
+
+    #[test]
+    fn a_local_install_counts_only_in_its_own_folder() {
+        // Mac test w2, MW3: the only record was `scope: "local"` for one
+        // project, and `tk status` said "yes" in /tmp and ~ too. Claude Code
+        // 2.1.311 uses a project or local record only when its projectPath is
+        // the folder it started in, or the same folder by its real path (its
+        // binary, function `WO`; read in fix pass 1).
+        let (h, mut env) = home("claudelocal");
+        let project = h.0.join("scratch");
+        std::fs::create_dir_all(&project).unwrap();
+        put(
+            &h.0.join(".claude/plugins/installed_plugins.json"),
+            &format!(
+                r#"{{"version":2,"plugins":{{"tk@tk":[{{"scope":"local","projectPath":"{}","installPath":"/x","version":"0.0.0"}}]}}}}"#,
+                project.display()
+            ),
+        );
+        env.cwd = Some(h.0.clone());
+        let elsewhere = check("claude-code", &env);
+        assert_eq!(elsewhere.word(), "no", "{elsewhere:?}");
+        assert!(
+            elsewhere.detail().unwrap().contains("installed for"),
+            "{elsewhere:?}"
+        );
+        env.cwd = Some(project.clone());
+        assert_eq!(check("claude-code", &env).word(), "yes");
+        // The same folder through a link counts too.
+        let link = h.0.join("via-link");
+        std::os::unix::fs::symlink(&project, &link).unwrap();
+        env.cwd = Some(link);
+        assert_eq!(check("claude-code", &env).word(), "yes");
+        // A user-scope record beside it counts everywhere.
+        put(
+            &h.0.join(".claude/plugins/installed_plugins.json"),
+            &format!(
+                r#"{{"version":2,"plugins":{{"tk@tk":[{{"scope":"local","projectPath":"{}","installPath":"/x"}},{{"scope":"user","installPath":"/y"}}]}}}}"#,
+                project.display()
+            ),
+        );
+        env.cwd = Some(h.0.clone());
         assert_eq!(check("claude-code", &env).word(), "yes");
     }
 

@@ -39,6 +39,9 @@ get no from the daemon.";
 /// Typed input this soon after a prompt is shown is dropped: it was typed
 /// for something else (a request that just timed out, or the shell).
 pub const SETTLE: Duration = Duration::from_millis(300);
+/// How long the next card waits for the daemon's reply to an answer, so the
+/// "sent" line is printed under the card it answers (box test w2, BW6).
+pub const REPLY_WAIT: Duration = Duration::from_secs(1);
 
 pub const BANNER: &str = "tk watch --approve: answering approval requests from this terminal.
 Known gap (finding S2, open): the daemon refuses an approver that a running
@@ -194,8 +197,12 @@ pub fn serve(
     let mut shown: Option<(Waiting, Instant)> = None;
     // The ids of answers sent, oldest first, to match the daemon's replies.
     let mut sent: VecDeque<(String, &'static str)> = VecDeque::new();
+    // When the last answer went out; the next card waits for its reply up to
+    // REPLY_WAIT.
+    let mut answered: Option<Instant> = None;
     loop {
-        if shown.is_none() {
+        let replied = sent.is_empty() || answered.is_none_or(|t| t.elapsed() >= REPLY_WAIT);
+        if shown.is_none() && replied {
             // Skip requests that timed out while another was on screen.
             while let Some(w) = queue.pop_front() {
                 if w.deadline > Instant::now() {
@@ -212,9 +219,12 @@ pub fn serve(
                 );
             }
         }
-        let wait = match &shown {
-            Some((w, _)) => w.deadline.saturating_duration_since(Instant::now()),
-            None => Duration::from_secs(3600),
+        let wait = match (&shown, answered) {
+            (Some((w, _)), _) => w.deadline.saturating_duration_since(Instant::now()),
+            (None, Some(t)) if !sent.is_empty() && !queue.is_empty() => {
+                REPLY_WAIT.saturating_sub(t.elapsed())
+            }
+            (None, _) => Duration::from_secs(3600),
         };
         match rx.recv_timeout(wait) {
             Ok(In::Daemon(Incoming::Approve(req))) => {
@@ -277,10 +287,16 @@ pub fn serve(
                     return Ended::DaemonGone("the answer could not be sent".into());
                 }
                 sent.push_back((id, word));
+                answered = Some(Instant::now());
             }
             Ok(In::DaemonGone(why)) => return Ended::DaemonGone(why),
             Ok(In::TtyGone) => return Ended::TtyGone,
             Err(RecvTimeoutError::Timeout) => {
+                if shown.is_none() {
+                    // The reply did not come in time: the next card is drawn
+                    // at the top of the loop.
+                    continue;
+                }
                 if let Some((w, _)) = shown.take() {
                     let _ = writeln!(out, "  {}: timed out; the daemon answers no", label(&w.req));
                 }
@@ -513,6 +529,10 @@ mod tests {
         tx.send(req("ap-2", 30)).unwrap();
         std::thread::sleep(SETTLE + Duration::from_millis(100));
         tx.send(In::Typed("y\n".into(), Instant::now())).unwrap();
+        // The daemon replies to each answer; the next card waits for that
+        // reply (fix pass 1, BW6), so the fake sends it as the daemon does.
+        tx.send(In::Daemon(Incoming::Reply(json!({"ok": true}))))
+            .unwrap();
         std::thread::sleep(SETTLE + Duration::from_millis(150));
         tx.send(In::Typed("n\n".into(), Instant::now())).unwrap();
         std::thread::sleep(Duration::from_millis(100));
@@ -527,6 +547,43 @@ mod tests {
         assert_eq!(
             (a[1]["id"].as_str(), a[1]["answer"].as_str()),
             (Some("ap-2"), Some("no"))
+        );
+    }
+
+    #[test]
+    fn the_confirmation_of_an_answer_comes_before_the_next_card() {
+        // Box test w2, BW6: "yes sent for <id>" was printed under the next
+        // request's card, because the next card was drawn before the
+        // daemon's reply to the answer arrived.
+        let (tx, rx) = mpsc::channel();
+        let wire = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let w = Wire(wire.clone());
+        let h = std::thread::spawn(move || {
+            let mut out = Vec::new();
+            let mut flush = || {};
+            serve(&rx, w, &mut out, &mut flush);
+            String::from_utf8(out).unwrap()
+        });
+        tx.send(req("ap-1", 30)).unwrap();
+        tx.send(req("ap-2", 30)).unwrap();
+        std::thread::sleep(SETTLE + Duration::from_millis(100));
+        tx.send(In::Typed("y\n".into(), Instant::now())).unwrap();
+        // The daemon takes a moment to reply.
+        std::thread::sleep(Duration::from_millis(200));
+        tx.send(In::Daemon(Incoming::Reply(json!({"ok": true}))))
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(200));
+        tx.send(In::TtyGone).unwrap();
+        let out = h.join().unwrap();
+        let sent = out.find("yes sent for ap-1").expect(&out);
+        let cards: Vec<usize> = out
+            .match_indices("Allow this one call?")
+            .map(|(i, _)| i)
+            .collect();
+        assert_eq!(cards.len(), 2, "{out}");
+        assert!(
+            sent < cards[1],
+            "the confirmation is under the next card:\n{out}"
         );
     }
 

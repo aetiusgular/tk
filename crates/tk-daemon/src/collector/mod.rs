@@ -132,15 +132,81 @@ pub fn install_plan(
     let stage = paths.data.join("activity").join("install");
     crate::socket::private_dir(&stage).map_err(|e| format!("stage folder: {e}"))?;
     let staged = stage.join(format!("{}.plist", names.label));
-    let plan = collector::terminal_plan(
+    let mut plan = collector::terminal_plan(
         &names,
         &binary.to_string_lossy(),
         &hash,
         &staged.to_string_lossy(),
         &peer.to_string_lossy(),
     )?;
+    let peer_hash = collector::file_sha256(peer).map_err(|e| format!("daemon binary: {e}"))?;
+    plan.explanation = explanation(
+        &binary.to_string_lossy(),
+        &hash,
+        &peer.to_string_lossy(),
+        &peer_hash,
+        writable_by_me(peer),
+        &staged.to_string_lossy(),
+        &names.label,
+    );
     crate::service::write_private(&staged, &plan.plist).map_err(|e| format!("plist: {e}"))?;
     Ok(plan)
+}
+
+/// The plan's words for tk (Mac test w2, MW5). The fork's text
+/// (`activity/collector.rs` `explanation`) spoke for MonoCode's signed app;
+/// tk's development install trusts its caller by path, which is weaker, and
+/// says what that costs.
+fn explanation(
+    binary: &str,
+    binary_sha: &str,
+    peer: &str,
+    peer_sha: &str,
+    peer_writable: bool,
+    staged: &str,
+    label: &str,
+) -> Vec<String> {
+    let mut lines = vec![
+        "The collector runs as root, outside any sandbox, and starts /usr/bin/eslogger.".to_string(),
+        "It needs Full Disk Access, which you grant it in System Settings, Privacy & Security.".to_string(),
+        "It records only: processes `tk run` started for a chat (the daemon names each one) and their children, and apps you granted for computer use while the grant holds.".to_string(),
+        "It records what they ran, the files they created, wrote, moved or deleted, and opens of sensitive files such as ~/.ssh. Command lines are kept.".to_string(),
+        "It blocks nothing. It sends nothing anywhere. Its log is root-owned, kept 7 days, at most 1 GB.".to_string(),
+        format!("It answers one caller: the program at {peer} (SHA-256 {peer_sha} today), matched by its exact path, because this build is unsigned. That is weaker than a signature."),
+    ];
+    if peer_writable {
+        lines.push(format!(
+            "You can write {peer} or its folder, so any process that runs as you can replace that file, an agent under `tk run --boundary none` included, and the replacement becomes the collector's caller. To close that, copy tk-daemon into a folder only root can write, run the daemon from there, and give that path to collector-plan."
+        ));
+    } else {
+        lines.push(format!(
+            "{peer} and its folder are not writable by you, so a process running as you cannot replace it (an administrator still can)."
+        ));
+    }
+    lines.push(format!(
+        "The commands check the collector binary and the plist against the hashes shown here before anything starts. The binary installed is {binary}, SHA-256 {binary_sha}."
+    ));
+    lines.push(format!(
+        "Its names are still MonoCode's: the label {label}, /var/run/monocode-activity and /Library/Application Support/MonoCode/activity, until tk's name is settled (toolkit plan, section 11, call 1)."
+    ));
+    lines.push(format!(
+        "This plan ran no command. It wrote one file, the staged plist at {staged} (0600), which the first command copies."
+    ));
+    lines
+}
+
+/// Whether this user could replace `path`: its owner is this user, or its
+/// folder is ours or writable by us (the folder decides a rename over it).
+fn writable_by_me(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    // SAFETY: getuid has no failure mode.
+    let me = unsafe { libc::getuid() };
+    let mine_or_open = |p: &std::path::Path| {
+        std::fs::metadata(p)
+            .map(|m| m.uid() == me || m.mode() & 0o002 != 0)
+            .unwrap_or(true)
+    };
+    mine_or_open(path) || path.parent().map(mine_or_open).unwrap_or(true)
 }
 
 /// Starts what lane K adds to a running daemon. Returns at once.
@@ -341,6 +407,47 @@ mod tests {
         std::os::unix::fs::symlink(&binary, &link).unwrap();
         assert!(install_plan(&paths, &link, &peer).is_err());
         assert!(install_plan(&paths, &root.join("absent"), &peer).is_err());
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn the_plan_speaks_for_tk_and_says_what_trusting_the_peer_by_path_costs() {
+        // Mac test w2, MW5: the plan said "Only MonoCode may talk to it" and
+        // "processes MonoCode started", and did not say that the caller it
+        // trusts by path sits in a folder you (and an agent running as you)
+        // can write; and it writes a staged plist, which "runs nothing" hid.
+        let root = std::env::temp_dir().join(format!(
+            "tk-collector-words-{}",
+            uuid::Uuid::new_v4().simple()
+        ));
+        std::fs::create_dir_all(&root).unwrap();
+        let binary = root.join("monocode-activity-collector");
+        std::fs::write(&binary, b"not really a collector").unwrap();
+        let peer = root.join("tk-daemon");
+        std::fs::write(&peer, b"daemon").unwrap();
+        let paths = Paths {
+            socket: root.join("run/tk/daemon.sock"),
+            data: root.join("data"),
+        };
+        let plan = install_plan(&paths, &binary, &peer).unwrap();
+        let text = plan.explanation.join("\n");
+        assert!(!text.contains("Only MonoCode"), "{text}");
+        assert!(!text.contains("processes MonoCode started"), "{text}");
+        assert!(text.contains("tk run"), "{text}");
+        let peer_hash = crate::activity::collector::file_sha256(&peer).unwrap();
+        assert!(
+            text.contains(&*peer.to_string_lossy()) && text.contains(&peer_hash),
+            "{text}"
+        );
+        assert!(text.contains("can replace that file"), "{text}");
+        assert!(
+            text.contains("wrote one file") && text.contains(&plan.staged_plist.clone().unwrap()),
+            "{text}"
+        );
+        assert!(
+            text.contains("com.monocode.desktop.activity-collector"),
+            "{text}"
+        );
         let _ = std::fs::remove_dir_all(root);
     }
 }

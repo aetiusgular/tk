@@ -109,17 +109,62 @@ pub fn main(args: &[String]) -> u8 {
     if parsed.flag("--json") {
         println!("{report}");
     } else {
-        // Every field is the daemon's text, which can hold a chat's words:
-        // cleaned before it reaches the terminal (text::clean).
-        println!(
-            "{}",
-            clean(
-                &serde_json::to_string_pretty(report).unwrap_or_default(),
-                20_000
-            )
-        );
+        print!("{}", render(report));
     }
     0
+}
+
+/// The report for a terminal: one `path: value` line per field, nested
+/// fields by their path (`runningChats[0].chat`), an empty list as
+/// `(none)`. Every value is the daemon's text, which can hold a chat's
+/// words, so each is cleaned on its own line (text::clean); cleaning the
+/// rendered block escaped its newlines too (Mac test w2, MW4).
+pub fn render(report: &Value) -> String {
+    let mut out = String::new();
+    fn walk(path: &str, v: &Value, out: &mut String, budget: &mut usize) {
+        if *budget == 0 {
+            return;
+        }
+        match v {
+            Value::Object(m) if !m.is_empty() => {
+                for (k, child) in m {
+                    let key = clean(k, 64);
+                    let p = if path.is_empty() {
+                        key
+                    } else {
+                        format!("{path}.{key}")
+                    };
+                    walk(&p, child, out, budget);
+                }
+            }
+            Value::Array(a) if !a.is_empty() => {
+                for (i, child) in a.iter().enumerate() {
+                    walk(&format!("{path}[{i}]"), child, out, budget);
+                }
+            }
+            Value::Object(_) | Value::Array(_) => {
+                *budget -= 1;
+                out.push_str(&format!("{path}: (none)\n"));
+            }
+            Value::String(s) => {
+                *budget -= 1;
+                out.push_str(&format!("{path}: {}\n", clean(s, 300)));
+            }
+            other => {
+                *budget -= 1;
+                out.push_str(&format!("{path}: {other}\n"));
+            }
+        }
+    }
+    let mut budget = 500usize;
+    if report.is_null() {
+        return "(no report)\n".into();
+    }
+    walk("", report, &mut out, &mut budget);
+    if budget == 0 {
+        out.push_str("… (more fields left out; --json prints all)\n");
+    }
+    out
 }
 
 #[cfg(test)]
@@ -152,6 +197,39 @@ mod tests {
         ] {
             assert!(parse(bad).is_err(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn the_human_output_is_one_field_per_line_with_each_value_cleaned() {
+        // Mac test w2, MW4: the whole pretty-printed JSON went through
+        // `clean`, which escaped its newlines onto one line.
+        let report = json!({
+            "helper": "missing",
+            "helperPath": "/Applications/MonoCode Computer Use.app",
+            "pending": [],
+            "runningChats": [{"chat": "tk-c1", "apps": ["com.apple.calculator"]}],
+            "note": "two\nlines \u{1b}[2J"
+        });
+        let text = render(&report);
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines.len(), 6, "{text}");
+        assert!(
+            lines.iter().filter(|l| l.contains("\\u{A}")).count() == 1,
+            "only the note's own newline is escaped: {text}"
+        );
+        assert!(lines.contains(&"helper: missing"), "{text}");
+        assert!(
+            lines.contains(&"helperPath: /Applications/MonoCode Computer Use.app"),
+            "{text}"
+        );
+        assert!(lines.contains(&"pending: (none)"), "{text}");
+        assert!(lines.contains(&"runningChats[0].chat: tk-c1"), "{text}");
+        assert!(
+            lines.contains(&"runningChats[0].apps[0]: com.apple.calculator"),
+            "{text}"
+        );
+        let note = lines.iter().find(|l| l.starts_with("note: ")).unwrap();
+        assert!(!note.contains('\x1b') && note.contains("\\u{A}"), "{note}");
     }
 
     #[test]

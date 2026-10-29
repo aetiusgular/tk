@@ -264,6 +264,10 @@ pub struct Daemon {
     /// until its `run.stop` (S2: an approver may not be one of them or run
     /// under one).
     runs: Mutex<HashMap<String, RunPid>>,
+    /// What `tk status` shows for each running chat, from its `run.start`:
+    /// harness, boundary, when, full-access flags (box test w2, BW3: the
+    /// tail's backlog lost a chat behind a flood of newer events).
+    run_info: Mutex<HashMap<String, Value>>,
     /// When each live chat token was minted, by its hash (hex), for the
     /// state file (BX8).
     minted_at: Mutex<HashMap<String, i64>>,
@@ -387,6 +391,7 @@ impl Daemon {
             pending: Mutex::new(HashMap::new()),
             chats: Mutex::new(HashMap::new()),
             runs: Mutex::new(HashMap::new()),
+            run_info: Mutex::new(HashMap::new()),
             minted_at: Mutex::new(HashMap::new()),
             state_file,
             next_conn: AtomicU64::new(1),
@@ -407,6 +412,7 @@ impl Daemon {
     fn restore_state(&self, saved: &Value) -> usize {
         let now = now_ms();
         let mut runs: HashMap<String, RunPid> = HashMap::new();
+        let mut infos: HashMap<String, Value> = HashMap::new();
         // Chats that had started, running or not: a started chat comes back
         // only while its harness runs.
         let mut started: HashSet<String> = HashSet::new();
@@ -428,6 +434,9 @@ impl Daemon {
                 pid,
                 start_time: r.get("startTime").and_then(Value::as_u64),
             };
+            if let Some(i) = r.get("info").map(run_info_restored) {
+                infos.insert(chat.to_string(), i);
+            }
             started.insert(chat.to_string());
             // A run comes back only with the start time it was recorded with
             // and never as pid 1 or 0 (review W2-S9: a planted run with no
@@ -474,10 +483,41 @@ impl Daemon {
         if let Ok(mut m) = self.minted_at.lock() {
             *m = minted_at;
         }
+        infos.retain(|chat, _| runs.contains_key(chat));
+        if let Ok(mut i) = self.run_info.lock() {
+            *i = infos;
+        }
         if let Ok(mut r) = self.runs.lock() {
             *r = runs;
         }
         restored
+    }
+
+    /// The chats `tk run` started that still run: chat, pid, whether that
+    /// process is still the one that started (its start time), and what its
+    /// `run.start` said. Daemon scope only (in `report`).
+    pub fn running(&self) -> Vec<Value> {
+        let runs = self.runs.lock().map(|r| r.clone()).unwrap_or_default();
+        let info = self.run_info.lock().map(|i| i.clone()).unwrap_or_default();
+        let mut out: Vec<Value> = runs
+            .iter()
+            .map(|(chat, run)| {
+                let mut row = info.get(chat).cloned().unwrap_or_else(|| json!({}));
+                if let Value::Object(m) = &mut row {
+                    m.insert("chat".into(), Value::String(chat.clone()));
+                    m.insert("pid".into(), Value::from(run.pid));
+                    m.insert("alive".into(), Value::Bool(run.alive()));
+                }
+                row
+            })
+            .collect();
+        out.sort_by(|a, b| {
+            a.get("since")
+                .and_then(Value::as_i64)
+                .cmp(&b.get("since").and_then(Value::as_i64))
+                .then_with(|| a["chat"].as_str().cmp(&b["chat"].as_str()))
+        });
+        out
     }
 
     /// Writes the state file (BX8): token hashes, running chats, the port.
@@ -499,13 +539,19 @@ impl Daemon {
                 )
             })
             .collect();
+        let info = self.run_info.lock().map(|i| i.clone()).unwrap_or_default();
         let runs: Vec<Value> = self
             .runs
             .lock()
             .map(|r| {
                 r.iter()
                     .map(|(chat, run)| {
-                        json!({"chat": chat, "pid": run.pid, "startTime": run.start_time})
+                        let mut row =
+                            json!({"chat": chat, "pid": run.pid, "startTime": run.start_time});
+                        if let (Some(i), Value::Object(m)) = (info.get(chat), &mut row) {
+                            m.insert("info".into(), i.clone());
+                        }
+                        row
                     })
                     .collect()
             })
@@ -680,6 +726,9 @@ impl Daemon {
                     if let (Some(pid), Ok(mut runs)) = (event.pid, self.runs.lock()) {
                         if runs.len() < 2_048 || runs.contains_key(&event.chat_id) {
                             runs.insert(event.chat_id.clone(), RunPid::of(pid));
+                            if let Ok(mut info) = self.run_info.lock() {
+                                info.insert(event.chat_id.clone(), run_info_of(&event, now_ms()));
+                            }
                         }
                     }
                     self.save_state();
@@ -691,6 +740,9 @@ impl Daemon {
                     self.receiver.revoke_chat(&event.chat_id);
                     if let Ok(mut runs) = self.runs.lock() {
                         runs.remove(&event.chat_id);
+                    }
+                    if let Ok(mut info) = self.run_info.lock() {
+                        info.remove(&event.chat_id);
                     }
                     self.save_state();
                 }
@@ -872,8 +924,17 @@ impl Daemon {
         if until < since {
             return error("until is before since");
         }
+        let mut report = self.report(chat.as_deref(), since, until);
+        if let Value::Object(m) = &mut report {
+            let running: Vec<Value> = self
+                .running()
+                .into_iter()
+                .filter(|r| chat.as_deref().is_none_or(|c| r["chat"] == c))
+                .collect();
+            m.insert("running".into(), Value::Array(running));
+        }
         Reply {
-            report: Some(self.report(chat.as_deref(), since, until)),
+            report: Some(report),
             ..ok()
         }
     }
@@ -1329,6 +1390,56 @@ fn read_state(path: &Path) -> Option<Value> {
 /// The disk's records and the ring's, as one backlog: one record per chat
 /// and id, the last copy where it may replace the first (case 35, the
 /// store's `may_replace`), oldest first, at most `MAX_BACKLOG`.
+/// What a `run.start` says that `tk status` shows, each string cut: the
+/// record is the daemon's own (daemon scope), but its words are `tk run`'s.
+fn run_info_of(event: &Event, received: i64) -> Value {
+    let cut = |v: Option<&Value>, max: usize| -> Value {
+        v.and_then(Value::as_str)
+            .map(|s| Value::String(s.chars().take(max).collect()))
+            .unwrap_or(Value::Null)
+    };
+    let flags: Vec<Value> = event
+        .detail
+        .get("dangerousFlags")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().take(16).map(|f| cut(Some(f), 64)).collect())
+        .unwrap_or_default();
+    json!({
+        "harness": Value::String(event.harness.chars().take(64).collect()),
+        "boundary": cut(event.detail.get("boundary"), 16),
+        "since": received,
+        "fullAccessFlags": flags,
+    })
+}
+
+/// A run's info as `chats.json` held it: the same fields, re-cut, nothing
+/// else kept (review W2-S9: the file is read, not trusted).
+fn run_info_restored(v: &Value) -> Value {
+    let cut = |k: &str, max: usize| -> Value {
+        v.get(k)
+            .and_then(Value::as_str)
+            .map(|s| Value::String(s.chars().take(max).collect()))
+            .unwrap_or(Value::Null)
+    };
+    let flags: Vec<Value> = v
+        .get("fullAccessFlags")
+        .and_then(Value::as_array)
+        .map(|a| {
+            a.iter()
+                .take(16)
+                .filter_map(Value::as_str)
+                .map(|s| Value::String(s.chars().take(64).collect()))
+                .collect()
+        })
+        .unwrap_or_default();
+    json!({
+        "harness": cut("harness", 64),
+        "boundary": cut("boundary", 16),
+        "since": v.get("since").and_then(Value::as_i64),
+        "fullAccessFlags": flags,
+    })
+}
+
 pub fn merge_backlog<'a>(
     disk: Vec<Event>,
     ring: impl Iterator<Item = &'a Event>,

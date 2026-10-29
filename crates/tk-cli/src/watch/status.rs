@@ -69,6 +69,9 @@ pub struct Env {
     pub home: Option<PathBuf>,
     pub path: String,
     pub vars: Vec<(String, String)>,
+    /// The folder `tk status` runs in: a Claude Code plugin installed at
+    /// project or local scope loads only there (Mac test w2, MW3).
+    pub cwd: Option<PathBuf>,
 }
 
 impl Env {
@@ -88,6 +91,7 @@ impl Env {
                 .iter()
                 .filter_map(|k| std::env::var(k).ok().map(|v| (k.to_string(), v)))
                 .collect(),
+            cwd: std::env::current_dir().ok(),
         }
     }
 
@@ -190,14 +194,17 @@ pub fn find_on_path(name: &str, path: &str) -> Option<PathBuf> {
 
 /// `<program> --version`, argv only, stdin closed, a clean environment but
 /// HOME and PATH, killed after `PROBE_TIMEOUT`. The first line of output,
-/// cleaned and cut, or why there is none.
+/// cleaned and cut, or why there is none. A program that exits with a
+/// status other than 0 is said not to be a working install, with its first
+/// line (stdout, else stderr): a shim on PATH that only says the real CLI
+/// is missing is not the agent (box test w2, BW4).
 pub fn probe_version(program: &Path) -> String {
     use std::process::{Command, Stdio};
     let mut cmd = Command::new(program);
     cmd.arg("--version")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .env_clear();
     for k in ["HOME", "PATH", "LANG", "TERM"] {
         if let Some(v) = std::env::var_os(k) {
@@ -209,9 +216,9 @@ pub fn probe_version(program: &Path) -> String {
         Err(e) => return format!("not run: {e}"),
     };
     let start = std::time::Instant::now();
-    loop {
+    let status = loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(status)) => break status,
             Ok(None) if start.elapsed() < PROBE_TIMEOUT => {
                 std::thread::sleep(Duration::from_millis(50))
             }
@@ -221,21 +228,40 @@ pub fn probe_version(program: &Path) -> String {
                 return format!("no answer in {} s", PROBE_TIMEOUT.as_secs());
             }
         }
+    };
+    let first_line = |pipe: Option<&mut dyn std::io::Read>| -> String {
+        let mut text = String::new();
+        if let Some(o) = pipe {
+            use std::io::Read;
+            let _ = o.take(4096).read_to_string(&mut text);
+        }
+        text.lines()
+            .map(str::trim)
+            .find(|l| !l.is_empty())
+            .unwrap_or("")
+            .to_string()
+    };
+    let out = first_line(child.stdout.as_mut().map(|o| o as &mut dyn std::io::Read));
+    if status.success() {
+        return if out.is_empty() {
+            "printed nothing".into()
+        } else {
+            clean(&out, 80)
+        };
     }
-    let mut text = String::new();
-    if let Some(mut o) = child.stdout.take() {
-        use std::io::Read;
-        let _ = (&mut o).take(4096).read_to_string(&mut text);
-    }
-    let first = text
-        .lines()
-        .map(str::trim)
-        .find(|l| !l.is_empty())
-        .unwrap_or("");
-    if first.is_empty() {
-        "printed nothing".into()
+    let line = if out.is_empty() {
+        first_line(child.stderr.as_mut().map(|o| o as &mut dyn std::io::Read))
     } else {
-        clean(first, 80)
+        out
+    };
+    let code = status
+        .code()
+        .map(|c| c.to_string())
+        .unwrap_or_else(|| "on a signal".into());
+    if line.is_empty() {
+        format!("exited {code}, not a working install")
+    } else {
+        format!("exited {code}, not a working install: {}", clean(&line, 80))
     }
 }
 
@@ -267,7 +293,16 @@ pub fn daemon_state(socket: &Path) -> Value {
         .request(&json!({"op": "report", "since": now - 3_600_000, "until": now}))
         .ok()
         .and_then(|r| r.get("report").cloned());
-    let chats = running_chats(socket, now);
+    // The daemon's own list of running chats (box test w2, BW3), else, from
+    // a daemon before it, the tail's backlog.
+    let chats = match report
+        .as_ref()
+        .and_then(|r| r.get("running"))
+        .and_then(Value::as_array)
+    {
+        Some(rows) => Value::Array(rows.iter().map(running_row).collect()),
+        None => running_chats(socket, now),
+    };
     json!({
         "running": true,
         "socket": socket.display().to_string(),
@@ -284,8 +319,22 @@ pub fn daemon_state(socket: &Path) -> Value {
     })
 }
 
-/// Chats with a `run.start` in the last 7 days and no `run.stop`, from the
-/// daemon's tail backlog. The backlog has no end marker, so it is read
+/// One of the daemon's running chats (`report.running`) as `tk status`
+/// shows it.
+fn running_row(r: &Value) -> Value {
+    json!({
+        "chat": r.get("chat"),
+        "harness": r.get("harness"),
+        "boundary": r.get("boundary"),
+        "since": r.get("since"),
+        "pid": r.get("pid"),
+        "alive": r.get("alive"),
+        "fullAccessFlags": r.get("fullAccessFlags"),
+    })
+}
+
+/// For a daemon without `report.running`: chats with a `run.start` in the
+/// last 7 days and no `run.stop`, from the daemon's tail backlog. The backlog has no end marker, so it is read
 /// until the daemon is quiet for half a second; at most 5,000 events come
 /// back (contract section 2), so on a busy daemon an old start can be
 /// missing.
@@ -559,6 +608,7 @@ mod tests {
             home: Some(home.to_path_buf()),
             path: String::new(),
             vars: Vec::new(),
+            cwd: None,
         }
     }
 
@@ -655,6 +705,37 @@ mod tests {
         let t = std::time::Instant::now();
         assert!(probe_version(&exe).starts_with("no answer"));
         assert!(t.elapsed() < PROBE_TIMEOUT + Duration::from_secs(2));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_probe_that_exits_non_zero_is_not_an_install() {
+        // Box test w2, BW4: /usr/bin/copilot is VS Code's shim, which says
+        // "GitHub Copilot CLI was not found" and exits 127; `tk status` showed
+        // it "on PATH" and the probe as "printed nothing".
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("tk-shim-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let shim = dir.join("copilot");
+        std::fs::write(
+            &shim,
+            "#!/bin/sh\necho 'GitHub Copilot CLI was not found' >&2\nexit 127\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&shim, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let v = probe_version(&shim);
+        assert_eq!(
+            v,
+            "exited 127, not a working install: GitHub Copilot CLI was not found"
+        );
+        let half = dir.join("half");
+        std::fs::write(&half, "#!/bin/sh\necho 'half 2.0'\nexit 1\n").unwrap();
+        std::fs::set_permissions(&half, std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(
+            probe_version(&half),
+            "exited 1, not a working install: half 2.0"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

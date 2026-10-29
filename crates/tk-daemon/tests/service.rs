@@ -280,3 +280,67 @@ fn a_restart_keeps_a_running_chat_and_its_otlp_port() {
     let _ = harness.wait();
     stop(daemon);
 }
+
+/// Box test w2, BW3: `tk status` lost a running chat behind newer events
+/// because it read run starts from the tail's backlog. `report` now carries
+/// the daemon's own list of running chats, and it survives a restart with
+/// what the chat's `run.start` said.
+#[test]
+fn report_lists_running_chats_across_a_restart_and_drops_a_stopped_one() {
+    let d = Dirs::new();
+    let daemon = start(&d);
+    let (mut w, mut r) = session(&d);
+    let mut harness = Command::new("sleep").arg("60").spawn().unwrap();
+    let started = ask(
+        &mut w,
+        &mut r,
+        json!({"op": "event", "event": {
+            "id": "start-r", "at": 0, "chatId": "chat-r", "harness": "opencode",
+            "source": "run", "kind": "run.start", "summary": "",
+            "detail": {"cwd": "/tmp", "boundary": "none", "dangerousFlags": ["--yolo"]},
+            "pid": harness.id()
+        }}),
+    );
+    assert_eq!(started["ok"], true, "{started}");
+    let running = |w: &mut _, r: &mut _| -> Vec<Value> {
+        let rep = ask(
+            w,
+            r,
+            json!({"op": "report", "since": 0, "until": i64::MAX / 2}),
+        );
+        rep["report"]["running"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+    };
+    let rows = running(&mut w, &mut r);
+    assert_eq!(rows.len(), 1, "{rows:?}");
+    assert_eq!(rows[0]["chat"], "chat-r");
+    assert_eq!(rows[0]["harness"], "opencode");
+    assert_eq!(rows[0]["boundary"], "none");
+    assert_eq!(rows[0]["alive"], true);
+    assert_eq!(rows[0]["fullAccessFlags"], json!(["--yolo"]));
+    drop((w, r));
+    stop(daemon);
+    let daemon = start(&d);
+    let (mut w, mut r) = session(&d);
+    let rows = running(&mut w, &mut r);
+    assert_eq!(rows.len(), 1, "{rows:?}");
+    assert_eq!(
+        (rows[0]["chat"].as_str(), rows[0]["boundary"].as_str()),
+        (Some("chat-r"), Some("none"))
+    );
+    let stopped = ask(
+        &mut w,
+        &mut r,
+        json!({"op": "event", "event": {
+            "id": "stop-r", "at": 0, "chatId": "chat-r", "harness": "opencode",
+            "source": "run", "kind": "run.stop", "summary": "", "detail": {}, "pid": harness.id()
+        }}),
+    );
+    assert_eq!(stopped["ok"], true, "{stopped}");
+    assert!(running(&mut w, &mut r).is_empty());
+    let _ = harness.kill();
+    let _ = harness.wait();
+    stop(daemon);
+}
