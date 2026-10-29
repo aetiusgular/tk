@@ -1,15 +1,21 @@
-// Contract checks for computer use (wave 3, lane C), run by
-// tests/cli-contract/run.mjs. They answer one question per harness: does the
-// stdio MCP server a harness starts see the two variables MonoCode sets on
-// the harness process (MONOCODE_CU_ENDPOINT, MONOCODE_CU_TOKEN)? The bridge
-// reads the chat's token from there, so a harness that drops them would leave
-// computer use unreachable.
+// Contract checks for computer use, run by tests/cli-contract/run.mjs.
+// Copied from the fork (wave 3, lane C), where they tested MONOCODE_CU_*;
+// rewritten by integration w2 for tk (lane K's request 9): tk's relay
+// (`tk-daemon cu-mcp`, crates/tk-daemon/src/computer_use/relay.rs) reads the
+// chat token `tk run` puts on the harness, TK_CHAT_TOKEN (or the file
+// TK_CHAT_TOKEN_FILE names), and finds the bridge in `cu.endpoint` beside the
+// daemon's socket, so no endpoint variable is involved.
 //
+// cu-env-*: does the stdio MCP server a harness starts see TK_CHAT_TOKEN? A
+// harness that drops it leaves computer use unreachable.
 //
-// The cu-shell checks ask the other way (security review X2): does the
-// agent's own shell, the Bash tool or exec_command, see MONOCODE_CU_TOKEN?
-// The fake model asks for one shell call that counts the variable's lines in
-// `env`; the token's value is a dummy and is never printed.
+// cu-shell-*: does the agent's own shell see it? A chat token is the
+// agent's too (rules case 66): under tk it is expected in Claude Code's Bash
+// (Claude Code passes its whole environment and has no per-variable
+// exclude), so that check reports info. Codex can exclude it from its shell
+// with shell_environment_policy.exclude; the check tests that mechanism,
+// which `tk run codex` does not set yet (wave 4 lane R). The token's value is
+// a dummy and is never printed.
 
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -21,19 +27,18 @@ import { startFakeMessages, textBlock, toolUse, isSideRequest as claudeSide } fr
 import { startFakeResponses, text, call, isSideRequest as codexSide } from "../lib/fakeResponses.mjs";
 import { codexShellEnvArgs } from "./otel.mjs";
 
-const ENDPOINT = "MONOCODE_CU_ENDPOINT";
-const TOKEN = "MONOCODE_CU_TOKEN";
-const FAKE_ENDPOINT = "127.0.0.1:9";
+const TOKEN = "TK_CHAT_TOKEN";
+const TK_SHELL_EXCLUDES = ["TK_CHAT_TOKEN", "TK_CHAT_TOKEN_FILE"];
 const FAKE_TOKEN = "contract-check-token-not-a-secret";
-const SERVER = "monocode_computer_use";
+// Claude Code reserves the name computer-use (lane C); tk's server is tk_cu.
+const SERVER = "tk_cu";
 
-// A stdio MCP server that writes which of the two variables it was given,
-// and answers initialize and tools/list.
+// A stdio MCP server that writes whether it was given the chat token, and
+// answers initialize and tools/list.
 const PROBE = `
 import { writeFileSync } from "node:fs";
 const out = process.argv[2];
 writeFileSync(out, JSON.stringify({
-  endpoint: process.env.${ENDPOINT} ?? null,
   token: process.env.${TOKEN} === ${JSON.stringify(FAKE_TOKEN)} ? "matches" : (process.env.${TOKEN} ? "differs" : null),
 }));
 let buf = "";
@@ -75,8 +80,7 @@ async function codexProbe(codexPath, withEnvVars) {
   writeFileSync(probe, PROBE);
   const fake = await startFakeResponses({ script: () => [text("ok")] });
   writeFileSync(path.join(dirs.codexHome, "config.toml"), codexHomeConfig({ baseUrl: fake.baseUrl }));
-  // The flags MonoCode passes for the chat's computer-use server
-  // (codexGatewayConfigArgs, plus env_vars under the [w3-c] hook in codex.ts).
+  // tk's server entry for Codex (`tk connect codex`, an env_vars list).
   const args = [
     "app-server",
     "-c",
@@ -84,10 +88,10 @@ async function codexProbe(codexPath, withEnvVars) {
     "-c",
     `mcp_servers.${SERVER}.args=${JSON.stringify([probe, out])}`,
   ];
-  if (withEnvVars) args.push("-c", `mcp_servers.${SERVER}.env_vars=${JSON.stringify([ENDPOINT, TOKEN])}`);
+  if (withEnvVars) args.push("-c", `mcp_servers.${SERVER}.env_vars=${JSON.stringify([TOKEN])}`);
   const child = spawn(codexPath, args, {
     cwd: dirs.work,
-    env: isolatedEnv({ home: dirs.home, extra: { CODEX_HOME: dirs.codexHome, [ENDPOINT]: FAKE_ENDPOINT, [TOKEN]: FAKE_TOKEN } }),
+    env: isolatedEnv({ home: dirs.home, extra: { CODEX_HOME: dirs.codexHome, [TOKEN]: FAKE_TOKEN } }),
     stdio: ["pipe", "pipe", "pipe"],
   });
   let stderr = "";
@@ -95,7 +99,7 @@ async function codexProbe(codexPath, withEnvVars) {
   let id = 1;
   const send = (method, params) => child.stdin.write(`${JSON.stringify(params === undefined ? { method } : { id: id++, method, params })}\n`);
   try {
-    send("initialize", { clientInfo: { name: "monocode", title: "MonoCode", version: "0.1.0" }, capabilities: { experimentalApi: true } });
+    send("initialize", { clientInfo: { name: "tk", title: "tk contract check", version: "0.1.0" }, capabilities: { experimentalApi: true } });
     await new Promise((r) => setTimeout(r, 500));
     child.stdin.write(`${JSON.stringify({ method: "initialized" })}\n`);
     send("thread/start", { cwd: dirs.work });
@@ -109,13 +113,13 @@ async function codexProbe(codexPath, withEnvVars) {
 async function codexEnvCheck({ codexPath }) {
   const without = await codexProbe(codexPath, false);
   const withVars = await codexProbe(codexPath, true);
-  const reached = withVars.seen?.endpoint === FAKE_ENDPOINT && withVars.seen?.token === "matches";
-  const dropped = !without.seen?.endpoint && !without.seen?.token;
+  const reached = withVars.seen?.token === "matches";
+  const dropped = !without.seen?.token;
   return {
     status: reached ? "pass" : "fail",
     finding: withVars.seen
-      ? `With env_vars, the server saw endpoint ${withVars.seen.endpoint ? "yes" : "no"} and token ${withVars.seen.token ?? "no"}. ` +
-        `Without env_vars it saw ${without.seen ? `endpoint ${without.seen.endpoint ? "yes" : "no"}, token ${without.seen.token ?? "no"}` : "nothing (did not start)"}: ` +
+      ? `With env_vars, the server saw ${TOKEN}: ${withVars.seen.token ?? "no"}. ` +
+        `Without env_vars it saw ${without.seen ? `${TOKEN}: ${without.seen.token ?? "no"}` : "nothing (did not start)"}: ` +
         `${dropped ? "Codex drops them unless named, so the flag is needed." : "Codex passes them on anyway."}`
       : `The probe server never started. Stderr: ${withVars.stderr.slice(-300)}`,
     seen: { with: withVars.seen, without: without.seen },
@@ -128,14 +132,14 @@ async function claudeEnvCheck({ claudePath }) {
   const out = path.join(dirs.root, "seen.json");
   writeFileSync(probe, PROBE);
   const fake = await startFakeMessages({ script: () => [textBlock("ok")] });
-  // The --mcp-config MonoCode builds (claudeGatewayMcpConfig).
+  // A user-level stdio entry, as `tk connect claude-code` writes it.
   const config = JSON.stringify({ mcpServers: { [SERVER]: { type: "stdio", command: process.execPath, args: [probe, out] } } });
   const s = new ClaudeSession({
     claudePath,
     dirs,
     baseUrl: fake.baseUrl,
     args: ["--mcp-config", config],
-    env: { [ENDPOINT]: FAKE_ENDPOINT, [TOKEN]: FAKE_TOKEN },
+    env: { [TOKEN]: FAKE_TOKEN },
   });
   try {
     let seen = await waitForFile(out, 8000);
@@ -143,11 +147,11 @@ async function claudeEnvCheck({ claudePath }) {
       await s.send("hello", 60000);
       seen = await waitForFile(out, 8000);
     }
-    const reached = seen?.endpoint === FAKE_ENDPOINT && seen?.token === "matches";
+    const reached = seen?.token === "matches";
     return {
       status: reached ? "pass" : "fail",
       finding: seen
-        ? `A --mcp-config stdio server saw endpoint ${seen.endpoint ? "yes" : "no"} and token ${seen.token ?? "no"}: Claude Code ${reached ? "passes" : "does not pass"} its environment on.`
+        ? `A --mcp-config stdio server saw ${TOKEN}: ${seen.token ?? "no"}: Claude Code ${reached ? "passes" : "does not pass"} its environment on.`
         : `The probe server never started. Stderr: ${s.stderr.slice(-300)}`,
       seen,
     };
@@ -179,9 +183,8 @@ async function claudeShellCheck({ claudePath }) {
       return hasResult ? [textBlock("done")] : [toolUse("Bash", { command: SHELL_COMMAND, description: "Count a variable" })];
     },
   });
-  // As MonoCode starts a chat with computer use: the two variables on the
-  // Claude Code process (computer_use.rs `configure_child`).
-  const s = new ClaudeSession({ claudePath, dirs, baseUrl: fake.baseUrl, env: { [ENDPOINT]: FAKE_ENDPOINT, [TOKEN]: FAKE_TOKEN } });
+  // As `tk run claude-code` starts a chat: the chat token on the process.
+  const s = new ClaudeSession({ claudePath, dirs, baseUrl: fake.baseUrl, env: { [TOKEN]: FAKE_TOKEN } });
   try {
     await s.send("Run the check command.", 120000);
   } finally {
@@ -200,13 +203,13 @@ async function claudeShellCheck({ claudePath }) {
   const { count, leaked } = shellCount(outputs);
   const seen = leaked || (count ?? 0) > 0;
   return {
-    status: count === null && !leaked ? "error" : seen ? "fail" : "pass",
+    status: count === null && !leaked ? "error" : "info",
     finding:
       count === null && !leaked
         ? "Could not read the Bash command's output."
         : seen
-          ? `Claude Code's Bash tool sees ${TOKEN} (count ${count}${leaked ? ", value in the output" : ""}). Claude Code passes its whole environment to Bash; MonoCode has no per-variable exclude for it.`
-          : `Claude Code's Bash tool does not see ${TOKEN}.`,
+          ? `Claude Code's Bash tool sees ${TOKEN} (count ${count}${leaked ? ", value in the output" : ""}), as expected under tk: Claude Code passes its whole environment to Bash, and a chat token is the agent's too (rules case 66; it posts only into its own chat and an app grant still needs an approver's yes).`
+          : `Claude Code's Bash tool does not see ${TOKEN}; Claude Code changed how it passes its environment, so recheck case 66's notes.`,
     seen: { count, leaked },
   };
 }
@@ -221,11 +224,11 @@ async function codexShellRun(codexPath, args) {
       return hasOutput ? [text("done")] : [call("exec_command", { cmd: SHELL_COMMAND }, "cu1")];
     },
   });
-  // The variables go on Codex's process, as MonoCode sets them. The driver
-  // starts Codex with its own environment, so a wrapper adds them.
+  // The chat token goes on Codex's process, as `tk run codex` sets it. The
+  // driver starts Codex with its own environment, so a wrapper adds it.
   const launcher = path.join(dirs.root, "codex-with-env.sh");
   const q = (v) => `'${String(v).replace(/'/g, `'\\''`)}'`;
-  writeFileSync(launcher, `#!/bin/sh\nexport ${ENDPOINT}=${q(FAKE_ENDPOINT)}\nexport ${TOKEN}=${q(FAKE_TOKEN)}\nexec ${q(codexPath)} "$@"\n`, { mode: 0o700 });
+  writeFileSync(launcher, `#!/bin/sh\nexport ${TOKEN}=${q(FAKE_TOKEN)}\nexec ${q(codexPath)} "$@"\n`, { mode: 0o700 });
   const client = new CodexClient({ codexPath: launcher, dirs, baseUrl: fake.url ?? fake.baseUrl, args });
   try {
     await client.initialize();
@@ -243,8 +246,8 @@ async function codexShellRun(codexPath, args) {
 }
 
 async function codexShellCheck({ codexPath }) {
-  // MonoCode's flags: the server's env_vars and the shell excludes
-  // (`codex_shell_env_args`, which now holds MONOCODE_CU_*).
+  // The server's env_vars, and Codex's shell excludes with tk's two
+  // variables added: the exclude wave 4 lane R is to set in `tk run codex`.
   const stub = path.join(path.dirname(new URL(import.meta.url).pathname), "..", "lib", "stubMcp.mjs");
   const serverArgs = [
     "-c",
@@ -252,16 +255,18 @@ async function codexShellCheck({ codexPath }) {
     "-c",
     `mcp_servers.${SERVER}.args=${JSON.stringify([stub])}`,
     "-c",
-    `mcp_servers.${SERVER}.env_vars=${JSON.stringify([ENDPOINT, TOKEN])}`,
+    `mcp_servers.${SERVER}.env_vars=${JSON.stringify([TOKEN])}`,
   ];
-  const withExclude = await codexShellRun(codexPath, [...codexShellEnvArgs(), ...serverArgs]);
+  const excludeArgs = codexShellEnvArgs();
+  excludeArgs[1] = excludeArgs[1].replace(/\]$/, `, ${TK_SHELL_EXCLUDES.map((v) => JSON.stringify(v)).join(", ")}]`);
+  const withExclude = await codexShellRun(codexPath, [...excludeArgs, ...serverArgs]);
   const without = await codexShellRun(codexPath, serverArgs);
   const seen = withExclude.leaked || (withExclude.count ?? 0) > 0;
   return {
     status: withExclude.count === null && !withExclude.leaked ? "error" : seen ? "fail" : "pass",
     finding:
-      `With MonoCode's shell excludes, exec_command saw ${TOKEN}: ${withExclude.count === null ? "unknown" : withExclude.count > 0 ? "yes" : "no"}. ` +
-      `Without them: ${without.count === null ? "unknown" : without.count > 0 ? "yes" : "no"}.`,
+      `With ${TOKEN} in shell_environment_policy.exclude, exec_command saw it: ${withExclude.count === null ? "unknown" : withExclude.count > 0 ? "yes" : "no"}. ` +
+      `Without the exclude: ${without.count === null ? "unknown" : without.count > 0 ? "yes" : "no"}. tk run codex does not set the exclude yet (wave 4 lane R).`,
     seen: { withExclude, without },
   };
 }
@@ -269,13 +274,13 @@ async function codexShellCheck({ codexPath }) {
 export const computerUseCodexChecks = [
   {
     id: "cu-shell-codex",
-    title: "Computer use: Codex's shell commands do not see the chat's bridge token",
+    title: "Computer use: Codex's shell can be kept from the chat token (shell_environment_policy.exclude)",
     flag: "computer-use shell excludes",
     run: codexShellCheck,
   },
   {
     id: "cu-env-codex",
-    title: "Computer use: the chat's MCP server gets MonoCode's endpoint and token on Codex",
+    title: "Computer use: the chat's MCP server gets the chat token on Codex",
     flag: "computer-use env_vars",
     run: codexEnvCheck,
   },
@@ -284,13 +289,13 @@ export const computerUseCodexChecks = [
 export const computerUseClaudeChecks = [
   {
     id: "cu-shell-claude",
-    title: "Computer use: Claude Code's Bash tool and the chat's bridge token",
+    title: "Computer use: Claude Code's Bash tool and the chat token (case 66)",
     flag: "computer-use env",
     run: claudeShellCheck,
   },
   {
     id: "cu-env-claude",
-    title: "Computer use: the chat's MCP server gets MonoCode's endpoint and token on Claude Code",
+    title: "Computer use: the chat's MCP server gets the chat token on Claude Code",
     flag: "computer-use env",
     run: claudeEnvCheck,
   },

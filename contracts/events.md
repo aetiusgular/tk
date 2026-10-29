@@ -15,7 +15,7 @@ Written by tk session 0, 27 Oct 2026, from the fork's receiver at `159ef3e` (`sr
 
 OTLP JSON logs (`POST $TK_OTLP_ENDPOINT/v1/logs`, header `x-tk-token: $TK_CHAT_TOKEN`), one `resourceLogs` entry per batch, batched at 1 second.
 
-Resource attributes: `service.name` = `pi`, `host.arch`, `os.type`. No `service.version`: Pi gives an extension no version without a runtime import of Pi, and the receiver keeps only `service.name` (`decode.rs:333-342`; lane A).
+Resource attributes: `service.name` = `pi`, or `oh-my-pi` when the package runs under oh-my-pi (Bun; lane I's request 6, integration w2), `host.arch`, `os.type`. No `service.version`: Pi gives an extension no version without a runtime import of Pi, and the receiver keeps only `service.name` (`decode.rs:333-342`; lane A).
 
 Per record: `timeUnixNano`, body `{"stringValue": "pi.<name>"}`, and these attributes, mirrored from Claude Code's:
 

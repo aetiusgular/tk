@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.aetiusgular/tk-computer-use",
   "title": "tk computer use",
-  "description": "Computer use on a Mac through the tk helper: one app per approval, a Stop control, recordings.",
+  "description": "Computer use on a Mac through the tk helper, served by tk-daemon: one app per approval, recordings.",
   "version": "0.0.1",
   "websiteUrl": "https://github.com/aetiusgular/tk",
   "repository": {
@@ -13,13 +13,27 @@
   "packages": [
     {
       "registryType": "host",
-      "identifier": "tk",
+      "identifier": "tk-daemon",
       "version": "0.0.1",
       "packageArguments": [
         {
           "type": "positional",
-          "value": "cu",
-          "description": "Until wave 2 lane K lands tk cu, the fork starts it as <MonoCode> computer-use-mcp (T0.4)"
+          "value": "cu-mcp",
+          "description": "tk-daemon cu-mcp, the relay to the daemon's computer-use bridge (lane K; integration w2 dispatched it)"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "TK_CHAT_TOKEN",
+          "description": "The chat token tk run sets on the harness; the relay presents it to the bridge. Codex passes it to a server only when named in env_vars (contract check cu-env-codex).",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "TK_CHAT_TOKEN_FILE",
+          "description": "The file holding the chat token, for harnesses that strip TOKEN-named variables (tk run --boundary none).",
+          "isRequired": false,
+          "isSecret": false
         }
       ],
       "transport": {

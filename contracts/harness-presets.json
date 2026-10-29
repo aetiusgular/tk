@@ -376,8 +376,8 @@
         "orcaId": "gemini",
         "gate": {
           "family": "command-hook",
-          "where": "~/.gemini/settings.json BeforeTool, or an extension's hooks/hooks.json",
-          "status": "planned",
+          "where": "extension tk, hooks/hooks.json BeforeTool (gemini extensions install <path>)",
+          "status": "built",
           "wave": 2,
           "lane": "I",
           "package": "packages/tk-gemini-extension"
@@ -386,8 +386,8 @@
         "failSwitch": null,
         "ask": "own-prompt",
         "shellAliases": [],
-        "verifiedAt": "0.65.0, source",
-        "note": "a hook cannot approve; pair with deny and allow rules in ~/.gemini/policies"
+        "verifiedAt": "0.66.0, run",
+        "note": "killed, crashed, hung and timed out hooks all let the call through, run on 0.66.0 and 0.65.0; the extension's policies/tk.toml and the printed user-tier TOML are what hold without the hook; a hook cannot approve; headless, Gemini's own prompt does not pass; under security.environmentVariableRedaction or GITHUB_SHA the hook loses TOKEN-named variables, so tk run also sets GEMINI_CLI_TK_CHAT_TOKEN_FILE (lane I, applied by integration w2)"
       }
     },
     {
@@ -487,8 +487,8 @@
         "orcaId": "hermes",
         "gate": {
           "family": "plugin",
-          "where": "Python plugin pre_tool_call in ~/.hermes/plugins/<tk>/",
-          "status": "planned",
+          "where": "Python plugin pre_tool_call and transform_tool_result, ~/.hermes/plugins/tk/ (hermes plugins enable tk)",
+          "status": "built",
           "wave": 2,
           "lane": "I",
           "package": "packages/tk-hermes-plugin"
@@ -497,7 +497,8 @@
         "failSwitch": null,
         "ask": "own-prompt",
         "shellAliases": [],
-        "verifiedAt": "v0.22.5, source"
+        "verifiedAt": "v0.22.5, source",
+        "note": "blocks on a raise and on its 30 s callback timeout (read); an ask goes to Hermes's prompt except under yolo, unattended or approvals off, where tk blocks; Hermes was never run (lane I: its install was refused), so every claim is read in source (lane I, applied by integration w2)"
       }
     },
     {
@@ -543,22 +544,24 @@
       ],
       "verified": "2026-10-27",
       "coverage": {
-        "tier": null,
+        "tier": "G",
         "orcaId": null,
         "gate": {
           "family": "plugin",
-          "where": "OpenClaw plugin",
-          "status": "planned",
+          "where": "OpenClaw plugin before_tool_call (openclaw.extensions), runs last",
+          "status": "built",
           "wave": 2,
           "lane": "I",
           "package": "packages/tk-openclaw-plugin"
         },
-        "failMode": "unknown",
+        "failMode": "blocks",
         "failSwitch": null,
-        "ask": "unknown",
-        "shellAliases": [],
-        "verifiedAt": "NF",
-        "note": "not in Orca's grid; kept from the toolkit plan"
+        "ask": "own-prompt",
+        "shellAliases": [
+          "exec"
+        ],
+        "verifiedAt": "2026.10.8, run",
+        "note": "fail-closed hook runner (read); tk runs last and hands back the params it checked (run); exec is gated as bash, but Code Mode's exec is a code tool and is not aliased; MCP tools reach it as <server>__<tool>; not in Orca's grid; needs Node 24.22.1 or later (lane I, applied by integration w2)"
       }
     },
     {
@@ -988,24 +991,25 @@
       "name": "oh-my-pi",
       "cli": "omp",
       "mcpFile": "~/.omp/agent/mcp.json",
-      "toolNameForm": "mcp__s_t",
+      "toolNameForm": "mcp__<server>_<tool>",
       "verified": "TODO",
       "coverage": {
         "tier": "G",
         "orcaId": "omp",
         "gate": {
           "family": "pi-extension",
-          "where": "the tk-pi package, omp install",
-          "status": "planned",
+          "where": "omp install <path> (a symlink under ~/.omp/plugins), tool_call",
+          "status": "built",
           "wave": 2,
-          "lane": "I"
+          "lane": "I",
+          "package": "packages/tk-pi"
         },
         "failMode": "blocks",
         "failSwitch": null,
         "ask": "own-prompt",
         "shellAliases": [],
-        "verifiedAt": "18.13.1, source",
-        "note": "its default approval mode is yolo, so the gate is its only check"
+        "verifiedAt": "18.13.3, run",
+        "note": "blocks on a throw and its 30 s timeout (run); confirm is false with no UI; its default approval mode is yolo, so the gate is its only check; the redundant <server>_ prefix is dropped and names over 64 characters get a hash; PI_CONFIG_DIR and PI_CODING_AGENT_DIR move its folders; a later extension that returns {input} still replaces the args tk allowed (lane I, applied by integration w2)"
       }
     },
     {
@@ -1171,24 +1175,25 @@
       "name": "Kilo Code CLI",
       "cli": "kilo",
       "mcpFile": "~/.config/kilo/kilo.json mcp",
-      "toolNameForm": "s_t",
+      "toolNameForm": "<server>_<tool>",
       "verified": "TODO",
       "coverage": {
         "tier": "G",
         "orcaId": "kilo",
         "gate": {
           "family": "plugin",
-          "where": "plugin ~/.config/kilo/plugin/<tk>.ts, tool.execute.before",
-          "status": "planned",
+          "where": "~/.config/kilo/kilo.json plugin array (a file: URL), or ~/.config/kilo/plugin/tk.ts; tool.execute.before",
+          "status": "built",
           "wave": 2,
-          "lane": "I"
+          "lane": "I",
+          "package": "packages/tk-kilo-plugin"
         },
         "failMode": "blocks",
         "failSwitch": null,
         "ask": "approver-or-deny",
         "shellAliases": [],
-        "verifiedAt": "7.8.18, source",
-        "note": "fail mode inferred; Kilo never fires permission.ask"
+        "verifiedAt": "7.8.18, run",
+        "note": "a throw stops the call (run); Kilo never fires permission.ask, so an ask is the daemon approver or deny; - stays in server names; XDG_CONFIG_HOME moves the folder and KILO_CONFIG_CONTENT replaces the config; npm plugins whose engines.opencode does not match are skipped, so the package declares none (lane I, applied by integration w2)"
       }
     },
     {

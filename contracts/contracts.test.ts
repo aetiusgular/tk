@@ -163,8 +163,8 @@ describe("harness coverage", () => {
     for (const r of orca) tiers[r.coverage.tier ?? "none"] = (tiers[r.coverage.tier ?? "none"] ?? 0) + 1;
     expect(tiers).toEqual({ G: 24, A: 2, O: 1 });
   });
-  it("marks built only the four wave 1 adapters", () => {
+  it("marks built the four wave 1 adapters and wave 2's five (integration w2)", () => {
     const built = [...data.harnesses, ...data.planned].filter((r) => r.coverage.gate.status === "built").map((r) => r.id).sort();
-    expect(built).toEqual(["claude-code", "codex", "opencode", "pi"]);
+    expect(built).toEqual(["claude-code", "codex", "gemini", "hermes", "kilo", "oh-my-pi", "openclaw", "opencode", "pi"]);
   });
 });

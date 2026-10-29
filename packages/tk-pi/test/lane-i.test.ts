@@ -138,3 +138,12 @@ describe("control markers added in wave 2", () => {
     }
   });
 });
+
+describe("the emitter names its harness (lane I's request 6, integration w2)", () => {
+  it("service.name is pi by default and oh-my-pi when given", async () => {
+    const { payload } = await import("../src/otlp.ts");
+    const name = (p: unknown) => ((p as { resourceLogs: { resource: { attributes: { key: string; value: { stringValue: string } }[] } }[] }).resourceLogs[0]!.resource.attributes.find((a) => a.key === "service.name")!.value.stringValue);
+    expect(name(payload([], { arch: "x64", os: "linux" }))).toBe("pi");
+    expect(name(payload([], { arch: "x64", os: "linux", service: "oh-my-pi" }))).toBe("oh-my-pi");
+  });
+});

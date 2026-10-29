@@ -587,8 +587,11 @@ mod tests {
                 .to_string()
         };
         assert!(line("codex").contains("FAILS OPEN"), "{}", line("codex"));
+        // Gemini's gate is built since wave 2 and fails open (lane I, run on
+        // 0.66.0); its registration is not read yet (integration w2).
         assert!(
-            line("gemini").contains("planned, wave 2 lane I"),
+            line("gemini").contains("built (command-hook)")
+                && line("gemini").contains("FAILS OPEN"),
             "{}",
             line("gemini")
         );
@@ -600,7 +603,7 @@ mod tests {
         assert!(line("copilot-cli").contains("on timeout"));
         assert!(line("zed").contains("no in-harness gate"));
         assert!(line("pi").contains("built (pi-extension)"));
-        assert!(line("gemini").contains("n/a"), "{}", line("gemini"));
+        assert!(line("gemini").contains("unknown"), "{}", line("gemini"));
     }
 
     #[test]
