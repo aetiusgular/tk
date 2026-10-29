@@ -340,10 +340,28 @@ mod tests {
         std::fs::copy(&sh, &fake_tk).unwrap();
         // `tk -c 'sleep 5 & wait'`: the copy of sh, named tk, is the parent
         // of a sleep.
-        let mut child = std::process::Command::new(&fake_tk)
-            .args(["-c", "sleep 5 & wait"])
-            .spawn()
-            .unwrap();
+        // A thread of this test binary that forks while the copy is still
+        // open for writing hands the child that descriptor until it execs,
+        // and exec of the copy then fails with ETXTBSY (moved here from
+        // tk-cli by integration w2, where it shared a binary with no other
+        // forking test). Try again for a moment.
+        let mut child = None;
+        for _ in 0..100 {
+            match std::process::Command::new(&fake_tk)
+                .args(["-c", "sleep 5 & wait"])
+                .spawn()
+            {
+                Ok(c) => {
+                    child = Some(c);
+                    break;
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::ExecutableFileBusy => {
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+                Err(e) => panic!("{e}"),
+            }
+        }
+        let mut child = child.expect("the copy of sh could be started");
         let tk_pid = child.id();
         let mut sleep_pid = None;
         for _ in 0..50 {

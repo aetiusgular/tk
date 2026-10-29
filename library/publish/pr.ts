@@ -10,7 +10,7 @@
 import { randomUUID } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { stableText } from "../mirror/store.ts";
 import { PROOF_FILE, type PublishProof } from "./publish.ts";
 
@@ -79,7 +79,11 @@ export async function runSteps(steps: Step[], exec: Exec): Promise<void> {
       if (resolve(s.copy.to).startsWith(resolve(s.copy.from) + "/") || resolve(s.copy.from).startsWith(resolve(s.copy.to) + "/")) throw new Error("the entry folder and the catalog folder contain one another");
       // The old version's folder is replaced; git holds it.
       if (existsSync(s.copy.to)) rmSync(s.copy.to, { recursive: true });
-      mkdirSync(s.copy.to, { recursive: true });
+      // The parent, not the folder itself: Node 24's cpSync refuses to copy a
+      // folder onto an existing one under errorOnExist (lib/internal/fs/cp/
+      // cp-sync.js onDir at v24.x 338f67f); Node 22's copied into it
+      // (v22.x e29aa49). CI's Node 24 failed here (integration w2).
+      mkdirSync(dirname(s.copy.to), { recursive: true });
       // verbatimSymlinks with errorOnExist: digest.ts already refused links.
       cpSync(s.copy.from, s.copy.to, { recursive: true, errorOnExist: true, force: false, verbatimSymlinks: true });
     } else writeFileSync(s.write.path, s.write.text, s.write.exclusive ? { flag: "wx", mode: 0o600 } : {});

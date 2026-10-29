@@ -248,10 +248,23 @@ mod tests {
         assert!(client
             .request("hello", json!({}), Duration::from_secs(5))
             .is_err());
-        assert!(events
-            .lock()
-            .unwrap()
-            .iter()
-            .any(|e| e["event"] == "closed"));
+        // The reader marks the client closed before it emits `closed`
+        // (above, `open.store` then `on_event`), so wait for the event as for
+        // the flag: CI's macOS runner once read the list in between
+        // (integration w2).
+        let closed = || {
+            events
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|e| e["event"] == "closed")
+        };
+        for _ in 0..100 {
+            if closed() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert!(closed());
     }
 }
