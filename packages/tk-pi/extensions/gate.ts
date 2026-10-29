@@ -188,11 +188,26 @@ export function createGate(options: GateOptions = {}) {
           announce({ ...base, toolNameNormalized: normalized, decision: "reject", reason: d.reason });
           return block(d.reason);
         }
+        // Freeze before the card, not after the yes: code that holds the
+        // input (an extension Pi ran first) could change it while you read
+        // the card, and the yes would approve text you never saw (fix pass
+        // 1's review, FP1-S6).
+        const held = sealed(event);
+        if (held !== undefined) {
+          announce({ ...base, toolNameNormalized: normalized, decision: "reject", reason: "input could not be held still" });
+          return held;
+        }
         const outcome = await askUser(ctx, `tk: allow ${normalized}?`, cardMessage(event.toolName, d.reason, policy, inputText), policy.askTimeoutSeconds * 1000);
         switch (outcome) {
           case "yes":
+            // With the freeze off (TK_PI_FREEZE_INPUT=0) the input could still
+            // change; a yes counts only for the text the card showed.
+            if (inputTextFor(normalized, event.input) !== inputText) {
+              announce({ ...base, toolNameNormalized: normalized, decision: "reject", reason: "input changed while asking" });
+              return block("the input changed while you were asked, so the call is refused");
+            }
             announce({ ...base, toolNameNormalized: normalized, decision: "ask_accept", reason: d.reason });
-            return sealed(event);
+            return undefined;
           case "timeout":
             announce({ ...base, toolNameNormalized: normalized, decision: "ask_timeout", reason: "ask timed out" });
             return block("ask timed out");

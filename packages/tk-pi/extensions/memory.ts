@@ -52,9 +52,12 @@
 //   `TK_MEMORY_STATE`), and an index that changed any other way (a shell's
 //   `cd memory && echo ... >> INDEX.md`, an editor, a second agent) is
 //   injected only after a "changed outside tk memory" card. Approved means:
-//   what a project held the first time tk memory saw it, a card's own
-//   write, or your yes to that card. The record file is as safe as
-//   `~/.tk/policy.json`: an agent that can write it can write the policy.
+//   a card's own write, or your yes to that card. An index the record does
+//   not know asks too, so a record that was removed, moved or never written
+//   (a project tk memory has not seen, or a project renamed so its real path
+//   changed) costs one card per index, never a silent injection (fix pass 1's
+//   review, FP1-S1). The record file is as safe as `~/.tk/policy.json`: an
+//   agent that can write it can write the policy.
 // No network call: `research_save` takes the page text the model already
 // has; tk-pi does not fetch (rules, section 5, item 8).
 
@@ -157,6 +160,8 @@ export interface MemoryOptions {
 }
 
 export const CHANGED_TITLE = "Use a changed tk memory index?";
+/** The card for an index in a project the record does not hold (FP1-S1). */
+export const UNKNOWN_TITLE = "Use a tk memory index you have not approved?";
 /** The record file is read only up to this size. */
 const MAX_STATE_BYTES = 4 * 1024 * 1024;
 /** Lines kept per approved index, for the card's "added" list. */
@@ -353,8 +358,8 @@ export interface Approved {
 
 /** The record: by project (its real path), by index file. `trusted` is
  * false when the file could not be used (a link, others can write it, not
- * ours, unreadable): then nothing counts as approved and nothing is taken
- * on first sight. */
+ * ours, unreadable): then nothing counts as approved and nothing is
+ * written back. A missing file is trusted and empty: every index asks. */
 interface StateRead {
   trusted: boolean;
   projects: Record<string, Record<string, Approved>>;
@@ -392,7 +397,7 @@ async function readState(file: string | undefined): Promise<StateRead> {
   try {
     handle = await fsp.open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch (e) {
-    // No record yet: first sight of every project.
+    // No record yet: nothing approved, every index asks.
     return (e as NodeJS.ErrnoException).code === "ENOENT" ? { trusted: true, projects: {} } : { trusted: false, projects: {} };
   }
   try {
@@ -448,20 +453,31 @@ function approvedOf(raw: string): Approved {
 }
 
 /** The card text for an index that changed outside the card. */
-function changedCard(rel: string, raw: string, before: Approved | undefined): string {
-  const now = indexLines(raw);
+function changedCard(rel: string, raw: string, before: Approved | undefined, projectKnown: boolean, file: string | undefined): string {
+  const all = indexLines(raw);
+  // Only the first MAX_LINES lines of an index can reach the model, so those
+  // are the lines a yes approves, and the card shows every one of them that
+  // is new: a line kept out of the card would go in on the same yes (fix
+  // pass 1's review, FP1-S2).
+  const now = all.slice(0, MAX_LINES);
   const was = new Set(before?.lines ?? []);
   const added = now.filter((l) => !was.has(l));
-  const kept = new Set(now);
+  const kept = new Set(all);
   const gone = (before?.lines ?? []).filter((l) => !kept.has(l)).length;
-  const shown = added.slice(0, 12).map((l) => `  + ${cardText(clip(l, MAX_LINE), MAX_LINE + 40)}`);
+  const shown = added.map((l) => `  + ${cardText(clip(l, MAX_LINE), MAX_LINE + 40)}`);
   return [
-    before ? `${rel} changed since you last approved it, and not through a tk memory card.` : `${rel} appeared, and not through a tk memory card.`,
-    `Something other than the card wrote it: a shell command, an editor, another agent. If you edited it yourself, say yes.`,
+    ...(before
+      ? [`${rel} changed since you last approved it, and not through a tk memory card.`, `Something other than the card wrote it: a shell command, an editor, another agent. If you edited it yourself, say yes.`]
+      : projectKnown
+        ? [`${rel} appeared, and not through a tk memory card.`, `Something other than the card wrote it: a shell command, an editor, another agent. If you edited it yourself, say yes.`]
+        : [
+          `tk memory has no record of you approving ${rel} in this project.`,
+          `Either tk memory has not seen this project before, or its record (${file ?? "none"}) was removed, moved or could not be read. Read the lines before you say yes.`,
+          ]),
     ``,
     added.length ? `Lines it would add to the model's context (${added.length}):` : `No new lines; ${gone} line(s) gone.`,
     ...shown,
-    ...(added.length > shown.length ? [`  … and ${added.length - shown.length} more`] : []),
+    ...(all.length > now.length ? [`(${all.length - now.length} line(s) past the first ${MAX_LINES} never reach the model.)`] : []),
     ...(added.length && gone ? [`${gone} line(s) gone.`] : []),
     ``,
     `Yes puts it in the model's context from now on. No leaves it out of this session; the next one asks again.`,
@@ -595,7 +611,9 @@ export function createMemory(options: MemoryOptions = {}) {
     const key = await projectKey(cwd);
     const known = state.projects[key];
     const rec = known?.[rel];
-    const beforeApproved = known === undefined || (rec !== undefined ? rec.sha256 === sha(before) : before === "");
+    // A new index file the card made counts; text it appended to counts only
+    // when that text was approved (FP1-S1: no project-wide first sight).
+    const beforeApproved = rec !== undefined ? rec.sha256 === sha(before) : before === "";
     if (!beforeApproved) return;
     await writeState(file, { ...state.projects, [key]: { ...(known ?? {}), [rel]: approvedOf(after) } });
   }
@@ -724,19 +742,16 @@ export function createMemory(options: MemoryOptions = {}) {
       const state = await readState(file);
       const key = await projectKey(ctx.cwd);
       const known = state.trusted ? state.projects[key] : undefined;
-      const firstSight = state.trusted && known === undefined;
+      // Every index the record does not hold as approved asks, the first
+      // time too: a removed or moved record must not approve what is there
+      // (FP1-S1).
       const approvedNow: Record<string, Approved> = { ...(known ?? {}) };
-      let dirty = firstSight;
+      let dirty = false;
       const use = new Map<string, string>();
       const leftOut: string[] = [];
       for (const [rel, raw] of files) {
         if (indexLines(raw).length === 0) continue;
         const h = sha(raw);
-        if (firstSight) {
-          approvedNow[rel] = approvedOf(raw);
-          use.set(rel, raw);
-          continue;
-        }
         if (known?.[rel]?.sha256 === h) {
           use.set(rel, raw);
           continue;
@@ -746,7 +761,7 @@ export function createMemory(options: MemoryOptions = {}) {
           leftOut.push(rel);
           continue;
         }
-        const answer = await ask(ctx, CHANGED_TITLE, changedCard(rel, raw, known?.[rel]));
+        const answer = await ask(ctx, known === undefined ? UNKNOWN_TITLE : CHANGED_TITLE, changedCard(rel, raw, known?.[rel], known !== undefined, file));
         if (answer === "yes") {
           approvedNow[rel] = approvedOf(raw);
           dirty = true;

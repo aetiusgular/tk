@@ -14,7 +14,7 @@
 
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, chmodSync, existsSync, statSync } from "node:fs";
 import http from "node:http";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -154,7 +154,15 @@ const first = seen[0] ? (seen[0].messages ?? []).map(textOf).join("\n") : "";
 check("the index text reached the model", first.includes("- [build](build.md): npm run check before a push"));
 const searchResult = seen[1] ? JSON.stringify(seen[1].messages.at(-1)) : "";
 check("memory_search found the seeded line", searchResult.includes("memory/build.md:1: npm run check before a push"), searchResult.slice(0, 160));
-check("memory_propose asked once through an RPC confirm", dialogs.length === 1 && dialogs[0].title === "Save to tk memory?", `${dialogs.length} dialogs`);
+// No record of an approval yet: the index asks once first (fix pass 1's
+// review, FP1-S1), then memory_propose asks once.
+check(
+  "the unapproved index asked once, then memory_propose once, through RPC confirms",
+  dialogs.length === 2 && dialogs[0].title === "Use a tk memory index you have not approved?" && dialogs[1].title === "Save to tk memory?",
+  dialogs.map((d) => d.title).join(" | "),
+);
+const record = join(dir, ".tk", "memory-index.json");
+check("the yes recorded the index in ~/.tk/memory-index.json, 0600", existsSync(record) && (statSync(record).mode & 0o777) === 0o600 && readFileSync(record, "utf8").includes("memory/INDEX.md"));
 const index = existsSync(join(work, "memory/INDEX.md")) ? readFileSync(join(work, "memory/INDEX.md"), "utf8") : "";
 check("the yes wrote memory/INDEX.md and memory/live.md", index.includes("- [live](live.md): Live entry") && existsSync(join(work, "memory/live.md")), index.trim().split("\n").at(-1));
 const last = seen.at(-1);
