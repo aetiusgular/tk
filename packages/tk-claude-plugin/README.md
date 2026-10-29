@@ -29,6 +29,18 @@ From the tk marketplace (lane E exports it): `claude plugin marketplace add <pat
 
 For an organization, `managed-settings.fragment.json` locks hooks to managed ones and force-enables this plugin. `tk connect claude-code --allowlist` prints it; tk never writes a managed file.
 
+A plugin installed with `--scope project` or `--scope local` loads only in the folder it was installed for: Claude Code uses such a record only when its `projectPath` is the folder it started in (read in 2.1.311's binary). `tk status` says so when you run it elsewhere.
+
+## Deferred MCP tools
+
+Claude Code defers MCP tool schemas behind its `ToolSearch` tool when many tools are loaded (seen on 2.1.304 with 571 tools; Mac test w2, MW2), and the gate sees `ToolSearch` as any other tool. With no rule for it, every deferred MCP tool costs one more ask before its own rule is read, and with no approver connected that ask is a deny. `ToolSearch` loads schemas and runs nothing, so a policy for this harness usually wants:
+
+```json
+{ "tool": "toolsearch", "harness": "claude-code", "action": "allow" }
+```
+
+tk does not add it for you: a rule allows a call only where you wrote it (rules case 72).
+
 ## Environment
 
 | Variable | Use |
