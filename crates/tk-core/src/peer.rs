@@ -383,19 +383,46 @@ mod tests {
     /// Mac test w2, MW1: the macOS halves of `start_time` and
     /// `tk_run_ancestor` had no test (Mac test 3.2 ran them first). These two
     /// run on both systems; CI's `rust-macos` job runs them on macOS.
+    /// Started as a copy of this test binary named `tk` by the test below:
+    /// it starts a sleep, prints its pid and waits. Without the variable it
+    /// does nothing.
+    #[test]
+    fn helper_a_tk_that_starts_a_child() {
+        if std::env::var_os("TK_PEER_HELPER").is_none() {
+            return;
+        }
+        let mut c = std::process::Command::new("sleep")
+            .arg("5")
+            .spawn()
+            .unwrap();
+        println!("CHILD {}", c.id());
+        use std::io::Write;
+        let _ = std::io::stdout().flush();
+        let _ = c.wait();
+    }
+
     #[test]
     fn a_child_under_a_program_named_tk_is_found_on_either_system() {
-        // A copy of sh named `tk` starts a sleep and prints its pid; no /proc.
+        // A copy of this test binary named `tk` starts a sleep and prints its
+        // pid; no /proc. (A copy of /bin/sh does not do on macOS: there sh
+        // execs bash, so the process is named bash; CI's rust-macos run,
+        // fix pass 1.)
         use std::io::BufRead;
         let dir = std::env::temp_dir().join(format!("tk-peer-any-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let fake_tk = dir.join("tk");
-        std::fs::copy("/bin/sh", &fake_tk).unwrap();
+        std::fs::copy(std::env::current_exe().unwrap(), &fake_tk).unwrap();
         let mut child = None;
         for _ in 0..100 {
             match std::process::Command::new(&fake_tk)
-                .args(["-c", "sleep 5 & echo $!; wait"])
+                .args([
+                    "peer::tests::helper_a_tk_that_starts_a_child",
+                    "--exact",
+                    "--nocapture",
+                    "--test-threads=1",
+                ])
+                .env("TK_PEER_HELPER", "1")
                 .stdout(std::process::Stdio::piped())
                 .spawn()
             {
@@ -409,17 +436,30 @@ mod tests {
                 Err(e) => panic!("{e}"),
             }
         }
-        let mut child = child.expect("the copy of sh could be started");
+        let mut child = child.expect("the copy could be started");
         let tk_pid = child.id();
-        let mut line = String::new();
-        std::io::BufReader::new(child.stdout.take().unwrap())
-            .read_line(&mut line)
-            .unwrap();
-        let sleep_pid: u32 = line.trim().parse().unwrap();
+        let mut reader = std::io::BufReader::new(child.stdout.take().unwrap());
+        let mut sleep_pid: Option<u32> = None;
+        for _ in 0..50 {
+            let mut line = String::new();
+            if reader.read_line(&mut line).unwrap_or(0) == 0 {
+                break;
+            }
+            // The harness prints "test <name> ... " before the output.
+            if let Some(at) = line.find("CHILD ") {
+                sleep_pid = line[at + 6..].trim().parse().ok();
+                break;
+            }
+        }
+        let sleep_pid = sleep_pid.expect("the helper printed its child");
+        // The sleep's parent is the copy's test thread's process.
         let found = tk_run_ancestor(sleep_pid);
         let named = program(tk_pid);
         let _ = child.kill();
         let _ = child.wait();
+        let _ = std::process::Command::new("kill")
+            .arg(sleep_pid.to_string())
+            .status();
         let _ = std::fs::remove_dir_all(&dir);
         assert_eq!(found, Some(tk_pid), "program of the parent: {named:?}");
         assert_eq!(tk_run_ancestor(std::process::id()), None);
