@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { domainToASCII } from "node:url";
 import { describe, expect, it } from "vitest";
 import { fold as coreFold } from "../../packages/tk-claude-plugin/src/core/fold.ts";
-import { fold as laneEFold } from "../validate/rejects.ts";
 import { loadCatalog } from "../validate/catalog.ts";
 import { fold, skeleton } from "./fold.ts";
 import { CATALOG_DIR, identityOf, loadBrands, loadReserved, mergeBrands, TRUST_DIR } from "./identity.ts";
@@ -23,8 +22,22 @@ describe("one fold with the gate", () => {
   // Lane E's hand-picked table (library/validate/rejects.ts). Every entry must
   // still read as its letter in a name skeleton after the move (lane E's open
   // item; plan T4.3). The five where the gate's table differs are pinned.
-  const laneESource = readFileSync(join(TRUST_DIR, "..", "validate", "rejects.ts"), "utf8");
-  const laneETable = [...laneESource.matchAll(/"\\u([0-9A-Fa-f]{4})": "([a-z])"/g)].map((m) => ({ hex: m[1]!.toUpperCase(), ch: String.fromCharCode(Number.parseInt(m[1]!, 16)), to: m[2]! }));
+  // Frozen by integration w2 when the validator moved to the gate's fold
+  // (library/trust/gen/lane-e-confusables.json, from rejects.ts at 9aff181).
+  const frozen = JSON.parse(readFileSync(join(TRUST_DIR, "gen", "lane-e-confusables.json"), "utf8")) as { entries: { code: string; to: string }[] };
+  const laneETable = frozen.entries.map((e) => ({ hex: e.code, ch: String.fromCharCode(Number.parseInt(e.code, 16)), to: e.to }));
+  // Lane E's fold as it was (rejects.ts at 9aff181): NFKC, lowercase,
+  // invisible characters dropped, spaces mapped, fullwidth to ASCII, then the
+  // table above. Kept here only to show what the gate's fold catches that it
+  // did not.
+  const laneEMap = new Map(laneETable.map((e) => [e.ch, e.to]));
+  const laneEFold = (text: string): string => {
+    let t = text.normalize("NFKC").toLowerCase().replace(/[\u00AD\u034F\u200B-\u200F\u2060-\u2064\uFEFF\u180E]/g, "").replace(/[\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g, " ");
+    t = t.replace(/[\uFF01-\uFF5E]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+    let out = "";
+    for (const ch of t) out += laneEMap.get(ch) ?? ch;
+    return out;
+  };
 
   it("reads lane E's 56 table entries", () => {
     expect(laneETable).toHaveLength(56);

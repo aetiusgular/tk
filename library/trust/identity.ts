@@ -1,60 +1,22 @@
 // What an entry points at, and the brand and reserved lists (lane H, T4.3).
 //
-// `identityOf` mirrors the validator's private helpers
-// (library/validate/index.ts:317-355, lane E) so the name rules see the same
-// namespace, hosts, images and packages the validator's lookalike rule does.
-// A request for integration asks that lane E's be exported and this copy
-// dropped; until then `identity.test.ts` holds the two to the same answers on
-// the seed catalog through the validator's own lookalike outcome.
+// `identityOf` reads the validator's helpers (library/validate/identity.ts,
+// one copy since integration w2), so the name rules see the same namespace,
+// hosts, images and packages the validator does.
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { Kind, LoadedEntry, TkMeta } from "../validate/types.ts";
+import { hostsOf, imagesOf, namespaceOf, packagesOf } from "../validate/identity.ts";
+import type { LoadedEntry } from "../validate/types.ts";
 import { getMeta, isRecord } from "../validate/types.ts";
+
+export { hostsOf };
 import type { Brand, Identity, Reserved } from "./names.ts";
 
 export const TRUST_DIR = dirname(fileURLToPath(import.meta.url));
 export const LIBRARY_DIR = join(TRUST_DIR, "..");
 export const CATALOG_DIR = join(LIBRARY_DIR, "catalog");
-
-function namespaceOf(kind: Kind, data: Record<string, unknown>): string {
-  if (kind === "server") return typeof data["name"] === "string" ? ((data["name"] as string).split("/")[0] ?? "") : "";
-  if (kind === "skill") return typeof data["namespace"] === "string" ? (data["namespace"] as string) : "";
-  const author = data["author"];
-  return isRecord(author) && typeof author["name"] === "string" ? author["name"] : "";
-}
-
-/** Hostnames of every remote. `{placeholder}` parts are replaced before parsing, as the validator does. */
-export function hostsOf(data: Record<string, unknown>): string[] {
-  const hosts: string[] = [];
-  const remotes = data["remotes"];
-  if (!Array.isArray(remotes)) return hosts;
-  for (const r of remotes) {
-    if (!isRecord(r) || typeof r["url"] !== "string") continue;
-    try {
-      hosts.push(new URL(r["url"].replace(/\{[^}]+\}/g, "x")).hostname);
-    } catch {
-      // an invalid URL is the upstream rules' finding
-    }
-  }
-  return hosts;
-}
-
-function imagesOf(data: Record<string, unknown>, meta: TkMeta | undefined): string[] {
-  const images: string[] = [];
-  if (meta?.runner.kind === "image") images.push(meta.runner.image);
-  const packages = data["packages"];
-  if (Array.isArray(packages)) for (const p of packages) if (isRecord(p) && p["registryType"] === "oci" && typeof p["identifier"] === "string") images.push(p["identifier"]);
-  return images;
-}
-
-function packagesOf(data: Record<string, unknown>): string[] {
-  const out: string[] = [];
-  const packages = data["packages"];
-  if (Array.isArray(packages)) for (const p of packages) if (isRecord(p) && p["registryType"] !== "oci" && typeof p["identifier"] === "string") out.push(p["identifier"]);
-  return out;
-}
 
 export function identityOf(entry: Pick<LoadedEntry, "kind" | "data">): Identity {
   const meta = getMeta(entry.kind, entry.data);

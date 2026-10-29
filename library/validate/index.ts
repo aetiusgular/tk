@@ -12,8 +12,9 @@
 // variable turns it on (upstream.ts).
 import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
-import type { Brand } from "./lookalikes.ts";
-import { lookalike } from "./lookalikes.ts";
+import { checkName, type Brand, type Reserved } from "../trust/names.ts";
+import { loadReserved } from "../trust/identity.ts";
+import { hostsOf, imagesOf, namespaceOf, packagesOf } from "./identity.ts";
 import { SERVER_ID, TOOL_NAME_CHARSET, mangle, policyKey } from "./names.ts";
 import { SECRET_LIKE, isEnvReference, scanRejects } from "./rejects.ts";
 import { REPO_ROOT, checkTkSchema, checkUpstreamServerSchema } from "./schemas.ts";
@@ -24,7 +25,11 @@ import { checkSkillsRef, checkUpstreamOnline, checkUpstreamSemantics } from "./u
 
 export type { Finding, Kind, LoadedEntry, Catalog } from "./types.ts";
 export { hasErrors } from "./types.ts";
-export { loadCatalog, loadEntry, loadBrands, CATALOG_DIR } from "./catalog.ts";
+export { loadCatalog, loadEntry, CATALOG_DIR } from "./catalog.ts";
+// The brand seeds: lane E's catalog list merged with lane H's generated ones,
+// and lane H's reserved names (integration w2, lane H's request).
+export { loadBrands, loadReserved } from "../trust/identity.ts";
+export { hostsOf, imagesOf, namespaceOf, packagesOf } from "./identity.ts";
 
 /** Permissive licences the library includes (ToolHive's and Docker's rule; plan section 11, call 4). SPDX ids. */
 export const PERMISSIVE_LICENSES = new Set(["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD", "MPL-2.0", "Unlicense", "CC0-1.0", "Zlib", "BSL-1.0"]);
@@ -35,7 +40,7 @@ export const DIRECT_TOOL_CEILING = 10;
 /** Well-known token shapes a manifest must never carry as a literal. */
 const TOKEN_SHAPES: RegExp[] = [/\bghp_[A-Za-z0-9]{20,}/, /\bgithub_pat_[A-Za-z0-9_]{20,}/, /\bAKIA[0-9A-Z]{16}\b/, /\bsk-[A-Za-z0-9_-]{20,}/, /\bxox[baprs]-[A-Za-z0-9-]{10,}/, /\bglpat-[A-Za-z0-9_-]{20,}/];
 
-export type ValidateOptions = { brands?: Brand[]; catalog?: Catalog };
+export type ValidateOptions = { brands?: Brand[]; reserved?: Reserved[]; catalog?: Catalog };
 
 /** Validate one entry on its own: schema, upstream rules, library rules that
  *  need no other entry. Catalog-wide rules are in `validateCatalog`. */
@@ -210,20 +215,24 @@ export function validateEntry(entry: LoadedEntry, opts: ValidateOptions = {}): F
     checkLicense(kind, data["license"], meta, out);
   }
 
-  // 9. Lookalikes against the seed brand list.
-  if (opts.brands && opts.brands.length > 0) {
+  // 9. Names against the brand seeds and the reserved list: lane H's
+  // checkName (rules trust/lookalike, trust/reserved, trust/reserved-prefix,
+  // trust/mixed-script, trust/punycode-namespace) on the gate's own fold,
+  // in place of lane E's hand-picked subset (integration w2; plan T4.3).
+  if ((opts.brands && opts.brands.length > 0) || (opts.reserved && opts.reserved.length > 0)) {
     const identity = { namespace: namespaceOf(kind, data), hosts: hostsOf(data), images: imagesOf(data, meta), packages: packagesOf(data) };
-    const hit = lookalike(entry.id, identity, opts.brands);
-    if (hit) out.push(finding("lib/lookalike", "error", "", `'${entry.id}' looks like the brand '${hit.brand}' (distance ${hit.distance}) and points at none of that brand's hosts or images (UpGuard, note AP section 5; plan T4.3)`));
+    const title = typeof data["title"] === "string" ? (data["title"] as string) : undefined;
+    const description = typeof data["description"] === "string" ? (data["description"] as string) : undefined;
+    out.push(...checkName({ id: entry.id, ...(title !== undefined ? { title } : {}), ...(description !== undefined ? { description } : {}), identity }, { brands: opts.brands ?? [], reserved: opts.reserved ?? [] }));
   }
 
   return out;
 }
 
 /** Catalog-wide rules, plus every entry's own findings keyed by id. */
-export function validateCatalog(catalog: Catalog, brands: Brand[]): { byEntry: Map<string, Finding[]>; catalog: Finding[] } {
+export function validateCatalog(catalog: Catalog, brands: Brand[], reserved: Reserved[] = loadReserved()): { byEntry: Map<string, Finding[]>; catalog: Finding[] } {
   const byEntry = new Map<string, Finding[]>();
-  for (const e of catalog.entries) byEntry.set(e.id, validateEntry(e, { brands, catalog }));
+  for (const e of catalog.entries) byEntry.set(e.id, validateEntry(e, { brands, reserved, catalog }));
   const out: Finding[] = [];
 
   // Tool names unique across the catalog once mangled.
@@ -312,46 +321,6 @@ function shortNameOf(kind: Kind, data: Record<string, unknown>): string | undefi
   const name = data["name"];
   if (typeof name !== "string") return undefined;
   return kind === "server" ? name.split("/").at(-1) : name;
-}
-
-function namespaceOf(kind: Kind, data: Record<string, unknown>): string {
-  if (kind === "server") return typeof data["name"] === "string" ? (data["name"] as string).split("/")[0] ?? "" : "";
-  if (kind === "skill") return typeof data["namespace"] === "string" ? (data["namespace"] as string) : "";
-  const author = data["author"];
-  return isRecord(author) && typeof author["name"] === "string" ? author["name"] : "";
-}
-
-function hostsOf(data: Record<string, unknown>): string[] {
-  const hosts: string[] = [];
-  const remotes = data["remotes"];
-  if (Array.isArray(remotes)) {
-    for (const r of remotes) {
-      if (isRecord(r) && typeof r["url"] === "string") {
-        try {
-          hosts.push(new URL(r["url"].replace(/\{[^}]+\}/g, "x")).hostname);
-        } catch {
-          // an invalid URL is reported by the upstream rules
-        }
-      }
-    }
-  }
-  return hosts;
-}
-
-function imagesOf(data: Record<string, unknown>, meta: TkMeta): string[] {
-  const images: string[] = [];
-  if (meta.runner.kind === "image") images.push(meta.runner.image);
-  const packages = data["packages"];
-  if (Array.isArray(packages)) for (const p of packages) if (isRecord(p) && p["registryType"] === "oci" && typeof p["identifier"] === "string") images.push(p["identifier"]);
-  return images;
-}
-
-/** Package identifiers that are not images (npm, pypi, nuget, mcpb, host commands). */
-function packagesOf(data: Record<string, unknown>): string[] {
-  const out: string[] = [];
-  const packages = data["packages"];
-  if (Array.isArray(packages)) for (const p of packages) if (isRecord(p) && p["registryType"] !== "oci" && typeof p["identifier"] === "string") out.push(p["identifier"]);
-  return out;
 }
 
 function checkLicense(kind: Kind, license: unknown, meta: TkMeta, out: Finding[]): void {

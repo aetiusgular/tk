@@ -1,37 +1,16 @@
 // Publish-time rejects (lane E, T3.1; plan T3.3 and section 9 item 4;
 // note AP section 8.5; contracts/policy.md section 3.1).
 //
-// The folding is the one the policy contract specifies for case 30 and case
-// 33: lowercase, drop invisible and format characters, map Unicode spaces to
-// one ASCII space, map fullwidth ASCII to ASCII, map confusable letters from
-// other scripts to their Latin look-alike. The confusable table here is the
-// small Latin-target subset the library needs for its key list and brand
-// names; it is not the whole of Unicode TR39 confusables.txt, which lanes A
-// and B carry for the policy matcher (see the status doc, Research).
+// The folding is the policy contract's, the gate's own function (below).
 
-const INVISIBLE = /[\u00AD\u034F\u200B-\u200F\u2060-\u2064\uFEFF\u180E]/g;
-const SPACES = /[\u0085\u00A0\u1680\u2000-\u200A\u2028\u2029\u202F\u205F\u3000]/g;
-
-/** Confusable single characters with a Latin or ASCII target. Sources:
- *  Unicode TR39 confusables.txt, the Cyrillic, Greek and Armenian rows whose
- *  target is a basic Latin letter, plus the ASCII digit look-alikes. */
-const CONFUSABLES: Record<string, string> = {
-  "\u0430": "a", "\u0435": "e", "\u043E": "o", "\u0440": "p", "\u0441": "c", "\u0443": "y", "\u0445": "x", "\u0456": "i", "\u0458": "j", "\u04BB": "h", "\u0501": "d", "\u051B": "q", "\u051D": "w", "\u0455": "s", "\u04CF": "l",
-  "\u0391": "a", "\u0392": "b", "\u0395": "e", "\u0396": "z", "\u0397": "h", "\u0399": "i", "\u039A": "k", "\u039C": "m", "\u039D": "n", "\u039F": "o", "\u03A1": "p", "\u03A4": "t", "\u03A5": "y", "\u03A7": "x",
-  "\u03B1": "a", "\u03BF": "o", "\u03BD": "v", "\u03C1": "p", "\u03C5": "u", "\u03B9": "i", "\u03BA": "k", "\u03C3": "o",
-  "\u0410": "a", "\u0412": "b", "\u0415": "e", "\u041A": "k", "\u041C": "m", "\u041D": "h", "\u041E": "o", "\u0420": "p", "\u0421": "c", "\u0422": "t", "\u0425": "x", "\u0406": "i", "\u0408": "j", "\u0405": "s",
-  "\u0131": "i", "\u0237": "j", "\u00F0": "d", "\u2113": "l", "\u212A": "k",
-};
-
-/** Fold text the way the policy contract's reject list does. */
-export function fold(text: string): string {
-  let s = text.normalize("NFKC").toLowerCase().replace(INVISIBLE, "").replace(SPACES, " ");
-  // Fullwidth ASCII (U+FF01 to U+FF5E) to ASCII.
-  s = s.replace(/[\uFF01-\uFF5E]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
-  let out = "";
-  for (const ch of s) out += CONFUSABLES[ch] ?? ch;
-  return out;
-}
+/** Fold text the way the policy contract's reject list does: the gate's own
+ *  fold (NFKD, marks dropped, invisible and format characters dropped, every
+ *  Unicode space to one ASCII space, fullwidth ASCII to ASCII, the whole of
+ *  confusables.txt 17.0.0, then lowercase), by import from the hook core
+ *  through library/trust/fold.ts (lane H's request, integration w2). Lane E's
+ *  hand-picked subset is gone. */
+import { fold } from "../trust/fold.ts";
+export { fold };
 
 /** contracts/policy.md section 3.1: endpoint, sandbox and approval keys the
  *  2025 and 2026 incidents wrote (note AP section 5). Any entry whose manifest,

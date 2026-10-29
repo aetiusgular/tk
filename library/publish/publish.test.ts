@@ -240,7 +240,7 @@ describe("tk publish", () => {
     const fx3 = fixture(server("io.github.alice/stripe", { remotes: [{ type: "streamable-http", url: "https://mcp.not-stripe.example.com/mcp" }] }), "stripe");
     const r3 = await publish({ dir: fx3.dir, library: fx3.lib, proof: "github" }, { gh: ghAs("alice"), fetchImpl: noPackages });
     expect(r3.ok).toBe(false);
-    expect(r3.findings.map((f) => f.rule)).toContain("lib/lookalike");
+    expect(r3.findings.map((f) => f.rule)).toContain("trust/lookalike");
     // An id the catalog already holds for another name.
     const fx4 = fixture(server("io.github.alice/exa"), "exa");
     expect((await publish({ dir: fx4.dir, library: fx4.lib, proof: "github" }, { gh: ghAs("alice"), fetchImpl: noPackages })).findings.map((f) => f.rule)).toContain("publish/id-taken");

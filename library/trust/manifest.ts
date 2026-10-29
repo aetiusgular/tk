@@ -20,7 +20,7 @@ import type { ToolsRecord } from "../validate/types.ts";
 import { isRecord } from "../validate/types.ts";
 import { hostsOf } from "./identity.ts";
 
-export const DRIFT_KINDS = ["tools-added", "tools-removed", "description", "input-schema", "endpoint-host", "annotations"] as const;
+export const DRIFT_KINDS = ["tools-added", "tools-removed", "description", "input-schema", "endpoint-host", "annotations", "package"] as const;
 export type DriftKind = (typeof DRIFT_KINDS)[number];
 
 export function sha256Hex(text: string): string {
@@ -174,6 +174,9 @@ export function diffManifests(prev: Manifest, next: Manifest): Drift {
   // not a move, but a remote that went from one host to another is.
   if (d.hostsAdded.length) d.changed.push("endpoint-host");
   if (d.annotations.length) d.changed.push("annotations");
+  // A package identity that was not there before is drift, as a new host is
+  // (the contract's `package` kind, added by integration w2 at lane H's ask).
+  if (d.packages.added.length) d.changed.push("package");
   return d;
 }
 

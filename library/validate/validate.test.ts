@@ -46,10 +46,16 @@ describe("the seed catalog", () => {
     expect(catalogHasErrors(result)).toBe(false);
   });
 
-  it("carries only the warnings it is meant to: third-party outputSchema, hyphenated names, missing entry skills", () => {
+  it("carries only the warnings it is meant to: third-party outputSchema, hyphenated names, missing entry skills, and tk's own bundle under the reserved prefix", () => {
     const warnings = new Set<string>();
     for (const f of result.byEntry.values()) for (const x of f) if (x.severity === "warning") warnings.add(x.rule);
-    expect([...warnings].sort()).toEqual(["lib/entry-skill", "lib/output-schema", "lib/tool-name-charset"]);
+    // trust/reserved-prefix on tk-connectors (integration w2): a bundle's only
+    // namespace is its free-text author name, which anyone can write, so the
+    // owner cannot be proven and the card says "not from its owner" (lane G:
+    // bundles are reviewed by hand).
+    expect([...warnings].sort()).toEqual(["lib/entry-skill", "lib/output-schema", "lib/tool-name-charset", "trust/reserved-prefix"]);
+    const prefixed = [...result.byEntry.entries()].filter(([, f]) => f.some((x) => x.rule === "trust/reserved-prefix")).map(([id]) => id);
+    expect(prefixed).toEqual(["tk-connectors"]);
     expect(result.catalog).toEqual([]);
   });
 
@@ -172,9 +178,9 @@ describe("one bad entry per rule", () => {
     const r = validateEntry(entry("granola", (e) => { (tk(e)["exposure"] as { default: string }).default = "direct"; }));
     expect(rules(r)).toContain("lib/exposure-direct");
   });
-  it("lib/lookalike: a brand's name on another host, and a confusable spelling (case 59)", () => {
-    expect(errors(validateEntry(entry("exa", (e) => { (e.data["remotes"] as { url: string }[])[0]!.url = "https://mcp.exa-tools.example/mcp"; }), { brands }))).toContain("lib/lookalike");
-    expect(errors(validateEntry(entry("exa", (e) => { e.id = "hubspоt"; e.data["name"] = "io.github.aetiusgular/hubspоt"; }), { brands }))).toContain("lib/lookalike");
+  it("trust/lookalike: a brand's name on another host, and a confusable spelling (case 59)", () => {
+    expect(errors(validateEntry(entry("exa", (e) => { (e.data["remotes"] as { url: string }[])[0]!.url = "https://mcp.exa-tools.example/mcp"; }), { brands }))).toContain("trust/lookalike");
+    expect(errors(validateEntry(entry("exa", (e) => { e.id = "hubspоt"; e.data["name"] = "io.github.aetiusgular/hubspоt"; }), { brands }))).toContain("trust/lookalike");
     expect(errors(validateEntry(entry("exa"), { brands }))).toEqual([]);
   });
   it("lib/license: a copyleft licence on a skill, a missing one on a bundle", () => {

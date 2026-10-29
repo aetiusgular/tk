@@ -10,7 +10,7 @@ import { basename, join, relative, resolve, sep } from "node:path";
 import type { Catalog, Kind, LoadedEntry, ToolsRecord } from "./types.ts";
 import { isRecord } from "./types.ts";
 import { LIBRARY_DIR, REPO_ROOT, readJson } from "./schemas.ts";
-import type { Brand } from "./lookalikes.ts";
+import type { Brand } from "../trust/names.ts";
 
 export const CATALOG_DIR = join(LIBRARY_DIR, "catalog");
 export const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
@@ -96,7 +96,5 @@ export function loadCatalog(catalogDir = CATALOG_DIR, repoRoot = REPO_ROOT): Cat
   return { dir: catalogDir, entries, sets, brands: brands.map((b) => b.name) };
 }
 
-export function loadBrands(catalogDir = CATALOG_DIR): Brand[] {
-  const brandsPath = join(catalogDir, "brands.json");
-  return existsSync(brandsPath) ? (readJson(brandsPath) as { brands: Brand[] }).brands : [];
-}
+// The brand list with lane H's seeds merged is library/trust/identity.ts
+// loadBrands, re-exported by validate/index.ts (integration w2).

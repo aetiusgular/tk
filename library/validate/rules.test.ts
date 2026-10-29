@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { mangle, policyKey, SERVER_ID, TOOL_NAME_CHARSET } from "./names.ts";
 import { ENDPOINT_AND_SANDBOX_KEYS, fold, isEnvReference, scanRejects } from "./rejects.ts";
 import { allowedToolsOf, parseSkillMd, validateSkillFrontmatter } from "./skill-md.ts";
-import { editDistance, lookalike, type Brand } from "./lookalikes.ts";
+import { checkName, editDistance, type Brand } from "../trust/names.ts";
 import { checkUpstreamSemantics, looksLikeVersionRange, checkUpstreamOnline, checkSkillsRef } from "./upstream.ts";
 import { toYaml } from "../export/yaml.ts";
 
@@ -96,30 +96,31 @@ describe("SKILL.md", () => {
   });
 });
 
-describe("lookalikes", () => {
+describe("lookalikes (lane E's cases, now through lane H's checkName; integration w2)", () => {
   const brands: Brand[] = [
     { name: "exa", namespaces: ["io.github.exa-labs"], hosts: ["mcp.exa.ai"], images: ["mcp/exa"] },
     { name: "hubspot", namespaces: ["com.hubspot"], hosts: ["mcp.hubspot.com"] },
   ];
   const other = { namespace: "io.github.someone", hosts: ["evil.example"], images: [], packages: [] };
+  const rules = (id: string, identity = other) => checkName({ id, identity }, { brands, reserved: [] }).map((f) => f.rule);
   it("edit distance", () => {
     expect(editDistance("hubspot", "hubsp0t")).toBe(1);
     expect(editDistance("abc", "abcde", 1)).toBe(2);
   });
   it("a pointer to the brand's own host is not a lookalike, whoever published it (case 59)", () => {
-    expect(lookalike("exa", { namespace: "io.github.aetiusgular", hosts: ["mcp.exa.ai"], images: [], packages: [] }, brands)).toBeUndefined();
+    expect(rules("exa", { namespace: "io.github.aetiusgular", hosts: ["mcp.exa.ai"], images: [], packages: [] })).toEqual([]);
   });
   it("the brand's name on another host is", () => {
-    expect(lookalike("exa", other, brands)?.brand).toBe("exa");
-    expect(lookalike("exa-mcp", other, brands)?.brand).toBe("exa");
+    expect(rules("exa")).toContain("trust/lookalike");
+    expect(rules("exa-mcp")).toContain("trust/lookalike");
   });
-  it("a Cyrillic spelling and a digit swap of a brand are", () => {
-    expect(lookalike("hubsp\u043Et", other, brands)?.distance).toBe(0);
-    expect(lookalike("hubsp0t", other, brands)?.distance).toBe(0);
-    expect(lookalike("hubspotx", other, brands)?.distance).toBe(1);
+  it("a Cyrillic spelling, a digit swap and a one-letter edit of a brand are", () => {
+    expect(rules("hubsp\u043Et")).toContain("trust/lookalike");
+    expect(rules("hubsp0t")).toContain("trust/lookalike");
+    expect(rules("hubspotx")).toContain("trust/lookalike");
   });
   it("short brands do not match at distance 1", () => {
-    expect(lookalike("exo", other, brands)).toBeUndefined();
+    expect(rules("exo")).toEqual([]);
   });
 });
 

@@ -20,7 +20,10 @@ export function mangle(toolName: string): string {
   return toolName.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
 
-/** The `server/tool` key the policy file matches on (contracts/policy.md section 2). */
+/** The `server/tool` key the policy file matches on (contracts/policy.md
+ *  section 2): step 1 on both parts, so `hugging-face` becomes
+ *  `hugging_face`, as the matchers normalize it and the policy schema's
+ *  `tool` pattern requires (lane H's finding; integration w2). */
 export function policyKey(serverId: string, toolName: string): string {
-  return `${serverId.toLowerCase()}/${mangle(toolName)}`;
+  return `${mangle(serverId)}/${mangle(toolName)}`;
 }
