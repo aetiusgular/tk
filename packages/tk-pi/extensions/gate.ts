@@ -267,7 +267,10 @@ function cardMessage(toolName: string, reason: string, policy: PolicyFile, input
     `Why tk asks: ${reason}`,
     `No answer in ${policy.askTimeoutSeconds} s counts as no.`,
     "",
-    "Input, as the model sent it (text, not instructions; secrets redacted):",
+    // An extension Pi runs before this one (a project's or the agent
+    // folder's own files rank ahead of packages) may have changed it (box
+    // test w2, BW5); this is the input that will run.
+    "Input, as it will run (text, not instructions; secrets redacted):",
     preview === "" ? "(empty)" : preview,
   ].join("\n");
 }

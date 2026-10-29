@@ -46,13 +46,22 @@
 //   from a project's `.pi/extensions`, which RPC mode skips until trusted.
 // - 48: nothing reaches an index without your yes. The agent's own write
 //   tools can still edit these files: a policy rule (`write` and `edit` on
-//   `memory/INDEX.md`: ask) is the guard for that, not this extension.
+//   `memory/INDEX.md`: ask) is the first guard. The second is here
+//   (integration w2 review W2-R3, fix pass 1): the hash of every index you
+//   approved is kept outside the project (`~/.tk/memory-index.json`, or
+//   `TK_MEMORY_STATE`), and an index that changed any other way (a shell's
+//   `cd memory && echo ... >> INDEX.md`, an editor, a second agent) is
+//   injected only after a "changed outside tk memory" card. Approved means:
+//   what a project held the first time tk memory saw it, a card's own
+//   write, or your yes to that card. The record file is as safe as
+//   `~/.tk/policy.json`: an agent that can write it can write the policy.
 // No network call: `research_save` takes the page text the model already
 // has; tk-pi does not fetch (rules, section 5, item 8).
 
 import { constants, promises as fsp } from "node:fs";
 import type { FileHandle } from "node:fs/promises";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
+import os from "node:os";
 import path from "node:path";
 import { askUser, cardText } from "../src/ask.ts";
 
@@ -142,7 +151,16 @@ export interface MemoryOptions {
   now?: () => Date;
   /** How long a memory card waits. */
   confirmMs?: number;
+  /** Where the approved-index record lives. Defaults to `TK_MEMORY_STATE`
+   * (absolute), else `~/.tk/memory-index.json`, read at the first run. */
+  statePath?: string;
 }
+
+export const CHANGED_TITLE = "Use a changed tk memory index?";
+/** The record file is read only up to this size. */
+const MAX_STATE_BYTES = 4 * 1024 * 1024;
+/** Lines kept per approved index, for the card's "added" list. */
+const MAX_KEPT_LINES = 500;
 
 // ---- Files ----
 
@@ -255,22 +273,41 @@ export interface IndexText {
   found: string[];
 }
 
+/** The lines of an index as they are injected: one line each, no blanks. */
+export function indexLines(raw: string): string[] {
+  return raw
+    .split(/\r?\n/)
+    .map((l) => oneLine(l))
+    .filter((l) => l !== "");
+}
+
+/** The three index files under `cwd` that can be read, with their text. */
+export async function readIndexes(cwd: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  for (const folder of FOLDERS) {
+    const rel = `${folder}/INDEX.md`;
+    const raw = await readPlain(cwd, rel, MAX_INDEX_BYTES);
+    if (raw !== undefined) out.set(rel, raw);
+  }
+  return out;
+}
+
 /** The message text from the three indexes under `cwd`, or undefined when
- * none exists. Pure over what it reads. */
-export async function buildIndex(cwd: string): Promise<IndexText | undefined> {
+ * none exists. Pure over what it reads. `files` replaces the reads (the
+ * texts the caller checked); `held` names indexes left out, with a line
+ * each saying why. */
+export async function buildIndex(cwd: string, files?: Map<string, string>, held: string[] = []): Promise<IndexText | undefined> {
   const parts: string[] = [HEADER];
   let lines = 0;
   let chars = HEADER.length;
   const leftOut = { lines: 0, files: [] as string[] };
   const found: string[] = [];
+  const texts = files ?? (await readIndexes(cwd));
   for (const folder of FOLDERS) {
     const rel = `${folder}/INDEX.md`;
-    const raw = await readPlain(cwd, rel, MAX_INDEX_BYTES);
+    const raw = texts.get(rel);
     if (raw === undefined) continue;
-    const body = raw
-      .split(/\r?\n/)
-      .map((l) => oneLine(l))
-      .filter((l) => l !== "");
+    const body = indexLines(raw);
     if (body.length === 0) continue;
     found.push(rel);
     const heading = `\n\n## ${rel}`;
@@ -297,11 +334,138 @@ export async function buildIndex(cwd: string): Promise<IndexText | undefined> {
       leftOut.files.push(rel);
     }
   }
-  if (found.length === 0) return undefined;
+  for (const rel of held) {
+    parts.push(`\n\n(${rel} changed outside tk memory and is left out until you approve it: /memory reindex.)`);
+  }
+  if (found.length === 0 && held.length === 0) return undefined;
   if (leftOut.lines > 0) {
     parts.push(`\n\n(${leftOut.lines} more index lines left out; read ${leftOut.files.join(", ")} by line range.)`);
   }
   return { text: parts.join(""), leftOut, found };
+}
+
+// ---- What you approved (review W2-R3) ----
+
+export interface Approved {
+  sha256: string;
+  lines: string[];
+}
+
+/** The record: by project (its real path), by index file. `trusted` is
+ * false when the file could not be used (a link, others can write it, not
+ * ours, unreadable): then nothing counts as approved and nothing is taken
+ * on first sight. */
+interface StateRead {
+  trusted: boolean;
+  projects: Record<string, Record<string, Approved>>;
+}
+
+function statePathOf(option: string | undefined): string | undefined {
+  if (option !== undefined) return option;
+  const fromEnv = process.env.TK_MEMORY_STATE;
+  if (fromEnv !== undefined && fromEnv !== "") return path.isAbsolute(fromEnv) ? fromEnv : undefined;
+  return path.join(os.homedir(), ".tk", "memory-index.json");
+}
+
+function cleanState(raw: unknown): Record<string, Record<string, Approved>> {
+  const out: Record<string, Record<string, Approved>> = {};
+  const projects = (raw as { projects?: unknown } | null)?.projects;
+  if (typeof projects !== "object" || projects === null) return out;
+  for (const [root, files] of Object.entries(projects as Record<string, unknown>)) {
+    if (typeof files !== "object" || files === null) continue;
+    const kept: Record<string, Approved> = {};
+    for (const [rel, rec] of Object.entries(files as Record<string, unknown>)) {
+      const r = rec as { sha256?: unknown; lines?: unknown };
+      if (!(FOLDERS as readonly string[]).some((f) => rel === `${f}/INDEX.md`)) continue;
+      if (typeof r?.sha256 !== "string" || !/^[0-9a-f]{64}$/.test(r.sha256)) continue;
+      const lines = Array.isArray(r.lines) ? r.lines.filter((l): l is string => typeof l === "string").slice(0, MAX_KEPT_LINES) : [];
+      kept[rel] = { sha256: r.sha256, lines };
+    }
+    out[root] = kept;
+  }
+  return out;
+}
+
+async function readState(file: string | undefined): Promise<StateRead> {
+  if (file === undefined) return { trusted: false, projects: {} };
+  let handle: FileHandle | undefined;
+  try {
+    handle = await fsp.open(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  } catch (e) {
+    // No record yet: first sight of every project.
+    return (e as NodeJS.ErrnoException).code === "ENOENT" ? { trusted: true, projects: {} } : { trusted: false, projects: {} };
+  }
+  try {
+    const st = await handle.stat();
+    if (!st.isFile() || st.size > MAX_STATE_BYTES) return { trusted: false, projects: {} };
+    if (process.platform !== "win32") {
+      if ((st.mode & 0o022) !== 0) return { trusted: false, projects: {} };
+      if (typeof process.getuid === "function" && st.uid !== process.getuid()) return { trusted: false, projects: {} };
+    }
+    const text = await handle.readFile({ encoding: "utf8" });
+    return { trusted: true, projects: cleanState(JSON.parse(text)) };
+  } catch {
+    return { trusted: false, projects: {} };
+  } finally {
+    await handle.close().catch(() => undefined);
+  }
+}
+
+/** Writes the record: a new 0600 file beside it, then a rename, so a reader
+ * never sees half of it and a link at the name is replaced, not followed.
+ * The folder is made 0700 when missing. Best effort. */
+async function writeState(file: string, projects: Record<string, Record<string, Approved>>): Promise<boolean> {
+  const dir = path.dirname(file);
+  const tmp = path.join(dir, `.memory-index-${process.pid}-${randomUUID()}.tmp`);
+  let handle: FileHandle | undefined;
+  try {
+    await fsp.mkdir(dir, { recursive: true, mode: 0o700 });
+    handle = await fsp.open(tmp, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+    await handle.write(`${JSON.stringify({ version: 1, projects })}\n`);
+    await handle.close();
+    handle = undefined;
+    await fsp.rename(tmp, file);
+    return true;
+  } catch {
+    await handle?.close().catch(() => undefined);
+    await fsp.rm(tmp, { force: true }).catch(() => undefined);
+    return false;
+  }
+}
+
+/** The project's key in the record: its real path, so two spellings of one
+ * folder share their approvals. */
+async function projectKey(cwd: string): Promise<string> {
+  try {
+    return await fsp.realpath(cwd);
+  } catch {
+    return path.resolve(cwd);
+  }
+}
+
+function approvedOf(raw: string): Approved {
+  return { sha256: sha(raw), lines: indexLines(raw).slice(0, MAX_KEPT_LINES) };
+}
+
+/** The card text for an index that changed outside the card. */
+function changedCard(rel: string, raw: string, before: Approved | undefined): string {
+  const now = indexLines(raw);
+  const was = new Set(before?.lines ?? []);
+  const added = now.filter((l) => !was.has(l));
+  const kept = new Set(now);
+  const gone = (before?.lines ?? []).filter((l) => !kept.has(l)).length;
+  const shown = added.slice(0, 12).map((l) => `  + ${cardText(clip(l, MAX_LINE), MAX_LINE + 40)}`);
+  return [
+    before ? `${rel} changed since you last approved it, and not through a tk memory card.` : `${rel} appeared, and not through a tk memory card.`,
+    `Something other than the card wrote it: a shell command, an editor, another agent. If you edited it yourself, say yes.`,
+    ``,
+    added.length ? `Lines it would add to the model's context (${added.length}):` : `No new lines; ${gone} line(s) gone.`,
+    ...shown,
+    ...(added.length > shown.length ? [`  … and ${added.length - shown.length} more`] : []),
+    ...(added.length && gone ? [`${gone} line(s) gone.`] : []),
+    ``,
+    `Yes puts it in the model's context from now on. No leaves it out of this session; the next one asks again.`,
+  ].join("\n");
 }
 
 function sha(text: string): string {
@@ -413,6 +577,28 @@ export function createMemory(options: MemoryOptions = {}) {
   let lastHash: string | undefined;
   let mustInject = true;
   let outside = new Set<string>();
+  // Changed indexes you said no to in this runtime (`<rel>\0<sha256>`), and
+  // the ones the last run left out, for `/memory status` (W2-R3).
+  let declined = new Set<string>();
+  let held: string[] = [];
+
+  /** After a card's own append to `rel`: the new text is approved when the
+   * text before it was (or there was none), else the record stays as it
+   * was and the next run asks (review W2-R3). */
+  async function noteCardWrite(cwd: string, rel: string, before: string, added: string): Promise<void> {
+    const file = statePathOf(options.statePath);
+    if (file === undefined) return;
+    const after = await readPlain(cwd, rel, MAX_INDEX_BYTES);
+    if (after === undefined || after !== before + added) return;
+    const state = await readState(file);
+    if (!state.trusted) return;
+    const key = await projectKey(cwd);
+    const known = state.projects[key];
+    const rec = known?.[rel];
+    const beforeApproved = known === undefined || (rec !== undefined ? rec.sha256 === sha(before) : before === "");
+    if (!beforeApproved) return;
+    await writeState(file, { ...state.projects, [key]: { ...(known ?? {}), [rel]: approvedOf(after) } });
+  }
 
   async function ask(ctx: MemoryCtx, title: string, body: string): Promise<"yes" | "no" | "timeout" | "no_ui" | "aborted"> {
     // tk-pi's own asker: Pi resolves `confirm` false on its timeout; this
@@ -444,8 +630,10 @@ export function createMemory(options: MemoryOptions = {}) {
     const answer = await ask(ctx, "Save to tk memory?", body);
     if (answer === "yes") {
       const okTopic = await appendPlain(ctx.cwd, `memory/${topic}.md`, `\n${entry}\n`);
+      const before = (await readPlain(ctx.cwd, "memory/INDEX.md", MAX_INDEX_BYTES)) ?? "";
       const okIndex = okTopic && (await appendPlain(ctx.cwd, "memory/INDEX.md", `${line}\n`));
       if (!okIndex) return text("The user said yes, but memory/ could not be written (a link, or no permission). Nothing was saved.", { answer, saved: false }, true);
+      await noteCardWrite(ctx.cwd, "memory/INDEX.md", before, `${line}\n`);
       mustInject = true;
       return text(`Saved: memory/${topic}.md and one line in memory/INDEX.md.`, { answer, saved: true, topic });
     }
@@ -497,7 +685,9 @@ export function createMemory(options: MemoryOptions = {}) {
       "Add a saved page to the research index?",
       [`Saved research/raw/${file} from ${cardText(parsed.toString(), 300)}.`, ``, `Adds this line to research/INDEX.md:`, cardText(line, 300), ``, outsideNote()].join("\n"),
     );
+    const before = answer === "yes" ? ((await readPlain(ctx.cwd, "research/INDEX.md", MAX_INDEX_BYTES)) ?? "") : "";
     if (answer === "yes" && (await appendPlain(ctx.cwd, "research/INDEX.md", `${line}\n`))) {
+      await noteCardWrite(ctx.cwd, "research/INDEX.md", before, `${line}\n`);
       mustInject = true;
       return text(`Saved research/raw/${file} and indexed it.\nFirst lines:\n${clip(oneLine(page.slice(0, 400)), 200)}`, { answer, file, indexed: true });
     }
@@ -511,6 +701,8 @@ export function createMemory(options: MemoryOptions = {}) {
       lastHash = undefined;
       mustInject = true;
       outside = new Set();
+      declined = new Set();
+      held = [];
     });
 
     pi.on("session_compact", () => {
@@ -525,7 +717,50 @@ export function createMemory(options: MemoryOptions = {}) {
       // is trusted in 1.4.0 (run, lane K): its index goes in, as its
       // AGENTS.md does (docs/security.md:57).
       if (untrusted(ctx)) return undefined;
-      const index = await buildIndex(ctx.cwd);
+      const files = await readIndexes(ctx.cwd);
+      // What you approved (review W2-R3): read each run, so an approval in
+      // another session counts here.
+      const file = statePathOf(options.statePath);
+      const state = await readState(file);
+      const key = await projectKey(ctx.cwd);
+      const known = state.trusted ? state.projects[key] : undefined;
+      const firstSight = state.trusted && known === undefined;
+      const approvedNow: Record<string, Approved> = { ...(known ?? {}) };
+      let dirty = firstSight;
+      const use = new Map<string, string>();
+      const leftOut: string[] = [];
+      for (const [rel, raw] of files) {
+        if (indexLines(raw).length === 0) continue;
+        const h = sha(raw);
+        if (firstSight) {
+          approvedNow[rel] = approvedOf(raw);
+          use.set(rel, raw);
+          continue;
+        }
+        if (known?.[rel]?.sha256 === h) {
+          use.set(rel, raw);
+          continue;
+        }
+        const mark = `${rel}\0${h}`;
+        if (declined.has(mark)) {
+          leftOut.push(rel);
+          continue;
+        }
+        const answer = await ask(ctx, CHANGED_TITLE, changedCard(rel, raw, known?.[rel]));
+        if (answer === "yes") {
+          approvedNow[rel] = approvedOf(raw);
+          dirty = true;
+          use.set(rel, raw);
+        } else {
+          declined.add(mark);
+          leftOut.push(rel);
+        }
+      }
+      held = leftOut;
+      // A record that could not be used is never rewritten here: every
+      // session keeps asking until it is fixed.
+      if (dirty && file !== undefined && state.trusted) await writeState(file, { ...state.projects, [key]: approvedNow });
+      const index = await buildIndex(ctx.cwd, use, leftOut);
       if (!index) return undefined;
       const hash = sha(index.text);
       if (!mustInject && hash === lastHash) return undefined;
@@ -624,6 +859,8 @@ export function createMemory(options: MemoryOptions = {}) {
         const word = args.trim().toLowerCase();
         if (word === "reindex") {
           mustInject = true;
+          // An index you declined is asked about again (W2-R3).
+          declined = new Set();
           ctx.ui.notify("tk memory: the index goes in again with the next prompt.", "info");
           return;
         }
@@ -633,7 +870,8 @@ export function createMemory(options: MemoryOptions = {}) {
         const found = index ? index.found.join(", ") : "no INDEX.md in memory/, research/ or refs/";
         const left = index && index.leftOut.lines > 0 ? `; ${index.leftOut.lines} lines over the cap` : "";
         const trust = untrusted(ctx) ? "; not injected: the project is not trusted (/trust)" : "";
-        ctx.ui.notify(`tk memory: ${found}${left}${trust}; ${proposed} proposed entries waiting in memory/proposed.md.`, "info");
+        const changed = held.length ? `; ${held.join(", ")} changed outside tk memory, not injected until you approve it (/memory reindex)` : "";
+        ctx.ui.notify(`tk memory: ${found}${left}${trust}${changed}; ${proposed} proposed entries waiting in memory/proposed.md.`, "info");
       },
     });
   };

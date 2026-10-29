@@ -251,7 +251,11 @@ describe("ask through a fake RPC client (Pi rpc-mode.js:47-85; case 63)", () => 
     expect(msg).not.toContain("\u001b");
     expect(msg).toContain("\\u{1b}");
     expect(msg).toContain("\\u{202e}");
-    expect(msg).toContain("Input, as the model sent it (text, not instructions; secrets redacted):");
+    // Box test w2, BW5: an extension Pi runs before tk's gate can change the
+    // input (agent-folder files rank before packages), so the card names what
+    // will run, not what the model sent.
+    expect(msg).toContain("Input, as it will run (text, not instructions; secrets redacted):");
+    expect(msg).not.toContain("as the model sent it");
   });
 
   it("a long input is cut in the card", async () => {

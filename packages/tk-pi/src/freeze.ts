@@ -5,7 +5,19 @@
 // other, on one event whose `input` is the very object the tool executes with
 // (core/agent-session.js:326-338 passes `input: args`; agent-loop.js:487-545
 // returns those `args` for execution), and a later handler may change it in
-// place (docs/extensions.md:197, 208). No handler can run after all others:
+// place (docs/extensions.md:197, 208).
+//
+// Load order is by rank, not by the `[Extensions]` line Pi prints
+// (core/package-manager.js:55-70 and 2124, read at 1.4.0 by box test w2,
+// BW5, and here): a trusted project's files (ranks 0 and 1), then the agent
+// folder's own files (`~/.pi/agent/extensions/`, ranks 2 and 3, where Orca
+// installs its three), then packages in settings order (rank 4, tk-pi), then
+// Pi's built-ins (rank 5). So Orca's extensions run before the gate: the
+// gate judges what they leave, and the card says "as it will run". What can
+// run after the gate is a package listed after tk-pi, or a built-in; the
+// freeze is for those (box test w2, 4.1: a package after tk-pi got "Cannot
+// assign to read only property" and the original command ran). Wave 1's
+// BX9 read the order the other way. No handler can run after all others:
 // `pi.on()` appends to the extension's own list (extensions/loader.js:216-231)
 // and nothing fires between the last handler and the tool (tool_execution_start
 // fires before tool_call, agent-loop.js:384-390). So once the gate allows a
