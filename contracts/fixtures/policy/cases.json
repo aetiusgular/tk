@@ -1,6 +1,6 @@
 {
   "policy": "policy.json",
-  "note": "Each case is a call and the expected answer under policy.json. `reasonPrefix` is compared with startsWith. `description` absent means the harness gave none. Case 21 needs confusable folding (policy.md, section 3), which session 0's Rust fold_text does not do yet. Cases 22 to 33 were added by integration w1 to pin what all three matchers agree on (policy.md, sections 2 to 4). Cases 34 to 45 were added by integration w1 after its security pass (findings S1, S4, S7 and S10): quotes, globs, git config files, continued lines and harness folders. Case 7 changed and cases 46 to 51 were added by integration w2 for finding S5: a Claude Code plugin's server keeps its whole name (plugin_<plugin>_<server>); a rule on a bare server it could be narrows it and never allows it; an mcp__ name with a second run of __ that servers does not settle asks instead of allowing.",
+  "note": "Each case is a call and the expected answer under policy.json. `reasonPrefix` is compared with startsWith. `description` absent means the harness gave none. Case 21 needs confusable folding (policy.md, section 3), which session 0's Rust fold_text does not do yet. Cases 22 to 33 were added by integration w1 to pin what all three matchers agree on (policy.md, sections 2 to 4). Cases 34 to 45 were added by integration w1 after its security pass (findings S1, S4, S7 and S10): quotes, globs, git config files, continued lines and harness folders. Case 7 changed and cases 46 to 51 were added by integration w2 for finding S5: a Claude Code plugin's server keeps its whole name (plugin_<plugin>_<server>); a rule on a bare server it could be narrows it and never allows it; an mcp__ name with a second run of __ that servers does not settle asks instead of allowing. Cases 52 and 53 were added by integration w2 when lane I's control paths joined every matcher's list.",
   "cases": [
     { "id": 1, "call": { "tool": "mcp__exa__search", "harness": "pi", "inputText": "{\"query\":\"rust\"}" },
       "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule" } },
@@ -135,6 +135,12 @@
       "note": "the plugin's own allow does not outrank a deny on the bare server (S5)" },
     { "id": 51, "call": { "tool": "mcp__exa__x__search", "harness": "pi", "inputText": "" },
       "expect": { "action": "ask", "normalizedTool": "exa/x__search", "reasonPrefix": "ambiguous server name" },
-      "note": "Claude Code allows a server named exa__x; with no servers entry to settle the split, an allow asks (S5)" }
+      "note": "Claude Code allows a server named exa__x; with no servers entry to settle the split, an allow asks (S5)" },
+    { "id": 52, "call": { "tool": "Read", "harness": "claude-code", "inputText": "{\"file_path\":\"/home/u/.gemini/settings.json\"}" },
+      "expect": { "action": "ask", "normalizedTool": "read", "reasonPrefix": "input names a control file" },
+      "note": "wave 2's agents' control folders are in every matcher's list (lane I's request 2, integration w2)" },
+    { "id": 53, "call": { "tool": "Bash", "harness": "claude-code", "inputText": "HERMES_YOLO_MODE=1 hermes chat" },
+      "expect": { "action": "ask", "normalizedTool": "bash", "reasonPrefix": "input names a control file" },
+      "note": "a variable that switches an agent's approvals off asks (lane I's request 2)" }
   ]
 }

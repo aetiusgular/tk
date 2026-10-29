@@ -35,7 +35,7 @@ fn load() -> (PolicyFile, Vec<Case>) {
 }
 
 #[test]
-fn fixture_has_thirteen_rules_and_fifty_one_cases() {
+fn fixture_has_thirteen_rules_and_fifty_three_cases() {
     let (policy, cases) = load();
     assert_eq!(
         policy.rules.len(),
@@ -44,8 +44,8 @@ fn fixture_has_thirteen_rules_and_fifty_one_cases() {
     );
     assert_eq!(
         cases.len(),
-        51,
-        "45 to integration w1, 6 from integration w2 (S5)"
+        53,
+        "45 to integration w1, 8 from integration w2"
     );
 }
 

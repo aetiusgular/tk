@@ -28,6 +28,7 @@ use super::harness::{Harness, HARNESSES};
 pub const OWNED_VARS: &[&str] = &[
     "TK_CHAT_TOKEN",
     "TK_CHAT_TOKEN_FILE",
+    "GEMINI_CLI_TK_CHAT_TOKEN_FILE",
     "TK_CHAT_ID",
     "TK_HARNESS",
     "TK_BOUNDARY",
@@ -212,7 +213,7 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
             let mut names: Vec<&str> = OWNED_VARS.to_vec();
             names.retain(|n| *n != "TK_CHAT_TOKEN" || i.token.is_some());
             // A host path means nothing inside the sandbox.
-            names.retain(|n| *n != "TK_CHAT_TOKEN_FILE");
+            names.retain(|n| *n != "TK_CHAT_TOKEN_FILE" && *n != "GEMINI_CLI_TK_CHAT_TOKEN_FILE");
             names.retain(|n| *n != "TK_OTLP_ENDPOINT" || otlp.is_some());
             names.retain(|n| *n != "TK_GATEWAY_URL" || gateway.is_some());
             for n in names {
@@ -341,6 +342,15 @@ pub fn build(i: &Inputs) -> Result<Plan, String> {
         env.push(("TK_CHAT_TOKEN".into(), t.clone()));
         if i.args.boundary == Boundary::None {
             env.push(("TK_CHAT_TOKEN_FILE".into(), i.token_file.clone()));
+            // Gemini CLI drops every variable named like a token from a
+            // hook's environment under its env redaction, and always keeps
+            // GEMINI_CLI_* (gemini-cli v0.66.0
+            // environmentSanitization.ts:13-195, run by lane I); the
+            // extension's hook reads this alias. The path only, never the
+            // token (lane I's request 1, integration w2).
+            if h.id == "gemini" {
+                env.push(("GEMINI_CLI_TK_CHAT_TOKEN_FILE".into(), i.token_file.clone()));
+            }
         }
     }
     if let Some(o) = &otlp {
@@ -513,6 +523,23 @@ mod tests {
         i.token = None;
         assert!(env(&build(&i).unwrap(), "TK_CHAT_TOKEN_FILE").is_none());
         assert!(OWNED_VARS.contains(&"TK_CHAT_TOKEN_FILE"));
+    }
+
+    /// Lane I's request 1: Gemini's hook gets the token file under the name
+    /// Gemini's env redaction keeps; no other harness gets the alias.
+    #[test]
+    fn gemini_also_gets_the_token_file_under_its_kept_prefix() {
+        let args = a(&["gemini", "--boundary", "none"]);
+        let p = build(&inputs(&args)).unwrap();
+        let file = Some("/run/user/1000/tk/chats/chat-b.token");
+        assert_eq!(env(&p, "TK_CHAT_TOKEN_FILE"), file);
+        assert_eq!(env(&p, "GEMINI_CLI_TK_CHAT_TOKEN_FILE"), file);
+        for h in ["pi", "claude-code"] {
+            let args = a(&[h, "--boundary", "none"]);
+            let p = build(&inputs(&args)).unwrap();
+            assert!(env(&p, "GEMINI_CLI_TK_CHAT_TOKEN_FILE").is_none(), "{h}");
+        }
+        assert!(OWNED_VARS.contains(&"GEMINI_CLI_TK_CHAT_TOKEN_FILE"));
     }
 
     #[test]

@@ -91,6 +91,21 @@ describe("decisions", () => {
     expect(s.client.requests).toHaveLength(0);
   });
 
+  it("an allowed write or edit of a memory index asks: those change only through memory_propose's card (case 48, lane K's request 8)", async () => {
+    const policy = policyText({ rules: [{ tool: "write", action: "allow" }, { tool: "edit", action: "allow" }] });
+    const s = setup({ policy, answer: () => ({ confirmed: false }) });
+    for (const [tool, path] of [
+      ["write", "memory/INDEX.md"],
+      ["edit", "/home/u/proj/research/INDEX.md"],
+      ["write", "./refs/index.MD"],
+    ] as const) {
+      expect(await s.call(tool, { path, content: "x" }, `${tool}-${path}`), path).toEqual({ block: true, reason: "Blocked by tk: not approved" });
+    }
+    expect(s.client.requests).toHaveLength(3);
+    expect(await s.call("write", { path: "memory/notes.md", content: "x" }, "other")).toBeUndefined();
+    expect(s.client.requests).toHaveLength(3);
+  });
+
   it("deny blocks with the rule as the reason and asks nothing", async () => {
     const s = setup();
     const r = await s.call("mcp__exa__delete_index", {});

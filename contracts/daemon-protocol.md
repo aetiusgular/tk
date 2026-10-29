@@ -44,7 +44,7 @@ The `report` object (lane B): `{since, until, chat, events, flags, bySource, byK
 
 `tail`: with `since`, the backlog is the log on disk plus the in-memory ring of the last 4,096 events, the last copy per (chat, id), at most 5,000; without `since`, live events only. A tail more than 4,096 lines behind is dropped; ingest never waits for a reader.
 
-Variables `tk run` sets in the harness (lane D, integration w1), each removed from what the child inherits first: `TK_CHAT_ID`, `TK_HARNESS`, `TK_BOUNDARY`, `TK_CHAT_TOKEN`, `TK_CHAT_TOKEN_FILE` (`--boundary none` only), `TK_OTLP_ENDPOINT`, `TK_GATEWAY_URL`. Readers may also honour `TK_POLICY` and `TK_DAEMON_SOCKET`; a hook refuses either when it points inside the session folder, and since integration w2 refuses any daemon socket path inside the session folder or relative, whichever variable produced it (`XDG_RUNTIME_DIR` too; security finding S14).
+Variables `tk run` sets in the harness (lane D, integration w1), each removed from what the child inherits first: `TK_CHAT_ID`, `TK_HARNESS`, `TK_BOUNDARY`, `TK_CHAT_TOKEN`, `TK_CHAT_TOKEN_FILE` (`--boundary none` only), `GEMINI_CLI_TK_CHAT_TOKEN_FILE` (the same path, Gemini only, because Gemini's env redaction drops names holding `TOKEN` and keeps `GEMINI_CLI_*`; lane I, integration w2), `TK_OTLP_ENDPOINT`, `TK_GATEWAY_URL`. Readers may also honour `TK_POLICY` and `TK_DAEMON_SOCKET`; a hook refuses either when it points inside the session folder, and since integration w2 refuses any daemon socket path inside the session folder or relative, whichever variable produced it (`XDG_RUNTIME_DIR` too; security finding S14).
 
 ## 3. The event
 

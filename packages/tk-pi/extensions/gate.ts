@@ -66,6 +66,17 @@ function block(reason: string): ToolCallResult {
   return { block: true, reason: `Blocked by tk: ${reason}` };
 }
 
+/** The memory index an allowed write or edit names, if any (case 48). */
+export function memoryIndexPath(normalized: string, input: unknown): string | undefined {
+  if (normalized !== "write" && normalized !== "edit") return undefined;
+  const p = input && typeof input === "object" ? (input as Record<string, unknown>).path ?? (input as Record<string, unknown>).file_path : undefined;
+  if (typeof p !== "string") return undefined;
+  const lowered = p.replace(/\\/g, "/").toLowerCase();
+  return MEMORY_INDEXES.find((i) => lowered === i || lowered.endsWith(`/${i}`));
+}
+
+const MEMORY_INDEXES = ["memory/index.md", "research/index.md", "refs/index.md"] as const;
+
 export function createGate(options: GateOptions = {}) {
   return function gate(pi: PiApi): void {
     let store: PolicyStore | undefined;
@@ -108,7 +119,7 @@ export function createGate(options: GateOptions = {}) {
         normalized = normalizeToolName(toolName, policy.servers, harness);
         const inputText = inputTextFor(normalized, event.input);
         const chat = chatFor(environment(), ctx);
-        const d = evaluate(
+        let d = evaluate(
           policy,
           {
             tool: toolName,
@@ -120,6 +131,12 @@ export function createGate(options: GateOptions = {}) {
           problem,
         );
         normalized = d.normalizedTool;
+        // The memory extension's indexes change only through memory_propose's
+        // card (case 48); an allowed write or edit of one asks too (lane K's
+        // request 8, integration w2). Narrowing only, and only in Pi, where
+        // the memory extension runs.
+        const index = d.action === "allow" ? memoryIndexPath(normalized, event.input) : undefined;
+        if (index !== undefined) d = { ...d, action: "ask", reason: `${index} is the memory index: memory_propose writes it` };
         if (d.action === "allow") {
           announce({ ...base, toolNameNormalized: normalized, decision: "accept", reason: d.reason });
           return sealed(event);

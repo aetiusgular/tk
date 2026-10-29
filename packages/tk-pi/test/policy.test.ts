@@ -35,8 +35,8 @@ describe("contract fixture (contracts/fixtures/policy)", () => {
     expect(loaded.policy.askTimeoutSeconds).toBe(30);
   });
 
-  it("has all 51 cases (21 from session 0, 24 from integration w1, 6 from integration w2)", () => {
-    expect(cases).toHaveLength(51);
+  it("has all 53 cases (21 from session 0, 24 from integration w1, 8 from integration w2)", () => {
+    expect(cases).toHaveLength(53);
   });
 
   for (const c of cases) {

@@ -435,6 +435,35 @@ export const CONTROL_PATHS = [
   ".claude/",
   ".codex/",
   ".pi/",
+  // Wave 2's agents (lane I's request 2, folded in by integration w2): each
+  // one's config and plugin folders and the variables that move them or switch
+  // its hooks off. Sources per agent in each adapter's src/control.ts and in
+  // plans/parallel/tk_lane_I.md.
+  ".gemini/",
+  "gemini-cli/",
+  "geminicli/",
+  "gemini_cli_system",
+  ".config/kilo/",
+  ".kilo/",
+  ".kilocode/",
+  "kilo.json",
+  "kilo_config",
+  "kilo_pure",
+  ".hermes/",
+  "hermes_home",
+  "hermes_safe_mode",
+  "hermes_yolo_mode",
+  "hermes_enable_project_plugins",
+  "hermes_accept_hooks",
+  ".openclaw/",
+  "openclaw.json",
+  "openclaw_config_path",
+  "openclaw_state_dir",
+  "openclaw_home",
+  ".omp/",
+  "pi_coding_agent_dir",
+  "pi_config_dir",
+  "tk_pi_freeze_input",
 ] as const;
 
 /**
