@@ -229,15 +229,16 @@ function pluginBareServers(server: string): string[] {
 
 /**
  * Separators an agent writes between server and tool other than the plain
- * `__` (after `mcp__`) or `_` (after `mcp_`, or with no prefix): its declared
- * name form (note AQ section 6). Wave 4's lanes confirm these against each
- * agent (contracts/hook-dialects.md).
+ * `__` (after `mcp__`) or `_` (after `mcp_`, or with no prefix): its
+ * declared name form (note AQ section 6). Only agents with a built gate are
+ * listed; a wave 4 lane adds its agent's form through integration with the
+ * tests that show the form cannot fold another server in (integration w2's
+ * re-review, W2-R1: Droid's `___`, Copilot's `-` and Vibe's `.` let
+ * `exa-evil` pass as `exa`). oh-my-pi's `_` after `mcp__` is its only form,
+ * and as ambiguous as OpenCode's `<server>_<tool>` (contracts/policy.md).
  */
 export const RAW_SEPARATORS: Readonly<Record<string, readonly string[]>> = {
   "oh-my-pi": ["_"],
-  droid: ["___"],
-  "copilot-cli": ["-"],
-  "mistral-vibe": ["."],
 };
 
 /**

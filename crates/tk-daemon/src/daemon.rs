@@ -718,7 +718,13 @@ impl Daemon {
     /// daemon-written `gate.conflict` (source `approval`) naming both.
     fn keep_conflict(&self, mut event: Event) -> Reply {
         let original = store::bound_event(event.clone()).id;
-        let copy = format!("{original}-conflict-{}", uuid::Uuid::new_v4().simple());
+        // The copy's id must survive `bound_event`'s cut to `MAX_ID`, or a long
+        // original would come back as itself (re-review W2-R2): the original
+        // part is cut so the suffix always fits.
+        let suffix = format!("-conflict-{}", uuid::Uuid::new_v4().simple());
+        let keep = store::MAX_ID.saturating_sub(suffix.len());
+        let head: String = original.chars().take(keep).collect();
+        let copy = format!("{head}{suffix}");
         event.id = copy.clone();
         match &mut event.detail {
             Value::Object(map) => {

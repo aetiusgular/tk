@@ -416,6 +416,39 @@ fn a_chat_token_cannot_replace_a_gate_decision() {
 }
 
 #[test]
+fn a_conflict_copy_of_a_long_id_keeps_its_own_id() {
+    // Re-review W2-R2: a 128-character id's copy was cut back to the id.
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "claude-code");
+    let (mut c, _) = Client::hello(&f, &token);
+    let long = "a".repeat(128);
+    let r = c.ask(event(
+        &long,
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny"}),
+    ));
+    assert_eq!(r["id"], long.as_str(), "{r}");
+    let mut ids = Vec::new();
+    for _ in 0..2 {
+        let r = c.ask(event(
+            &long,
+            "c1",
+            "adapter",
+            "approval",
+            json!({"decision": "allow"}),
+        ));
+        let id = r["id"].as_str().unwrap().to_string();
+        assert_ne!(id, long, "{r}");
+        assert!(id.len() <= 128 && id.contains("-conflict-"), "{id}");
+        ids.push(id);
+    }
+    assert_ne!(ids[0], ids[1]);
+}
+
+#[test]
 fn a_tail_that_falls_behind_is_dropped_and_ingest_never_waits() {
     let f = fixture();
     let mut d = Client::daemon(&f);

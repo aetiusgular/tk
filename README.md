@@ -42,17 +42,17 @@ How tk attaches to each agent in Orca's list. Tier G: tk registers a gate that r
 
 | Agent | Tier | tk attaches through | Status |
 |---|---|---|---|
-| Pi | G | `packages/tk-pi` (`tool_call`) | Built, wave 1. Run in a real Pi 1.4.0 in the cloud (JSON and RPC modes; 14 live checks), and under `tk run` with the real daemon. Not run in Orca, MonoCode or the TUI |
-| Claude Code | G | `packages/tk-claude-plugin` (PreToolUse, `onFailure: "block"`) | Built, wave 1. Contract checks pass against Claude Code 2.1.311; installed from this repository's marketplace as `tk@tk`. `bypassPermissions` not run (root) |
-| Codex | G, fails open | `packages/tk-codex-plugin` (PreToolUse) | Built, wave 1. Contract check passes against Codex 0.163.0 and 0.164.0 |
-| OpenCode | G | `packages/tk-opencode-plugin` (`tool.execute.before`) | Built, wave 1. Unit tests only; never run against a real OpenCode (source read at 1.19.4) |
-| Gemini CLI | G, fails open | BeforeTool hook | Planned, wave 2. Scaffolded; the fake Gemini API served a real Gemini CLI 0.65.0 turn |
-| Hermes Agent | G | Python plugin `pre_tool_call` | Planned, wave 2. Scaffolded |
-| oh-my-pi | G | `tk-pi`, installed with `omp install` | Planned, wave 2 |
-| Kilo Code | G | the OpenCode plugin with Kilo's paths | Planned, wave 2. Scaffolded |
+| Pi | G | `packages/tk-pi` (`tool_call`) | Built, wave 1. Run in a real Pi 1.4.0 in the cloud (14 live checks) and on the box in the TUI and in Orca (box test w1); the memory extension (wave 2) in a real Pi 1.4.0 RPC session, 8 and 2 live checks |
+| Claude Code | G | `packages/tk-claude-plugin` (PreToolUse, `onFailure: "block"`) | Built, wave 1. Contract checks pass against Claude Code 2.1.311; run in MonoCode and a terminal on the Mac (Mac test w1). `bypassPermissions` not run in the cloud (root) |
+| Codex | G, fails open | `packages/tk-codex-plugin` (PreToolUse) | Built, wave 1. Contract checks pass against Codex 0.163.0 and 0.164.0; run on 0.161.0 on the Mac (Mac test w1) |
+| OpenCode | G | `packages/tk-opencode-plugin` (`tool.execute.before`) | Built, wave 1. Run on the box against OpenCode 1.19.4 (box test w1) |
+| Gemini CLI | G, fails open | BeforeTool hook | Built, wave 2 (`packages/tk-gemini-extension`). Contract checks pass against Gemini CLI 0.65.0 and 0.66.0 in the cloud; fails open on every hook failure (run). Not run on the box or the Mac |
+| Hermes Agent | G | Python plugin `pre_tool_call` | Built, wave 2 (`packages/tk-hermes-plugin`). Unit tests only; Hermes itself not run (box test w2 4.3) |
+| oh-my-pi | G | `tk-pi`, installed with `omp install` | Built, wave 2. Contract checks pass against omp 18.13.3 in the cloud (lane I) |
+| Kilo Code | G | the OpenCode plugin with Kilo's paths | Built, wave 2 (`packages/tk-kilo-plugin`). Contract checks pass against Kilo 7.8.18 in the cloud |
 | OpenClaude | G, fails open | PreToolUse in `~/.openclaude/settings.json` | Planned, wave 4 |
 | Qwen Code | G, fails open | PreToolUse in `~/.qwen/settings.json` | Planned, wave 4 |
-| Droid | G, fails open | PreToolUse in `~/.factory/settings.json`, beside Orca's entry | Planned, wave 4; fixtures only without a seat |
+| Droid | G, fails open | PreToolUse in `~/.factory/settings.json`, beside Orca's entry | Planned, wave 4; fixtures only without a seat. Contract and fixtures: `contracts/hook-dialects.md` |
 | Command Code | G | PreToolUse with `failClosed` | Planned, wave 4 |
 | Kimi Code | G, fails open | `[[hooks]]` in `~/.kimi-code/config.toml` | Planned, wave 4 |
 | Auggie | G, fails open | PreToolUse or a script policy | Planned, wave 4; fixtures only without a seat |
@@ -70,6 +70,8 @@ How tk attaches to each agent in Orca's list. Tier G: tk registers a gate that r
 | Rovo Dev | A | `toolPermissions` in `~/.rovodev/config.yml` | Planned, wave 4; fixtures only without a seat |
 | Codebuff | O | `tk run`, the MCP file | Planned, wave 4 |
 | Any other CLI agent | O | `tk run -- <command>` | Planned, wave 4 |
+
+Outside Orca's grid: OpenClaw, tier G, `packages/tk-openclaw-plugin` (`before_tool_call`, tk runs last): built, wave 2, contract checks pass against OpenClaw 2026.10.8 in the cloud (lane I). Wave 4's agents' hook contracts and fixtures are in `contracts/hook-dialects.md`.
 
 Orca's ids differ for three agents: Orca says `claude`, `copilot` and `aug`; tk says `claude-code`, `copilot-cli` and (wave 4) Auggie's own id. The machine-readable form of this table is the preset table, one file per agent in `crates/tk-cli/src/connect/presets/` (the `coverage` field on each row; `index.json` lists the `harnesses` and the `planned` rows).
 

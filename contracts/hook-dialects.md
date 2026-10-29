@@ -57,24 +57,4 @@ Read 28 Oct 2026 by two read-only research agents for integration w2, in the ven
 
 Corrections to note AQ from this read, each in its `sources.json`: OpenClaude has no `onFailure`; Grok's `failClosed` starts at 1.0.71, which npm's `latest` is not yet; Droid's docs now call `hooks.json` the primary user file and its binary merges it over `settings.json`; Command Code's filter strips `TK_CHAT_TOKEN_FILE` too, so case 76's file variable does not reach its hook; Cline also needs `CLINE_TOOL_APPROVAL_DIR`, and desktop approval works only in prompt runs; Auggie's input rewrite (`updatedInput`) is verified and its hook timeout is likely in milliseconds; Copilot's `<server>-<tool>` was not found again (NF). Current versions on 28 Oct: Qwen 0.26.3, Droid 0.251.0, Command Code 1.88.1, Kimi 2.4.0, Copilot 1.0.105, Grok 1.0.70 latest (1.0.73 alpha).
 
-The matcher already reads three of these name forms from the agent's id (`RAW_SEPARATORS` in the hook core and tk-core: Droid's `___`, Copilot's `-`, Mistral Vibe's `.`, and oh-my-pi's `_` after `mcp__`); any other separator the fold made, or capitals in a server name, turns an allow into an ask (integration w2 review, W2-S2). A lane that finds another form adds it there through integration.
-
-## 3. Fixture folders
-
-`fixtures/hook-dialects/<preset id>/`:
-
-| File | What |
-|---|---|
-| `register.json`, `register.toml` or `register.ts` | One pre-tool registration as the agent's docs show it, the command replaced by `/ABSOLUTE/PATH/TO/tk-hook` |
-| `stdin.pre-tool.json` | The pre-tool input for a shell call |
-| `stdin.pre-tool.mcp.json` | The same for an MCP tool, where the agent documents one |
-| `stdin.<event>.json` | Other events the gate reads (Cursor's `beforeMCPExecution`, `beforeShellExecution`) |
-| `reply.allow.json`, `reply.deny.json`, `reply.ask.json` | The decisions the agent accepts on stdout; a decision by exit code alone is `reply.deny.exit`, the code on one line |
-| `approval-request.json`, `approval-answer.*.json` | Cline's approval files |
-| `sources.json` | Per file: `from` (`verbatim` or `built-from-fields`), `source`, `mark`; and `facts`, each claim with its source and mark |
-
-A fixture marked `built-from-fields` is the shape the docs describe, with placeholder values; a lane whose agent runs in the cloud replaces it with a recorded input (a contract check that dumps what the agent sends) and says so in `sources.json`.
-
-## Sources
-
-Note AQ section 4 and its sources list (27 Oct); each agent's `sources.json` (28 Oct); `plans/parallel_build_tk.md` section 7a; rules section 4, cases 70 to 83.
+The matcher reads an agent's separator from its id (`RAW_SEPARATORS` in the hook core and tk-core), but lists only agents whose gate is built: oh-my-pi's `_` after `mcp__`. Droid's `___`, Copilot's `-` and Mistral Vibe's `.` make an allow ask until the lane that builds that gate adds the form through integration with tests that show it cannot fold another server in (`exa-evil` arriving as `exa`; integration w2's re-review, W2-R1; fixture cases 24, 25, 59, 60). Any other separator the fold made, or capitals in a server name, turns an allow into an ask too (W2-S2).

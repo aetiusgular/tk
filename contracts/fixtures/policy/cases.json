@@ -53,11 +53,11 @@
       "expect": { "action": "deny", "normalizedTool": "my_server/fetch", "reasonPrefix": "rule" },
       "note": "OpenCode keeps - in server names (lane F); the same normalization" },
     { "id": 24, "call": { "tool": "exa___search", "harness": "droid", "inputText": "" },
-      "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule" },
-      "note": "Droid's s___t: split at the first run of two or more underscores (note AQ section 6)" },
+      "expect": { "action": "ask", "normalizedTool": "exa/search", "reasonPrefix": "ambiguous server name" },
+      "note": "Droid's s___t: split at the first run of two or more underscores (note AQ section 6); since integration w2 an allow there asks, because ___ could hold a server exa_ (W2-S2, W2-R1)" },
     { "id": 25, "call": { "tool": "mcp__exa___search", "harness": "droid", "inputText": "" },
-      "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule" },
-      "note": "the same run rule after the mcp__ prefix" },
+      "expect": { "action": "ask", "normalizedTool": "exa/search", "reasonPrefix": "ambiguous server name" },
+      "note": "the same run rule after the mcp__ prefix; an allow asks, as case 24" },
     { "id": 26, "call": { "tool": "PowerShell", "harness": "pi", "inputText": "Get-ChildItem $env:HOME" },
       "expect": { "action": "ask", "normalizedTool": "powershell", "reasonPrefix": "shell text the matcher cannot read" },
       "note": "powershell is a shell tool (lanes A and F)" },
@@ -156,6 +156,12 @@
       "note": "exa-evil's tool search folds into exa's prefix; the raw separator is not _, so an allow asks (W2-S2)" },
     { "id": 58, "call": { "tool": "exa_search", "harness": "opencode", "inputText": "" },
       "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule exa/*" },
-      "note": "the same form spelled plainly still allows (W2-S2)" }
+      "note": "the same form spelled plainly still allows (W2-S2)" },
+    { "id": 59, "call": { "tool": "exa-evil-search", "harness": "copilot-cli", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/evil_search", "reasonPrefix": "ambiguous server name" },
+      "note": "no agent's separator is exempt until its gate is built: Copilot's - could be inside a server name (integration w2's re-review, W2-R1)" },
+    { "id": 60, "call": { "tool": "exa.evil_search", "harness": "mistral-vibe", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/evil_search", "reasonPrefix": "ambiguous server name" },
+      "note": "nor Mistral Vibe's .; cases 24 and 25 (Droid's ___) ask for the same reason since integration w2 (W2-R1)" }
   ]
 }

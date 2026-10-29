@@ -227,13 +227,9 @@ fn js_trim(raw: &str) -> &str {
 
 /// Separators an agent writes between server and tool other than the plain
 /// `__` (after `mcp__`) or `_` (after `mcp_`, or with no prefix): its
-/// declared name form (note AQ section 6; the hook core's `RAW_SEPARATORS`).
-pub const RAW_SEPARATORS: &[(&str, &[&str])] = &[
-    ("oh-my-pi", &["_"]),
-    ("droid", &["___"]),
-    ("copilot-cli", &["-"]),
-    ("mistral-vibe", &["."]),
-];
+/// declared name form (the hook core's `RAW_SEPARATORS`). Only agents with a
+/// built gate are listed (integration w2's re-review, W2-R1).
+pub const RAW_SEPARATORS: &[(&str, &[&str])] = &[("oh-my-pi", &["_"])];
 
 /// Integration w2 review, W2-S2 (the hook core's `splitInDoubt`): whether the
 /// raw name spells the chosen split plainly. Capitals or non-ASCII letters in

@@ -89,12 +89,18 @@ export function memoryIndexPath(normalized: string, input: unknown, cwd?: string
   };
   const direct = named(plain);
   if (direct !== undefined || cwd === undefined) return direct;
-  try {
-    const parent = realpathSync(path.resolve(cwd, path.dirname(plain)));
-    return named(`${parent.replace(/\\/g, "/")}/${path.basename(plain)}`);
-  } catch {
-    return undefined;
+  const full = path.resolve(cwd, plain);
+  // The file itself when it exists (a link named `x.md` to the index;
+  // re-review W2-R3), else its folder.
+  for (const resolve of [() => realpathSync(full), () => `${realpathSync(path.dirname(full))}/${path.basename(full)}`]) {
+    try {
+      const hit = named(resolve().replace(/\\/g, "/"));
+      if (hit !== undefined) return hit;
+    } catch {
+      // Not there: try the next form.
+    }
   }
+  return undefined;
 }
 
 /** Tools that only read: naming an index there is not a write. */

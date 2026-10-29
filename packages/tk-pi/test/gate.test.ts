@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createGate, memoryIndexPath, memoryIndexText } from "../extensions/gate.ts";
@@ -119,6 +119,9 @@ describe("decisions", () => {
     expect(memoryIndexPath("write", { path: "m2/INDEX.md" }, dir)).toBe("memory/index.md");
     expect(memoryIndexPath("write", { path: join(dir, "m2", "INDEX.md") }, dir)).toBe("memory/index.md");
     expect(memoryIndexPath("write", { path: "m2/notes.md" }, dir)).toBeUndefined();
+    writeFileSync(join(dir, "memory", "INDEX.md"), "- a\n");
+    symlinkSync(join(dir, "memory", "INDEX.md"), join(dir, "x.md"));
+    expect(memoryIndexPath("write", { path: "x.md" }, dir), "a link to the index (W2-R3)").toBe("memory/index.md");
     expect(memoryIndexText("bash", 'echo "x" >> memory/IN""DEX.md')).toBe("memory/index.md");
     expect(memoryIndexText("bash", "tee -a ./research//INDEX.md")).toBe("research/index.md");
     expect(memoryIndexText("read", "memory/INDEX.md")).toBeUndefined();
