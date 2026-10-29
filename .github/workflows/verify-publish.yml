@@ -1,0 +1,55 @@
+# The library's check of a publish pull request (lane G, T3.3), copied from
+# library/publish/ci/verify-pr.yml by integration w2.
+#
+# The pull request's files are data. The code that checks them comes from the
+# base branch, checked out apart, so a pull request that edits
+# library/publish/verify.ts cannot change its own check. `pull_request` (not
+# `pull_request_target`): a read-only token and no secrets reach the run. The
+# author's login reaches the script through an environment variable, never
+# through `${{ }}` inside a script (GitHub's script injection guidance).
+name: verify-publish
+
+on:
+  pull_request:
+    paths: ["library/catalog/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: the base branch's code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+      - name: the pull request's files, as data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - run: npm ci --ignore-scripts
+        working-directory: base
+      - name: verify each changed entry
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git -C pr fetch -q --depth 1 origin "$BASE_SHA"
+          ids=$(git -C pr diff --name-only "$BASE_SHA" HEAD -- library/catalog | awk -F/ 'NF>=4 {print $3}' | sort -u)
+          if [ -z "$ids" ]; then echo "no entry changed"; exit 0; fi
+          # Folder names are a stranger's text: no globbing, and each id is checked
+          # against the library's id pattern before it names a path (verify.ts).
+          set -f
+          # shellcheck disable=SC2086
+          node --no-warnings base/library/publish/cli.ts verify --pr pr --base base --author "$PR_AUTHOR" $ids

@@ -1,0 +1,78 @@
+# Daily trust scans (lane H, T4.1), copied from library/trust/ci/trust.yml by
+# integration w2. Not run anywhere yet.
+#
+# What it does: records each server version's manifest, runs the name rules,
+# then runs every scan that is due (each version once, then daily: ClawHub's
+# lesson, openclaw.ai/blog/virustotal-partnership) with the two pinned
+# scanners of library/trust/scanners.json, and uploads library/trust/records/
+# as an artifact. It commits nothing: whether records land in git, on a data
+# branch as lane G's mirror does, is integration's call.
+#
+# Network: GitHub, PyPI and github.com for the installs; SkillSpector's OSV
+# lookup reaches api.osv.dev (no off switch in 2.13.2); Cisco's YARA scan
+# makes no call. `osv` (TK_TRUST_ONLINE) is not run here.
+#
+# Action pins are lane G's (library/mirror/ci/mirror.yml on wip/G-mirror at
+# e4e3b3f), taken as G recorded them.
+name: trust
+
+# Installed by integration w2 with the schedule and the push trigger off:
+# each run installs two scanners from GitHub and PyPI and reaches
+# api.osv.dev through SkillSpector, and spends Actions minutes. Tony's call;
+# until then it runs only from the Actions tab. To turn them on, add back
+# under `on:`:
+#   schedule:
+#     - cron: "41 6 * * *"
+#   push:
+#     branches: [main]
+#     paths: ["library/catalog/**", "library/trust/**"]
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trust
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install the pinned scanners
+        # Versions and commits from library/trust/scanners.json; the runner refuses any other version.
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/skillspector"
+          "$RUNNER_TEMP/skillspector/bin/pip" install --no-input "git+https://github.com/NVIDIA/skillspector.git@abd82935b67f765a9541013c0866c6349251dcdf"
+          python3 -m venv "$RUNNER_TEMP/cisco"
+          "$RUNNER_TEMP/cisco/bin/pip" install --no-input "cisco-ai-mcp-scanner==4.8.7"
+          echo "$RUNNER_TEMP/skillspector/bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/cisco/bin" >> "$GITHUB_PATH"
+      - name: Record manifests
+        run: node library/trust/cli.ts record
+      - name: Name rules
+        run: node library/trust/cli.ts names
+      - name: Scans due
+        env:
+          TK_TRUST_SCAN: "1"
+        run: |
+          node library/trust/cli.ts due
+          node library/trust/cli.ts scan
+      # Pinned by integration w2: tag v4.6.2 is this commit (git ls-remote, 28 Oct 2026).
+      - name: Upload the records
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trust-records
+          path: library/trust/records/
+          if-no-files-found: ignore
+          retention-days: 90
