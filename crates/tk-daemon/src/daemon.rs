@@ -751,12 +751,15 @@ impl Daemon {
         if store::bound_event(event.clone()).id.is_empty() {
             return error("event id is empty");
         }
-        if matches!(who, Who::Chat { .. }) && self.holds_gate_decision(&event) {
+        if let Some(held) = matches!(who, Who::Chat { .. })
+            .then(|| self.held_gate_decision(&event))
+            .flatten()
+        {
             // The hook and the agent share the chat token (case 66), and the
             // agent can post first (integration w2 review, W2-S3), so a second
             // copy is never dropped: it is kept under its own id, and the
             // daemon records the conflict, which only it can write.
-            return self.keep_conflict(event);
+            return self.keep_conflict(event, held);
         }
         let id = self.ingest(event);
         Reply {
@@ -765,10 +768,11 @@ impl Daemon {
         }
     }
 
-    /// A chat-scope post under the id of a gate decision already held:
-    /// stored as `<id>-conflict-<uuid>` with `detail.conflictsWith`, and a
-    /// daemon-written `gate.conflict` (source `approval`) naming both.
-    fn keep_conflict(&self, mut event: Event) -> Reply {
+    /// A chat-scope post of a gate decision already held (`held`, by its id
+    /// or its call): stored as `<id>-conflict-<uuid>` with
+    /// `detail.conflictsWith` naming the held one, and a daemon-written
+    /// `gate.conflict` (source `approval`) naming both.
+    fn keep_conflict(&self, mut event: Event, held: String) -> Reply {
         let original = store::bound_event(event.clone()).id;
         // The copy's id must survive `bound_event`'s cut to `MAX_ID`, or a long
         // original would come back as itself (re-review W2-R2): the original
@@ -780,9 +784,9 @@ impl Daemon {
         event.id = copy.clone();
         match &mut event.detail {
             Value::Object(map) => {
-                map.insert("conflictsWith".into(), Value::String(original.clone()));
+                map.insert("conflictsWith".into(), Value::String(held.clone()));
             }
-            other => *other = json!({"value": other.clone(), "conflictsWith": original}),
+            other => *other = json!({"value": other.clone(), "conflictsWith": held}),
         }
         let (chat, harness, kind, source) = (
             event.chat_id.clone(),
@@ -799,10 +803,10 @@ impl Daemon {
             source: Source::Approval,
             kind: "gate.conflict".into(),
             summary: clip(
-                &format!("two records under the gate decision {original}"),
+                &format!("two records for the gate decision {held}"),
                 200,
             ),
-            detail: json!({"id": original, "copy": kept, "kind": kind, "source": source}),
+            detail: json!({"id": held, "copy": kept, "posted": original, "kind": kind, "source": source}),
             pid: None,
             approval_id: None,
         });
@@ -812,17 +816,29 @@ impl Daemon {
         }
     }
 
-    /// True when the ring holds a gate decision under this event's chat and
-    /// id (S9). Readers keep the first copy whatever is written later
+    /// The id of a gate decision the ring holds under this event's chat and
+    /// id (S9), or for its call. Readers keep the first copy whatever is written later
     /// (`store::may_replace`); this refusal only tells the poster, for a
     /// decision still in the last `RING_CAPACITY` events.
-    fn holds_gate_decision(&self, event: &Event) -> bool {
-        let id = store::bound_event(event.clone()).id;
-        self.order.lock().is_ok_and(|ring| {
-            ring.iter().rev().any(|old| {
-                old.id == id && old.chat_id == event.chat_id && store::is_gate_decision(old)
+    ///
+    /// Since gate decision ids end in random bits (box test w2, BW2), the
+    /// agent's forgery is a decision under an id of its own for the same
+    /// call: a second adapter decision in the chat naming the same
+    /// `detail.toolUseId` counts as the same decision too (fix pass 1's
+    /// review, FP1-S4). OTel records keep their attributes elsewhere, so only
+    /// adapter records are joined this way.
+    fn held_gate_decision(&self, event: &Event) -> Option<String> {
+        let new = store::bound_event(event.clone());
+        let call = adapter_call(&new);
+        let ring = self.order.lock().ok()?;
+        ring.iter()
+            .rev()
+            .find(|old| {
+                old.chat_id == event.chat_id
+                    && store::is_gate_decision(old)
+                    && (old.id == new.id || (call.is_some() && adapter_call(old) == call))
             })
-        })
+            .map(|old| old.id.clone())
     }
 
     /// A daemon-scope `run.start` may name the chat's folders
@@ -1509,6 +1525,21 @@ fn collector_events(
         }
     }
     Some(reply)
+}
+
+/// The call an adapter's gate decision names (`detail.toolUseId`), for an
+/// adapter record of kind `approval` only.
+fn adapter_call(event: &crate::activity::types::ActivityEvent) -> Option<String> {
+    use crate::activity::types::ActivitySource::Adapter;
+    if event.kind != "approval" || !matches!(event.source, Adapter) {
+        return None;
+    }
+    event
+        .detail
+        .get("toolUseId")
+        .and_then(Value::as_str)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
 }
 
 #[cfg(test)]

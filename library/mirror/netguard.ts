@@ -28,6 +28,7 @@ for (const [net, prefix] of [
   ["192.168.0.0", 16],
   ["198.18.0.0", 15],
   ["198.51.100.0", 24],
+  ["192.88.99.0", 24], // 6to4 relay anycast, deprecated (fix pass 1's review, FP1-S7)
   ["203.0.113.0", 24],
   ["224.0.0.0", 4], // multicast
   ["240.0.0.0", 4], // reserved and broadcast
@@ -48,12 +49,26 @@ for (const [net, prefix] of [
 ] as const)
   BLOCKED.addSubnet(net, prefix, "ipv6");
 
+// IPv6 prefixes that carry an IPv4 address, refused whole (fix pass 1's
+// review, FP1-S7): IPv4-compatible, IPv4-mapped in any spelling, SIIT's
+// IPv4-translated, and Teredo, which embeds a client's address. A name with
+// a public service has no reason to publish one of these. They sit in their
+// own list because Node's BlockList matches an IPv4 address against an
+// IPv6 rule for `::ffff:0:0/96`, which would refuse every IPv4 address.
+const EMBEDDING_V6 = new BlockList();
+for (const [net, prefix] of [
+  ["::", 96],
+  ["::ffff:0:0", 96],
+  ["::ffff:0:0:0", 96],
+  ["2001::", 32],
+] as const)
+  EMBEDDING_V6.addSubnet(net, prefix, "ipv6");
+
 export function isBlockedAddress(address: string): boolean {
   const family = isIP(address);
   if (family === 0) return true;
   if (family === 4) return BLOCKED.check(address, "ipv4");
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address);
-  if (mapped && BLOCKED.check(mapped[1]!, "ipv4")) return true;
+  if (EMBEDDING_V6.check(address, "ipv6")) return true;
   return BLOCKED.check(address, "ipv6");
 }
 

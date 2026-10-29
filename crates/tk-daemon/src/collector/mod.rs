@@ -176,11 +176,11 @@ fn explanation(
     ];
     if peer_writable {
         lines.push(format!(
-            "You can write {peer} or its folder, so any process that runs as you can replace that file, an agent under `tk run --boundary none` included, and the replacement becomes the collector's caller. To close that, copy tk-daemon into a folder only root can write, run the daemon from there, and give that path to collector-plan."
+            "You can write {peer} or a folder on the way to it, so any process that runs as you can replace that file, an agent under `tk run --boundary none` included, and the replacement becomes the collector's caller. To close that, copy tk-daemon into a folder only root can write, run the daemon from there, and give that path to collector-plan."
         ));
     } else {
         lines.push(format!(
-            "{peer} and its folder are not writable by you, so a process running as you cannot replace it (an administrator still can)."
+            "Neither {peer} nor any folder on the way to it is yours or writable by you, so a process running as you cannot replace it (an administrator still can)."
         ));
     }
     lines.push(format!(
@@ -195,18 +195,48 @@ fn explanation(
     lines
 }
 
-/// Whether this user could replace `path`: its owner is this user, or its
-/// folder is ours or writable by us (the folder decides a rename over it).
+/// Whether this user could replace `path`: the file, or any folder on the
+/// way to it, is this user's or writable by this user, by owner, group, other
+/// bits or an ACL, as the kernel decides it (`faccessat` with `AT_EACCESS`).
+/// A folder anywhere up the chain decides a rename that swaps the exact path,
+/// so every one is checked, for the path as given and for its real path
+/// (fix pass 1's review, FP1-S3: the first version looked at the file and
+/// its folder, by owner and other-write only). A path it cannot check counts
+/// as writable.
 fn writable_by_me(path: &std::path::Path) -> bool {
+    writable_with(path, can_change)
+}
+
+fn writable_with(path: &std::path::Path, can: impl Fn(&std::path::Path) -> bool) -> bool {
+    let mut chains = vec![path.to_path_buf()];
+    if let Ok(real) = std::fs::canonicalize(path) {
+        chains.push(real);
+    }
+    chains
+        .iter()
+        .any(|p| p.ancestors().any(|a| !a.as_os_str().is_empty() && can(a)))
+}
+
+/// One path: owned by this user (who can always chmod it), or writable by
+/// this user's effective ids.
+fn can_change(p: &std::path::Path) -> bool {
+    use std::os::unix::ffi::OsStrExt;
     use std::os::unix::fs::MetadataExt;
     // SAFETY: getuid has no failure mode.
     let me = unsafe { libc::getuid() };
-    let mine_or_open = |p: &std::path::Path| {
-        std::fs::metadata(p)
-            .map(|m| m.uid() == me || m.mode() & 0o002 != 0)
-            .unwrap_or(true)
+    let Ok(meta) = std::fs::symlink_metadata(p) else {
+        return true;
     };
-    mine_or_open(path) || path.parent().map(mine_or_open).unwrap_or(true)
+    if meta.uid() == me {
+        return true;
+    }
+    let Ok(c) = std::ffi::CString::new(p.as_os_str().as_bytes()) else {
+        return true;
+    };
+    // SAFETY: a valid C string; faccessat only reads it. AT_EACCESS checks
+    // the effective ids, as a rename would. AT_SYMLINK_NOFOLLOW is not passed:
+    // a link's own entry is its folder's, which the chain checks.
+    unsafe { libc::faccessat(libc::AT_FDCWD, c.as_ptr(), libc::W_OK, libc::AT_EACCESS) == 0 }
 }
 
 /// Starts what lane K adds to a running daemon. Returns at once.
@@ -408,6 +438,34 @@ mod tests {
         assert!(install_plan(&paths, &link, &peer).is_err());
         assert!(install_plan(&paths, &root.join("absent"), &peer).is_err());
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn a_peer_is_replaceable_when_any_folder_up_its_path_is_ours() {
+        // Fix pass 1's review, FP1-S3: the first check looked at the file
+        // and its own folder, by owner and other-write. A user-owned /opt/tk
+        // above a root-owned /opt/tk/bin/tk-daemon still lets the user rename
+        // bin away and put another tk-daemon at the exact path.
+        let only = |hit: &'static str| move |p: &std::path::Path| p == std::path::Path::new(hit);
+        let peer = std::path::Path::new("/opt/tk/bin/tk-daemon");
+        assert!(writable_with(peer, only("/opt/tk")));
+        assert!(writable_with(peer, only("/opt")));
+        assert!(writable_with(peer, only("/opt/tk/bin/tk-daemon")));
+        assert!(!writable_with(peer, only("/elsewhere")));
+        // On the real system: /bin/sh is root's all the way up, so only root
+        // can replace it (CI's macOS runner and a Linux user both run this
+        // as a user).
+        // SAFETY: getuid has no failure mode.
+        let root = unsafe { libc::getuid() } == 0;
+        assert_eq!(writable_by_me(std::path::Path::new("/bin/sh")), root);
+        // A folder of ours anywhere up the given path counts, even when the
+        // path is a link to a file we cannot write.
+        let dir = std::env::temp_dir().join(format!("tk-chain-{}", uuid::Uuid::new_v4().simple()));
+        std::fs::create_dir_all(dir.join("bin")).unwrap();
+        let link = dir.join("bin").join("tk-daemon");
+        std::os::unix::fs::symlink("/bin/sh", &link).unwrap();
+        assert!(writable_by_me(&link));
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

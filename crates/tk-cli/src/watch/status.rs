@@ -215,6 +215,43 @@ pub fn probe_version(program: &Path) -> String {
         Ok(c) => c,
         Err(e) => return format!("not run: {e}"),
     };
+    // Each pipe is read on its own thread, so a process the program left
+    // behind holding the pipe open (`sleep 1d & exit 1`) cannot keep
+    // `tk status` waiting past the deadline (fix pass 1's review, FP1-S5).
+    let read_on_thread = |pipe: Option<Box<dyn std::io::Read + Send>>| {
+        let buf = std::sync::Arc::new(std::sync::Mutex::new(Vec::<u8>::new()));
+        let into = buf.clone();
+        let handle = pipe.map(|mut p| {
+            std::thread::spawn(move || {
+                let mut chunk = [0u8; 1024];
+                loop {
+                    match p.read(&mut chunk) {
+                        Ok(0) | Err(_) => break,
+                        Ok(n) => {
+                            let mut b = into.lock().unwrap_or_else(|e| e.into_inner());
+                            b.extend_from_slice(&chunk[..n]);
+                            if b.len() >= 4096 {
+                                break;
+                            }
+                        }
+                    }
+                }
+            })
+        });
+        (buf, handle)
+    };
+    let (out_buf, out_thread) = read_on_thread(
+        child
+            .stdout
+            .take()
+            .map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
+    );
+    let (err_buf, err_thread) = read_on_thread(
+        child
+            .stderr
+            .take()
+            .map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
+    );
     let start = std::time::Instant::now();
     let status = loop {
         match child.try_wait() {
@@ -229,19 +266,29 @@ pub fn probe_version(program: &Path) -> String {
             }
         }
     };
-    let first_line = |pipe: Option<&mut dyn std::io::Read>| -> String {
-        let mut text = String::new();
-        if let Some(o) = pipe {
-            use std::io::Read;
-            let _ = o.take(4096).read_to_string(&mut text);
+    // The program has exited, so what it wrote is in the pipes; only
+    // something it left running can hold them open. Give the readers half a
+    // second to see the end, never past the deadline.
+    let grace = std::time::Instant::now() + Duration::from_millis(500);
+    for t in [&out_thread, &err_thread].into_iter().flatten() {
+        while !t.is_finished()
+            && start.elapsed() < PROBE_TIMEOUT
+            && std::time::Instant::now() < grace
+        {
+            std::thread::sleep(Duration::from_millis(20));
         }
-        text.lines()
+    }
+    let first_line = |buf: &std::sync::Arc<std::sync::Mutex<Vec<u8>>>| -> String {
+        let b = buf.lock().unwrap_or_else(|e| e.into_inner());
+        let n = b.len().min(4096);
+        String::from_utf8_lossy(&b[..n])
+            .lines()
             .map(str::trim)
             .find(|l| !l.is_empty())
             .unwrap_or("")
             .to_string()
     };
-    let out = first_line(child.stdout.as_mut().map(|o| o as &mut dyn std::io::Read));
+    let out = first_line(&out_buf);
     if status.success() {
         return if out.is_empty() {
             "printed nothing".into()
@@ -250,7 +297,7 @@ pub fn probe_version(program: &Path) -> String {
         };
     }
     let line = if out.is_empty() {
-        first_line(child.stderr.as_mut().map(|o| o as &mut dyn std::io::Read))
+        first_line(&err_buf)
     } else {
         out
     };
@@ -736,6 +783,41 @@ mod tests {
             probe_version(&half),
             "exited 1, not a working install: half 2.0"
         );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_probe_returns_when_the_program_exits_even_if_its_child_holds_the_pipes() {
+        // Fix pass 1's review, FP1-S5: `sleep 1d & exit 1` on PATH kept
+        // `tk status --probe` waiting for a day, reading to the end of a pipe
+        // the left-behind sleep still held.
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("tk-hold-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        for (name, body, want) in [
+            (
+                "holds-err",
+                "#!/bin/sh\nsleep 30 &\necho 'held 1.0' >&2\nexit 1\n",
+                "exited 1, not a working install: held 1.0",
+            ),
+            (
+                "holds-out",
+                "#!/bin/sh\nsleep 30 &\necho 'held 2.0'\nexit 0\n",
+                "held 2.0",
+            ),
+        ] {
+            let shim = dir.join(name);
+            std::fs::write(&shim, body).unwrap();
+            std::fs::set_permissions(&shim, std::fs::Permissions::from_mode(0o755)).unwrap();
+            let t = std::time::Instant::now();
+            assert_eq!(probe_version(&shim), want);
+            assert!(
+                t.elapsed() < Duration::from_secs(3),
+                "{name} took {:?}",
+                t.elapsed()
+            );
+        }
         let _ = std::fs::remove_dir_all(&dir);
     }
 

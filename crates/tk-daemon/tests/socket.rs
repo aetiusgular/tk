@@ -416,6 +416,79 @@ fn a_chat_token_cannot_replace_a_gate_decision() {
 }
 
 #[test]
+fn a_second_decision_for_the_same_call_is_a_conflict_whatever_its_id() {
+    // Fix pass 1's review, FP1-S4: with random decision ids (BW2) the agent
+    // posts its forged decision under an id of its own, naming the call the
+    // hook will decide (`detail.toolUseId`). Both are kept; the second is
+    // stored as a conflict copy and the daemon flags it. Another call, or
+    // another chat, is not a conflict.
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "opencode");
+    let other = mint(&mut d, "c2", "opencode");
+    let (mut agent, _) = Client::hello(&f, &token);
+    let r = agent.ask(event(
+        "forged-by-the-agent",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "allow", "toolUseId": "call_18"}),
+    ));
+    assert_eq!(r["id"], "forged-by-the-agent", "{r}");
+    let (mut hook, _) = Client::hello(&f, &token);
+    let real = "opencode-call_18-decision-0123456789abcdef0123456789abcdef";
+    let r = hook.ask(event(
+        real,
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_18"}),
+    ));
+    let kept = r["id"].as_str().unwrap().to_string();
+    assert!(kept.starts_with(&format!("{real}-conflict-")), "{r}");
+    let r = hook.ask(event(
+        "opencode-call_19-decision-0123456789abcdef0123456789abcdef",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_19"}),
+    ));
+    assert_eq!(
+        r["id"], "opencode-call_19-decision-0123456789abcdef0123456789abcdef",
+        "{r}"
+    );
+    let (mut elsewhere, _) = Client::hello(&f, &other);
+    let r = elsewhere.ask(event(
+        "opencode-call_18-decision-ffffffffffffffffffffffffffffffff",
+        "c2",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_18"}),
+    ));
+    assert_eq!(
+        r["id"], "opencode-call_18-decision-ffffffffffffffffffffffffffffffff",
+        "{r}"
+    );
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let mut seen = Vec::new();
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        seen.push(line["event"].clone());
+    }
+    let flags: Vec<_> = seen
+        .iter()
+        .filter(|e| e["kind"] == "gate.conflict")
+        .collect();
+    assert_eq!(flags.len(), 1, "{seen:?}");
+    assert_eq!(flags[0]["chatId"], "c1");
+    assert_eq!(flags[0]["detail"]["id"], "forged-by-the-agent");
+    assert_eq!(flags[0]["detail"]["posted"], real);
+    let copy = seen.iter().find(|e| e["id"] == kept.as_str()).unwrap();
+    assert_eq!(copy["detail"]["conflictsWith"], "forged-by-the-agent");
+    assert!(seen.iter().any(|e| e["id"] == "forged-by-the-agent"));
+}
+
+#[test]
 fn a_conflict_copy_of_a_long_id_keeps_its_own_id() {
     // Re-review W2-R2: a 128-character id's copy was cut back to the id.
     let f = fixture();

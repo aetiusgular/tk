@@ -41,6 +41,12 @@ describe("netguard", () => {
     for (const a of ["93.184.215.14", "1.1.1.1", "2606:4700::1111"]) expect(isBlockedAddress(a), a).toBe(false);
   });
 
+  it("blocks an IPv4 address in every IPv6 spelling, and the 6to4 relay block (FP1-S7)", () => {
+    for (const a of ["::127.0.0.1", "::7f00:1", "::ffff:7f00:1", "::ffff:0:7f00:1", "2001::7f00:1", "2001:0:4136:e378:8000:63bf:3fff:fdd2", "192.88.99.1"])
+      expect(isBlockedAddress(a), a).toBe(true);
+    for (const a of ["2001:4860:4860::8888", "2a00:1450:4001::1"]) expect(isBlockedAddress(a), a).toBe(false);
+  });
+
   it("refuses non-https, IP literals, single labels, local names, credentials and templated URLs", () => {
     expect(refuseUrl("http://a.example.com/")).toBe("not https");
     expect(refuseUrl("https://127.0.0.1/")).toBe("an IP literal");
