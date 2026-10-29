@@ -43,8 +43,8 @@ describe("normalizeToolName (contract section 2, case 60)", () => {
       expect(normalizeToolName(raw, servers), raw).toBe("exa/search");
     }
   });
-  it("drops the plugin name from Claude Code plugin servers", () => {
-    expect(normalizeToolName("mcp__plugin_tk_exa__search", servers)).toBe("exa/search");
+  it("keeps a Claude Code plugin server's whole name, so a rule for exa does not allow a plugin's exa (S5)", () => {
+    expect(normalizeToolName("mcp__plugin_tk_exa__search", servers)).toBe("plugin_tk_exa/search");
   });
   it("keeps built-ins bare and lowercased", () => {
     expect(normalizeToolName("Bash", servers)).toBe("bash");
@@ -215,7 +215,7 @@ describe("loadPolicy (contract section 1; case 46 is the caller's)", () => {
   it("reads a good file through a symlink", () => {
     const good = file("good.json", JSON.stringify(policyFixture));
     symlinkSync(good, path.join(dir, "link.json"));
-    expect(loadPolicy(path.join(dir, "link.json")).policy.rules.length).toBe(12);
+    expect(loadPolicy(path.join(dir, "link.json")).policy.rules.length).toBe(13);
   });
   it("cleans up", () => {
     rmSync(dir, { recursive: true, force: true });

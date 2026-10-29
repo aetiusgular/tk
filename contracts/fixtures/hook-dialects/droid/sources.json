@@ -1,0 +1,125 @@
+{
+  "presetId": "droid",
+  "agent": "Factory Droid (npm droid / @factory/cli-linux-x64)",
+  "versionRead": "binary 0.251.0; docs Factory-AI/factory@892925c (2026-10-23). Earlier notes read 0.250.0",
+  "currentVersion": "0.251.0 (npm, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "verbatim",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L35-L52 (org-managed example; allowManagedHooksOnly dropped, command replaced). Shape for the hooks key of ~/.factory/settings.json",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "verbatim",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L302-L315 with tool_name changed from Create to Execute and tool_input to {command}; field list confirmed in npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): da('PreToolUse',{session_id,transcript_path,cwd,permission_mode,hook_event_name,tool_name,tool_input})",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): MCP tool id built as `${serverName}___${toolName}` (no 'mcp__' string anywhere in the binary); docs https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L759-L765 say mcp__<server>__<tool>",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L512-L523",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L496-L505",
+      "mark": "V"
+    },
+    "reply.ask.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L504-L505",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L439-L453: exit 2 blocks the tool call and stderr is shown to Droid",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Docs now say user hooks live in ~/.factory/hooks.json, with the hooks key of ~/.factory/settings.json as fallback when hooks.json is absent",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L12-L18",
+      "mark": "V"
+    },
+    {
+      "claim": "Binary loads both files and merges per event key: {...settingsJsonHooks, ...hooksJsonHooks}. A PreToolUse array in hooks.json replaces (shadows) the PreToolUse array in settings.json; other events from settings.json survive",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): loadHooks(){...mergeHookSettings(hooksJson, settingsJson)} and mergeHookSettings returns {...i,...e}",
+      "mark": "V"
+    },
+    {
+      "claim": "Binary reads and writes hooks.json as a bare event map ({\"PreToolUse\":[...]}), not wrapped in {\"hooks\":...}; the guide's hooks.json example shows a hooks wrapper, which the loader would treat as an unknown event key and ignore",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): persistHooksJson(e.hooks) writes JSON.stringify(e); loadHooksFromFile parses the whole file with the event-map schema; https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/cli/configuration/hooks-guide.mdx#L106-L124",
+      "mark": "I"
+    },
+    {
+      "claim": "Hook entry: matcher group {matcher?, commandRegex?, hooks:[{type:'command', command, timeout?(seconds), preserveRiskLevel?}]}; event map also takes hooksDisabled and showHookOutput booleans",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) zod schemas ko/Uo/pI; https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/enterprise/hierarchical-settings-and-org-control.mdx#L169-L200 documents commandRegex, hooksDisabled, showHookOutput",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher is case-sensitive; plain string matches exactly, regex allowed, '*' or '' or absent matches all",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L81-L86",
+      "mark": "V"
+    },
+    {
+      "claim": "Default timeout 60 s; timeout unit seconds (binary setTimeout(o*1000))",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L844 and npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) executeCommand",
+      "mark": "V"
+    },
+    {
+      "claim": "No fail-closed switch",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx and npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): no failClosed string",
+      "mark": "NF"
+    },
+    {
+      "claim": "Exit 0: stdout parsed as JSON only if it starts with '{'; otherwise shown in transcript only. Exit 2: deny with stderr as reason (default 'Tool execution blocked by hook'). Exit 1/other: warning, call proceeds",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L432-L447 and npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) PreToolUse handler",
+      "mark": "V"
+    },
+    {
+      "claim": "Exit 3 from a PreToolUse hook throws AgentAbortError ('Agent aborted by PreToolUse hook' or stderr) and ends the whole agent run; undocumented",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): R.find(G=>G.exitCode===3) ... throw new Rg(G); not in https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx",
+      "mark": "V"
+    },
+    {
+      "claim": "continue:false (with stopReason) throws HookStopError and stops Droid, not just the call",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L481-L494 and npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): R.find(G=>G.continue===!1) ... throw new Ug",
+      "mark": "V"
+    },
+    {
+      "claim": "permissionDecision allow bypasses the permission system (allow-bypass) and merges updatedInput into the tool input ({...input,...updatedInput}); deny returns reason permissionDecisionReason; ask only logs and falls through to the normal permission flow in this binary",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) PreToolUse switch; https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L500-L510",
+      "mark": "V"
+    },
+    {
+      "claim": "Timeout: process tree SIGTERMed and result becomes exitCode 1, a non-blocking warning, so the call proceeds (fail-open). Spawn error also gives exitCode 1. An exception in the hook pipeline returns [] (no hooks)",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) executeCommand (D=!0 timeout path, Pe(1,null)) and 'Error executing hooks - returning empty array'",
+      "mark": "V"
+    },
+    {
+      "claim": "Invalid JSON on stdout starting with '{' is logged and ignored; the exit code alone then decides",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings): catch -> 'Failed to parse JSON output from hook'",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool name is Execute (inputFields Execute:['command']); docs list Execute as the shell matcher",
+      "source": "https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L203 and npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings)",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook env gets FACTORY_PROJECT_DIR, DROID_PROJECT_DIR and CLAUDE_PROJECT_DIR; hooks are snapshotted at startup",
+      "source": "npm:@factory/cli-linux-x64@0.251.0 package/bin/droid (strings) executeCommand env; https://github.com/Factory-AI/factory/blob/892925c655a97e7a0bc7d558236015ebb22cb214/docs/reference/hooks-reference.mdx#L833-L840",
+      "mark": "V"
+    },
+    {
+      "claim": "https://docs.factory.com/harness/hooks could not be fetched (WebFetch blocked); the GitHub docs source was read instead",
+      "source": "WebFetch permission not answered",
+      "mark": "NF"
+    }
+  ]
+}

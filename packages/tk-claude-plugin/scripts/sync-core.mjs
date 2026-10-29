@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Copies the shared hook core from packages/tk-claude-plugin/src/core/ (the
-// canonical copy) into the Codex and OpenCode plugins. Each harness copies a
+// canonical copy) into every package in `targets` below. Each harness copies a
 // plugin's own folder into its cache and nothing outside it, so each plugin
 // carries the core itself. A test in each plugin checks the copies are
 // byte-identical (src/core.vendored.test.ts).
@@ -14,8 +14,21 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const source = path.join(here, "..", "src", "core");
-// tk-gemini-extension and tk-kilo-plugin added by integration w1 for wave 2 lane I.
-const targets = ["tk-codex-plugin", "tk-opencode-plugin", "tk-gemini-extension", "tk-kilo-plugin"].map((p) => path.join(here, "..", "..", p, "src", "core"));
+// tk-gemini-extension and tk-kilo-plugin added by integration w1 for wave 2 lane I;
+// tk-hermes-plugin and tk-openclaw-plugin by integration w2 (lane I's request 3);
+// the four wave 4 packages by integration w2's scaffold (section 8, step 6).
+const targets = [
+  "tk-codex-plugin",
+  "tk-opencode-plugin",
+  "tk-gemini-extension",
+  "tk-kilo-plugin",
+  "tk-hermes-plugin",
+  "tk-openclaw-plugin",
+  "tk-hooks-claude-compat",
+  "tk-hooks-native",
+  "tk-amp-plugin",
+  "tk-cline",
+].map((p) => path.join(here, "..", "..", p, "src", "core"));
 const check = process.argv.includes("--check");
 
 // Tests stay with the canonical copy.

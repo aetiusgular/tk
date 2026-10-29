@@ -1,0 +1,30 @@
+{
+  "clineVersion": "3.0.74",
+  "timestamp": "2026-10-28T12:00:00.000Z",
+  "taskId": "conv_1",
+  "sessionContext": {
+    "rootSessionId": "conv_1"
+  },
+  "workspaceRoots": [
+    "/home/you/project"
+  ],
+  "userId": "you",
+  "agent_id": "agent_1",
+  "hookName": "tool_call",
+  "iteration": 1,
+  "tool_call": {
+    "id": "toolu_01ABC",
+    "name": "run_commands",
+    "input": {
+      "commands": [
+        "ls -la"
+      ]
+    }
+  },
+  "preToolUse": {
+    "toolName": "run_commands",
+    "parameters": {
+      "commands": "[\"ls -la\"]"
+    }
+  }
+}

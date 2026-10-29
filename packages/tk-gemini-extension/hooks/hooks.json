@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "tk-gate",
+            "type": "command",
+            "command": "node --no-warnings \"${extensionPath}${/}bin${/}tk-hook.mjs\" before",
+            "timeout": 120000,
+            "description": "tk policy gate. Gemini lets a call through when a hook fails or times out, so the hook never crashes on purpose and caps its own waits at 90 seconds, below this timeout."
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "name": "tk-record",
+            "type": "command",
+            "command": "node --no-warnings \"${extensionPath}${/}bin${/}tk-hook.mjs\" after",
+            "timeout": 30000,
+            "description": "tk records the call (a hash, no content) and redacts secret-like values in the result."
+          }
+        ]
+      }
+    ]
+  }
+}

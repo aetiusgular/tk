@@ -10,7 +10,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync }
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { chatToken, exchange, insideFolder } from "./daemon.ts";
+import { chatToken, decisionId, exchange, insideFolder } from "./daemon.ts";
 import { loadPolicyFrom } from "./policy.ts";
 import { startFakeDaemon } from "../testing/fakeDaemon.ts";
 
@@ -108,6 +108,14 @@ describe("paths from the environment", () => {
     expect("error" in r && r.error).toMatch(/inside the session folder/);
   });
 
+  it("refuses a daemon socket inside the session folder or relative, whichever variable named it (S14)", async () => {
+    if (process.platform === "darwin") return; // the socket there is under HOME, not XDG_RUNTIME_DIR
+    for (const runtime of [path.join(project, "run"), "relative/run"]) {
+      const r = await exchange([{ op: "event", event: { id: "x" } }], { env: { XDG_RUNTIME_DIR: runtime, TK_CHAT_TOKEN: CHAT }, client: "t", replyTimeoutMs: 500, cwd: project });
+      expect("error" in r && r.error, runtime).toMatch(/the daemon socket is (inside the session folder|not an absolute path)/);
+    }
+  });
+
   it("refuses TK_POLICY inside the session folder, and accepts the same file elsewhere", () => {
     const body = JSON.stringify({ version: 1, rules: [{ tool: "bash", action: "allow" }] });
     const inProject = path.join(project, ".tk-policy.json");
@@ -123,5 +131,30 @@ describe("paths from the environment", () => {
   it("does not apply the folder check to the default ~/.tk/policy.json (a session started in HOME)", () => {
     const r = loadPolicyFrom({}, homedir());
     expect(r.problem ?? "").not.toMatch(/inside the session folder/);
+  });
+});
+
+// Box test w2, BW2: a gate decision's id was `<harness>-<call id>-decision`.
+// Call ids count up (OpenCode's `call_16`, `call_17`), so the agent, which
+// holds the same chat token (case 66), posted a forged decision under the
+// next call's id first; the real one became the conflict copy, and an id no
+// call ever took stayed a plain forged decision. The id now ends in 128
+// random bits the agent cannot know before the hook writes it.
+describe("a gate decision's id (box test w2, BW2)", () => {
+  it("cannot be known from the call id: two decisions for one call differ, and neither is the old form", () => {
+    const a = decisionId("opencode", "call_17");
+    const b = decisionId("opencode", "call_17");
+    expect(a).not.toBe(b);
+    for (const id of [a, b]) {
+      expect(id).toMatch(/^opencode-call_17-decision-[0-9a-f]{32}$/);
+      expect(id).not.toBe("opencode-call_17-decision");
+    }
+  });
+  it("names an unknown call and stays under the daemon's id cap", () => {
+    expect(decisionId("claude-code", undefined)).toMatch(/^claude-code-unknown-decision-[0-9a-f]{32}$/);
+    const long = decisionId("claude-code", "x".repeat(400));
+    expect(long.length).toBeLessThanOrEqual(128);
+    expect(long).toMatch(/-decision-[0-9a-f]{32}$/);
+    expect(decisionId("hermes", "a\nb c/d")).toMatch(/^hermes-a_b_c_d-decision-[0-9a-f]{32}$/);
   });
 });

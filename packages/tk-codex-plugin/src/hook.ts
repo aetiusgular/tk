@@ -16,8 +16,8 @@
 // - PostToolUse cannot rewrite output (updatedMCPToolOutput is refused);
 //   decision "block" replaces the tool result with the reason.
 
-import { createHash } from "node:crypto";
-import { approve, postEvent } from "./core/daemon.ts";
+import { createHash, randomUUID } from "node:crypto";
+import { approve, decisionId, postEvent } from "./core/daemon.ts";
 import { decideCall, resolveAsk, type GateCall } from "./core/gate.ts";
 import { loadPolicyFrom, type LoadedPolicy } from "./core/policy.ts";
 import { redactValue } from "./core/redact.ts";
@@ -82,7 +82,9 @@ export async function handlePre(input: Record<string, unknown>, deps: Deps): Pro
     reason = "secret-like value in input of a tool tk cannot rewrite on Codex";
   }
   await deps.postEvent({
-    id: `${HARNESS}-${call.toolUseId ?? "unknown"}-decision`,
+    // A decision is written once per chat and id (the daemon, S9), so
+    // one with no call id gets its own id instead of a shared "unknown".
+    id: decisionId(HARNESS, call.toolUseId),
     chatId: chat ?? "",
     harness: HARNESS,
     kind: "approval",

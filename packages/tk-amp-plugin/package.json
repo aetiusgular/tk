@@ -1,0 +1,11 @@
+{
+  "name": "tk-amp-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Amp plugin (Bun, tool.call) on lane F's gate core (wave 4, lane P, T2.7)",
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

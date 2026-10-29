@@ -32,6 +32,7 @@ import {
   type ToolExecutionStartEvent,
 } from "../src/pi-api.ts";
 import { redactText } from "../src/redact.ts";
+import { harnessId } from "../src/harness.ts";
 
 const CONTENT_MAX = 4096;
 const MAX_PENDING = 2000;
@@ -130,7 +131,7 @@ export function createEmitter(options: EmitterOptions = {}): EmitterFactory {
       url: target.url,
       token,
       fetch: fetchImpl,
-      resource: { arch: arch(), os: platform() },
+      resource: { arch: arch(), os: platform(), service: harnessId() },
       ...(options.intervalMs !== undefined ? { intervalMs: options.intervalMs } : {}),
     });
   };

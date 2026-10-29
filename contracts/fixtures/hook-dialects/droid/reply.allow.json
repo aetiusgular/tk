@@ -1,0 +1,10 @@
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "permissionDecisionReason": "My reason here",
+    "updatedInput": {
+      "field_to_modify": "new value"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "kiro",
+  "name": "Kiro CLI",
+  "cli": "kiro-cli",
+  "mcpFile": "~/.kiro/settings/mcp.json",
+  "toolNameForm": "mcp_s_t (hooks)",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "kiro",
+    "gate": {
+      "family": "command-hook",
+      "where": "a version 1 hook file in ~/.kiro/hooks/, PreToolUse, exit codes only",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "2.34.0, docs",
+    "note": "stdout on exit 0 goes into the model's context; needs an account"
+  }
+}

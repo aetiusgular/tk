@@ -1,0 +1,8 @@
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Security policy blocks database writes",
+    "additionalContext": "Current environment: production. Proceed with caution."
+  }
+}

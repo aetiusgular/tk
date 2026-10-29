@@ -1,0 +1,11 @@
+{
+  "name": "tk-cline",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Cline CLI: the approval-file responder (an SDK plugin beforeTool as the fallback) on lane F's gate core (wave 4, lane P, T2.7)",
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

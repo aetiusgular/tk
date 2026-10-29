@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "matcher": "bash",
+        "bash": "/ABSOLUTE/PATH/TO/tk-hook",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

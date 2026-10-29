@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "conversation_id": "00000000-0000-0000-0000-000000000000",
+  "workspace_roots": ["/home/user/project"],
+  "tool_name": "example_tool_example-server",
+  "tool_input": { "query": "placeholder" },
+  "tool_error": null,
+  "is_mcp_tool": true
+}

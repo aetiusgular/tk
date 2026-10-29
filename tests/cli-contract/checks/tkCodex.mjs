@@ -14,6 +14,7 @@
 
 import { createHash } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
+import { spawnGroup, stopGroup } from "../lib/procs.mjs";
 import { cpSync, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,14 +55,18 @@ export function trustToml(hooksJson, keySource) {
 
 function run(bin, args, opts) {
   return new Promise((resolve) => {
-    const ch = spawn(bin, args, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
+    // Its own process group: a timeout ends the native binary under the npm
+    // shim too, and so does the end of the run (Mac test w2, MW6).
+    const ch = spawnGroup(bin, args, { ...opts, stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
     let err = "";
     ch.stdout.on("data", (d) => (out += d));
     ch.stderr.on("data", (d) => (err += d));
-    const timer = setTimeout(() => ch.kill("SIGKILL"), opts.timeoutMs ?? 90000);
+    const timer = setTimeout(() => void stopGroup(ch, 0), opts.timeoutMs ?? 90000);
     ch.on("exit", (code) => {
       clearTimeout(timer);
+      // Anything the CLI left in its group (an MCP server, a helper) ends here.
+      void stopGroup(ch, 0);
       resolve({ code, out, err });
     });
   });

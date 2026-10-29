@@ -1,0 +1,110 @@
+{
+  "presetId": "qwen-code",
+  "agent": "Qwen Code (QwenLM/qwen-code)",
+  "versionRead": "v0.26.3 (git tag; earlier notes read v0.26.1)",
+  "currentVersion": "0.26.3 (npm @qwen-code/qwen-code, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "verbatim",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L1530-L1561 (PreToolUse part only, command replaced)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L487-L500 common fields + #L548-L556 PreToolUse fields; tool id run_shell_command from https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/tools/tool-names.ts#L28",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "MCP tool name mcp__<server>__<tool> from https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/tools/mcp-tool.ts#L1242; no separate server field in hook input",
+      "mark": "I"
+    },
+    "reply.deny.json": {
+      "from": "verbatim",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L614-L623",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L558-L569",
+      "mark": "V"
+    },
+    "reply.ask.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L558-L573",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L510-L516: exit 2 blocks, stdout ignored, stderr is the reason fed to the model",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User-scope file is ~/.qwen/settings.json; hooks live under top-level key hooks.PreToolUse[] as {matcher, sequential?, hooks:[{type:'command', command, name?, timeout?}]}",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/configuration/settings.md#L37 and https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L1523-L1561",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher is an unanchored regex over the runtime tool id; '', '*' or '.*' match all; Claude Code names such as Bash are accepted as exact aliases",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L414-L420",
+      "mark": "V"
+    },
+    {
+      "claim": "timeout is in seconds, default 60; values >= 1000 are read as milliseconds for back-compat; non-numeric values fall back to 60 s",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L75-L81",
+      "mark": "V"
+    },
+    {
+      "claim": "No fail-closed switch exists for command hooks",
+      "source": "grep of https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md and https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/hooks (only an internal failClosedResult for hook-system crashes, which blocks only TodoCreated/TodoCompleted: https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/hooks/hookEventHandler.ts#L959-L972)",
+      "mark": "NF"
+    },
+    {
+      "claim": "Exit 0: a JSON object on stdout controls behaviour; other stdout is plain text kept as a system message for PreToolUse. Exit 2: blocking, stdout ignored, stderr fed to the model. Any other exit: non-blocking error, execution continues",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L510-L516",
+      "mark": "V"
+    },
+    {
+      "claim": "PreToolUse decision is hookSpecificOutput.permissionDecision allow|deny|ask plus permissionDecisionReason; allow does not skip normal permission checks",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L558-L569",
+      "mark": "V"
+    },
+    {
+      "claim": "ask falls back to deny in headless --prompt runs and background subagents, and is treated as deny in ACP sessions",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L569 and #L573",
+      "mark": "V"
+    },
+    {
+      "claim": "Input rewrite: hookSpecificOutput.updatedInput replaces the whole tool input (not merged); a non-object value stops the call; ignored from async hooks",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L583-L606",
+      "mark": "V"
+    },
+    {
+      "claim": "Timeout: the hook process is killed and the result is outcome 'timeout' with success false, which the aggregator treats as an error, not a deny, so the tool call proceeds (fail-open)",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/hooks/hookRunner.ts#L1567-L1573 and https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/hooks/hookAggregator.ts#L83-L92",
+      "mark": "I"
+    },
+    {
+      "claim": "Stdout that starts with '{' but is not valid JSON is a non-blocking error and is ignored (call proceeds)",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L514 and https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/hooks/hookRunner.ts#L1680-L1703",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool id is run_shell_command; MCP tools are named mcp__<server>__<tool>; the hook input has no separate MCP server field",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/tools/tool-names.ts#L28, https://github.com/QwenLM/qwen-code/blob/v0.26.3/packages/core/src/tools/mcp-tool.ts#L1242, https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L548-L556",
+      "mark": "V"
+    },
+    {
+      "claim": "Common output field continue:false (with stopReason) stops execution of the whole turn, not just the call",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L524 and #L993",
+      "mark": "I"
+    },
+    {
+      "claim": "disableAllHooks:true, --safe-mode or --bare turn all hooks off; project hooks load only in a trusted folder",
+      "source": "https://github.com/QwenLM/qwen-code/blob/v0.26.3/docs/users/features/hooks.md#L7-L18 and #L39",
+      "mark": "V"
+    }
+  ]
+}

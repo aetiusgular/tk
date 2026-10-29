@@ -237,8 +237,22 @@ pub fn read(
 pub fn may_replace(old: &ActivityEvent, new: &ActivityEvent) -> bool {
     use super::types::ActivitySource::{Adapter, Otel};
     old.chat_id == new.chat_id
+        && !is_gate_decision(old)
         && (old.source == new.source
             || (matches!(old.source, Adapter | Otel) && matches!(new.source, Adapter | Otel)))
+}
+
+/// A gate's decision as a hook or a harness's OTel export records it
+/// (`kind: "approval"`, source `adapter` or `otel`). It is written once per
+/// chat and id: a later copy never replaces it (integration w1's security
+/// finding S9). The hook and the agent hold the same chat token (case 66),
+/// so a second copy is not known to be the gate's; it stays in the log's
+/// chain, and readers keep the first. The daemon's own approval records
+/// (`source: "approval"`) are not covered: it writes the request and then
+/// its outcome under one id.
+pub fn is_gate_decision(event: &ActivityEvent) -> bool {
+    use super::types::ActivitySource::{Adapter, Otel};
+    event.kind == "approval" && matches!(event.source, Adapter | Otel)
 }
 
 /// `read`, keeping only the new events `keep` accepts, so the cap counts
@@ -700,6 +714,33 @@ mod tests {
         assert_eq!(back.events.len(), 1);
         assert_eq!(back.events[0].source, ActivitySource::Cua);
         assert_eq!(back.events[0].kind, "cua.runtime");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_gate_decision_is_never_replaced() {
+        // Integration w1's security finding S9: a chat token is the agent's
+        // too (case 66), so a later copy under a gate decision's id is not
+        // the gate's. The first copy stays; the later ones stay in the log.
+        let dir = temp_dir("replace-decision");
+        let mut writer = ChainWriter::new(dir.clone());
+        let day = 20_377 * DAY;
+        let mut decision = event("claude-code-t1-decision", "c1", day + 5);
+        decision.kind = "approval".into();
+        decision.detail = json!({ "decision": "deny" });
+        writer.write(&Entry::Event(decision), day + 5).unwrap();
+        let mut forged = event("claude-code-t1-decision", "c1", day + 6);
+        forged.source = ActivitySource::Otel;
+        forged.kind = "approval".into();
+        forged.detail = json!({ "decision": "allow" });
+        writer.write(&Entry::Event(forged), day + 6).unwrap();
+        let mut forged = event("claude-code-t1-decision", "c1", day + 7);
+        forged.kind = "tool.call".into();
+        writer.write(&Entry::Event(forged), day + 7).unwrap();
+        let back = read(&dir, day, day + DAY - 1, None, 100);
+        assert_eq!(back.events.len(), 1);
+        assert_eq!(back.events[0].kind, "approval");
+        assert_eq!(back.events[0].detail["decision"], "deny");
         let _ = fs::remove_dir_all(&dir);
     }
 

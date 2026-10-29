@@ -89,7 +89,7 @@ pub fn manifest_yaml(grants: &[Grant]) -> Option<String> {
         return None;
     }
     let mut out = String::new();
-    out.push_str("# Written by MonoCode for one chat. Do not edit.\n");
+    out.push_str("# Written by tk for one chat. Do not edit.\n");
     out.push_str("version: 3\n");
     out.push_str(&format!("expires_after: {}\n", quote(EXPIRES_AFTER)));
     out.push_str(&format!("idle_timeout: {}\n", quote(IDLE_TIMEOUT)));

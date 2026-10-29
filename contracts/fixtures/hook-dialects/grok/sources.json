@@ -1,0 +1,120 @@
+{
+  "presetId": "grok",
+  "agent": "Grok Build (npm @xai-official/grok, binary @xai-official/grok-linux-x64)",
+  "versionRead": "1.0.71 embedded docs (main), cross-checked against 1.0.70 and 1.0.73-alpha embedded docs. https://docs.x.ai/build/features/hooks not reachable (WebFetch blocked)",
+  "currentVersion": "npm dist-tag latest = 1.0.70, alpha = 1.0.73; 1.0.71 and 1.0.72 published (2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "built-from-fields",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30068-30091 (The Hook JSON Format: {hooks:{PreToolUse:[{matcher:'Bash', hooks:[{type:'command', command:'bin/safety-check.sh', timeout:10}]}]}}; braces lost in strings extraction) plus failClosed from :30091. Put in ~/.grok/hooks/<name>.json",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "verbatim",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30228-30237 (toolUseId and toolInputTruncated added: the doc says the payload always includes them)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30121 (MCP tool named <server>__<tool>, e.g. github__search_repositories)",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "verbatim",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30243",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30242",
+      "mark": "V"
+    },
+    "reply.ask.json": {
+      "from": "verbatim",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30244",
+      "mark": "V"
+    },
+    "reply.rewrite.json": {
+      "from": "verbatim",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30246",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30298 Exit Codes: 2 = explicit deny; first stderr line (capped) is the reason when JSON carries none",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User hook files: ~/.grok/hooks/*.json (merged with ~/.grok/config.toml [[hooks.PreToolUse]], ~/.claude/settings.json, ~/.cursor/hooks.json, project and plugin sources); all hooks need folder trust except managed/requirements ones; headless grok -p counts the folder as trusted for your own hooks",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.70 embedded 10-hooks.md (strings line numbers) lines 28833-28851 (Hook Locations, Trusting a project)",
+      "mark": "V"
+    },
+    {
+      "claim": "Handler fields read: type, command, args, url, timeout, env, and from 1.0.71 also failClosed and onFailure; Claude fields if/async/asyncRewake/shell/statusMessage/headers produce load errors (if skips the handler)",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30123 vs npm:@xai-official/grok-linux-x64@1.0.70 embedded 10-hooks.md (strings line numbers) Unsupported Handler Fields ('type, command, args, url, timeout, and env')",
+      "mark": "V"
+    },
+    {
+      "claim": "Fail-closed switch: \"failClosed\": true on a handler (fail_closed also read; Claude-style \"onFailure\": \"block\" also read). Exists in 1.0.71 and 1.0.73, NOT in 1.0.70, the current npm latest. Only PreToolUse and UserPromptSubmit honor it; with it a timeout, crash, spawn failure, unparseable '{' reply or unknown decision denies; plain non-JSON stdout on exit 0 still allows",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30091 and :33517; grep failClosed in 1.0.70 strings: only a managed-config symbol, no hook doc",
+      "mark": "V"
+    },
+    {
+      "claim": "timeout in seconds, any non-negative number, default 5 s for PreToolUse (600 s for Stop/SubagentStop/PostToolUse); 0 keeps the default",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30086",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher: '*', '' or omitted = all; only [A-Za-z0-9_- ,|] = exact name list; anything else = unanchored regex, also tested against alias names. Bash aliases run_terminal_command. A matcher containing mcp__ is also tested against the Claude name mcp__<server>__<tool>",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.70 embedded 10-hooks.md (strings line numbers) Matcher Syntax and Tool Name Aliases (grok_hooks_doc lines 144-179); npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30121-30131",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool run_terminal_command (alias Bash; Shell under the Cursor preset); MCP tool <server>__<tool>; no separate server field documented",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30121 and :30131",
+      "mark": "V"
+    },
+    {
+      "claim": "stdin is one JSON line: hookEventName (grok snake value), hook_event_name (Claude PascalCase value), sessionId, cwd, workspaceRoot, permissionMode, toolName, toolInput, toolUseId, toolInputTruncated, timestamp; strings over the 128 KiB budget are cut with ' [truncated]'",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30228-30239",
+      "mark": "V"
+    },
+    {
+      "claim": "The binary holds a camelCase-to-Claude key table (session_id, transcript_path, permission_mode, tool_name, tool_input, tool_response, tool_use_id); whether snake_case copies are always sent is not documented",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output strings near 'hook_event_namesessionIdsession_id...'",
+      "mark": "I"
+    },
+    {
+      "claim": "Reply: top-level decision allow|deny|ask|defer (+reason) or hookSpecificOutput.permissionDecision (+permissionDecisionReason), the latter wins; legacy approve/block accepted; allow does not auto-approve; ask forces the permission prompt; defer = no opinion; updatedInput replaces the input (non-object fails the hook; schema failure blocks); additionalContext goes to the model",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30240-30270",
+      "mark": "V"
+    },
+    {
+      "claim": "Exit codes: 0 allow unless JSON says otherwise; 2 deny (unless stdout JSON says continue:false, which stops the agent); other codes fail open but a JSON deny or continue:false on stdout is honored at any exit code; a non-zero exit drops updatedInput and additionalContext",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30298-30304",
+      "mark": "V"
+    },
+    {
+      "claim": "Without failClosed, timeouts, crashes and malformed output fail open; exceptions that block: reply past 8 MiB read limit, updatedInput nested past 124 levels or failing the tool schema",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30086-30090 and Reading a Hook's Reply",
+      "mark": "V"
+    },
+    {
+      "claim": "continue:false (+stopReason) ends the turn (the agent stops; queued prompts wait for the user) instead of just denying the call",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:30248",
+      "mark": "V"
+    },
+    {
+      "claim": "Compat imports off: [compat.claude] hooks = false and [compat.cursor] hooks = false in ~/.grok/config.toml, or GROK_CLAUDE_HOOKS_ENABLED=false / GROK_CURSOR_HOOKS_ENABLED=false (env beats config.toml). Cursor's flat entries do not run yet; only matcher groups load",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.71 bin/grok.br (brotli) embedded 10-hooks.md, line numbers are lines of 'strings -n 8' output:34532 and :34539; npm:@xai-official/grok-linux-x64@1.0.70 embedded 10-hooks.md (strings line numbers) Harness compatibility table (strings 27505-27519) and Cursor Hook Compatibility",
+      "mark": "V"
+    },
+    {
+      "claim": "1.0.73-alpha docs keep failClosed and onFailure with the same wording",
+      "source": "npm:@xai-official/grok-linux-x64@1.0.73 (alpha) embedded docs strings :29315 and :29347",
+      "mark": "V"
+    }
+  ]
+}

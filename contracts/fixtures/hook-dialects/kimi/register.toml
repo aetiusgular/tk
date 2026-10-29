@@ -1,0 +1,5 @@
+[[hooks]]
+event = "PreToolUse"
+matcher = "Bash"
+command = "/ABSOLUTE/PATH/TO/tk-hook"
+timeout = 5

@@ -18,7 +18,7 @@
     },
     "runner": { "$ref": "#/$defs/runner" },
     "exposure": {
-      "description": "How each harness should load this entry's tools. Keys are harness ids from contracts/harness-presets.json; `default` applies to any harness not named. Pi's own values (docs/mcp.md at 1.4.0).",
+      "description": "How each harness should load this entry's tools. Keys are harness ids from the preset table (crates/tk-cli/src/connect/presets/); `default` applies to any harness not named. Pi's own values (docs/mcp.md at 1.4.0).",
       "type": "object",
       "required": ["default"],
       "properties": { "default": { "enum": ["codemode", "deferred", "direct", "hidden"] } },
@@ -120,7 +120,7 @@
       "additionalProperties": false,
       "required": ["contentSha256", "scans", "liveness"],
       "properties": {
-        "namespaceProof": { "enum": ["github-oauth", "github-oidc", "dns", "http-well-known", "none"] },
+        "namespaceProof": { "enum": ["github-oauth", "github-oidc", "dns", "http-well-known", "official-registry", "none"], "$comment": "official-registry: a mirrored entry, whose namespace the official registry proved by a method it does not publish (lane G; integration w2)" },
         "provenance": {
           "description": "ToolHive's provenance names plus the kind of attestation",
           "type": "object",
@@ -156,7 +156,9 @@
           "required": ["state"],
           "properties": {
             "state": { "enum": ["alive", "dead", "unknown", "not-applicable"] },
-            "checkedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" }
+            "checkedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+            "reason": { "type": "string", "maxLength": 300, "$comment": "what the probe saw, in words (lane G; integration w2)" },
+            "era": { "enum": ["modern", "legacy"], "$comment": "modern: answered the 2026-07-28 server/discover; legacy: a 4xx with no modern JSON-RPC body (lane G)" }
           }
         },
         "capabilityDrift": {
@@ -168,7 +170,7 @@
             "toVersion": { "type": "string" },
             "changed": {
               "type": "array",
-              "items": { "enum": ["tools-added", "tools-removed", "description", "input-schema", "endpoint-host", "annotations"] }
+              "items": { "enum": ["tools-added", "tools-removed", "description", "input-schema", "endpoint-host", "annotations", "package"], "$comment": "package: a package identity changed between versions (lane H; integration w2)" }
             }
           }
         }

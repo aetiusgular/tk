@@ -1,0 +1,10 @@
+{
+  "hook_event_name": "PreToolUse",
+  "session_id": "session_abc",
+  "cwd": "/path/to/project",
+  "client_type": "kimi_code_cli",
+  "session_title": "Fix the login page",
+  "tool_name": "mcp__example-server__example_tool",
+  "tool_input": { "query": "placeholder" },
+  "tool_call_id": "call_placeholder"
+}

@@ -39,11 +39,37 @@ pub enum Request {
     /// Become an approver: the daemon then sends `approve` lines on this
     /// connection and reads `answer` lines back.
     Approver {},
-    /// An approver's answer to one request.
-    Answer { id: String, answer: Answer },
+    /// An approver's answer to one request. `chat` names the request's chat;
+    /// it may be left out while only one chat waits on that id (integration
+    /// w2, security finding S8).
+    Answer {
+        id: String,
+        answer: Answer,
+        #[serde(default)]
+        chat: Option<String>,
+    },
     /// Mint a chat token. Needs the daemon scope.
     #[serde(rename = "token.mint")]
     TokenMint { chat: String, harness: String },
+    /// Computer use's controls, which went with the fork's menu bar (lane
+    /// K's request 3, integration w2): its status, stop one chat or every
+    /// chat, take one app back from a chat. Needs the daemon scope.
+    Cu {
+        action: CuAction,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        chat: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        app: Option<String>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum CuAction {
+    Status,
+    Stop,
+    StopAll,
+    Revoke,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

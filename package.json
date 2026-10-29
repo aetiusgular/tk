@@ -15,6 +15,10 @@
     "packages/tk-hermes-plugin",
     "packages/tk-openclaw-plugin",
     "packages/tk-kilo-plugin",
+    "packages/tk-hooks-claude-compat",
+    "packages/tk-hooks-native",
+    "packages/tk-amp-plugin",
+    "packages/tk-cline",
     "library"
   ],
   "scripts": {

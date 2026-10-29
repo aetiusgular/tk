@@ -1,0 +1,27 @@
+{
+  "id": "auggie",
+  "name": "Auggie",
+  "cli": "TODO",
+  "mcpFile": "~/.augment/settings.json",
+  "toolNameForm": "t_s",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "aug",
+    "gate": {
+      "family": "command-hook",
+      "where": "PreToolUse in ~/.augment/settings.json, or a script-policy rule",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [
+      "launch-process"
+    ],
+    "verifiedAt": "0.36.0, npm",
+    "note": "needs an account: fixtures only unless call 8 buys a seat"
+  }
+}

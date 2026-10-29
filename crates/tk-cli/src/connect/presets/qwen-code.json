@@ -1,0 +1,64 @@
+{
+  "id": "qwen-code",
+  "name": "Qwen Code",
+  "cli": "qwen",
+  "configFiles": {
+    "user": {
+      "macos": "~/.qwen/settings.json",
+      "linux": "~/.qwen/settings.json"
+    },
+    "project": "<project>/.qwen/settings.json"
+  },
+  "format": "jsonc",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "qwen-code",
+  "trailingNewline": false,
+  "write": "write",
+  "envRef": "$VAR",
+  "enableKey": null,
+  "addCommand": [
+    "qwen",
+    "mcp",
+    "add",
+    "-s",
+    "user",
+    "<name>",
+    "<cmd>"
+  ],
+  "toolNameForm": "mcp__<server>__<tool> (V, core/src/utils/tool-name-utils.ts#L8-L42 at v0.26.1)",
+  "nameMangling": "used as is when it matches ^[A-Za-z][A-Za-z0-9_-]*$ and is at most 63 characters; otherwise [^A-Za-z0-9_-] becomes _, then cut and suffixed _ plus an FNV-1a hash (V)",
+  "managedFiles": {
+    "macos": "/Library/Application Support/QwenCode/settings.json",
+    "linux": "/etc/qwen-code/settings.json"
+  },
+  "inHarnessGate": null,
+  "listChanged": "a doc comment claims toolsChanged on notifications/tools/list_changed (tools/mcp-pool-events.ts#L40); no handler registration found (NF)",
+  "notes": "qwen mcp add (0.26.1) writes command, args, env and httpUrl (not url), headers, adds \"$version\": 4 at the end of a new file, keeps comments, and ends the file with no newline (V, recorded). Probe run 27 Oct (`qwen mcp list` starting a stdio server): both $TOKEN and ${TOKEN} expand in env and args (V). Source (v0.26.1): http writes httpUrl, sse writes url; type allows only 'sdk' (core/src/config/mcp-server-config.ts#L109-L161); `qwen mcp add` defaults to user scope; existing files are edited with jsonc-parser and refused if the result would be invalid (cli/src/utils/jsonc-editor.ts). QWEN_HOME replaces ~/.qwen (V, core/src/config/storage.ts#L193-L203). The project path is an inference by Gemini lineage (I).",
+  "sources": [
+    "recorded: qwen 0.26.1 (@qwen-code/qwen-code) `mcp add -s user` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/qwen-2-after.json)",
+    "note AP section 4 (qwenlm.github.io/qwen-code-docs/en/users/features/mcp/)",
+    "github.com/QwenLM/qwen-code at v0.26.1: packages/core/src/config/storage.ts, config/mcp-server-config.ts, utils/envVarResolver.ts, utils/tool-name-utils.ts, cli/src/commands/mcp/add.ts, cli/src/utils/jsonc-editor.ts, cli/src/config/storage-paths-lite.ts (lane C research, batch 1, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "homeEnv": "QWEN_HOME",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "qwen-code",
+    "gate": {
+      "family": "command-hook",
+      "where": "~/.qwen/settings.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "0.26.1, source",
+    "note": "ask becomes deny in -p, background subagents and ACP"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "openclaw",
+  "name": "OpenClaw",
+  "cli": "openclaw",
+  "configFiles": {
+    "user": {
+      "macos": "~/.openclaw/openclaw.json",
+      "linux": "~/.openclaw/openclaw.json"
+    },
+    "project": null
+  },
+  "format": "jsonc",
+  "entryShape": "json5:mcp.servers",
+  "entryPath": [
+    "mcp",
+    "servers"
+  ],
+  "entryStyle": "openclaw",
+  "write": "print",
+  "writeNote": "the file is JSON5 (unquoted keys, single quotes), which tk does not parse; paste the fragment, or use `openclaw mcp set <name> '<json>'`. OPENCLAW_CONFIG_PATH, OPENCLAW_STATE_DIR and OPENCLAW_HOME move the file, and OPENCLAW_CONFIG_READONLY=1 makes it read-only",
+  "envRef": "${VAR}",
+  "enableKey": "enabled",
+  "addCommand": [
+    "openclaw",
+    "mcp",
+    "add",
+    "<name>",
+    "--url",
+    "<url>",
+    "--transport",
+    "streamable-http"
+  ],
+  "toolNameForm": "<server>__<tool> (no mcp prefix)",
+  "nameMangling": "characters outside [A-Za-z0-9_-] become -; a fragment must start with a letter or gets mcp- or tool-; server part capped at 30, total at 64; collisions get -2, -3 (V, src/agents/agent-bundle-mcp-names.ts)",
+  "managedFiles": null,
+  "inHarnessGate": "before_tool_call (wave 2 lane I)",
+  "listChanged": "yes, listChanged.tools.onChanged invalidates the catalog (V, src/agents/agent-bundle-mcp-runtime.ts#L649-L661)",
+  "notes": "A url with no transport resolves to SSE (V, src/agents/mcp-transport-config.ts#L138), so tk names transport streamable-http explicitly. command wins over url. ${VAR} and ${VAR:-default}; a missing variable is an error (V, src/config/env-substitution.ts). Writes strip JSON5 comments with a warning (V). `__proto__` is a reserved server name.",
+  "sources": [
+    "github.com/openclaw/openclaw at v2026.10.8: src/config/paths.ts, src/agents/mcp-transport-config.ts, src/config/env-substitution.ts, src/cli/mcp-cli.ts#L948-L1010, docs/tools/mcp.md, docs/cli/mcp/transports.md (lane C research, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": null,
+    "gate": {
+      "family": "plugin",
+      "where": "OpenClaw plugin before_tool_call (openclaw.extensions), runs last",
+      "status": "built",
+      "wave": 2,
+      "lane": "I",
+      "package": "packages/tk-openclaw-plugin"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [
+      "exec"
+    ],
+    "verifiedAt": "2026.10.8, run",
+    "note": "fail-closed hook runner (read); tk runs last and hands back the params it checked (run); exec is gated as bash, but Code Mode's exec is a code tool and is not aliased; MCP tools reach it as <server>__<tool>; not in Orca's grid; needs Node 24.22.1 or later (lane I, applied by integration w2)"
+  }
+}

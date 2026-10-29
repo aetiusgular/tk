@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^shell$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/tk-hook",
+            "on_failure": "block"
+          }
+        ]
+      }
+    ]
+  }
+}

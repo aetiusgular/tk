@@ -1,6 +1,6 @@
 {
-  "$comment": "A fragment for ~/.config/opencode/opencode.json. `plugin` loads the tk gate; `permission` keeps OpenCode's own prompts as a second layer for the tools that run or write (keys from OpenCode 1.19.4, packages/core/src/v1/config/permission.ts). tk connect prints this; it never writes a project-level opencode.json.",
-  "plugin": ["tk-opencode-plugin"],
+  "$comment": "A fragment for ~/.config/opencode/opencode.json. `plugin` loads the tk gate from your clone: replace /ABSOLUTE/PATH/TO/tk with the clone's absolute path (OpenCode 1.19.4 loads a file: URL or path, plugin/shared.ts:171-189; a bare name is fetched from npm as <name>@latest, shared.ts:207-212, and tk-opencode-plugin is not published; integration w2, lane J's request 3; the box test ran F1 this way); `permission` keeps OpenCode's own prompts as a second layer for the tools that run or write (keys from OpenCode 1.19.4, packages/core/src/v1/config/permission.ts). tk connect prints this; it never writes a project-level opencode.json.",
+  "plugin": ["file:///ABSOLUTE/PATH/TO/tk/packages/tk-opencode-plugin"],
   "permission": {
     "bash": "ask",
     "edit": "ask",

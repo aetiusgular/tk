@@ -1,0 +1,85 @@
+{
+  "presetId": "kimi",
+  "agent": "Kimi Code CLI (npm @moonshot-ai/kimi-code, repo MoonshotAI/kimi-code)",
+  "versionRead": "2.4.0 (repo commit 0c63065fbd7386132b3b8c914de37adfff4c8daf, 'sync release/2026-10-28 (2.4.0)'; apps/kimi-code/package.json version 2.4.0). Earlier notes read 2.3.3",
+  "currentVersion": "2.4.0 (npm, 2026-10-28)",
+  "files": {
+    "register.toml": {
+      "from": "verbatim",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L136-L141 (command replaced)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "Base fields verbatim from https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L68-L76; tool fields from https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/agent/agentExternalHooksService.ts#L306-L319 (toolName, toolInput, toolCallId, sessionTitle) camel-to-snake converted in https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/internal/matchHooks.ts#L60-L65 and #L124-L134 (top-level keys only; tool_input keys are passed unchanged)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/mcpCore/tool-naming.ts#L1-L17: mcp__<server>__<tool>, parts sanitized to [a-zA-Z0-9_-], names over 64 chars truncated with an 8-hex hash",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "verbatim",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L93-L100",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L83-L89: exit 2 blocks, stderr is the reason; https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/internal/runHook.ts#L140-L150",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Registration is a [[hooks]] array entry in ~/.kimi-code/config.toml (or $KIMI_CODE_HOME/config.toml) with exactly four keys: event, matcher?, command, timeout? (integer seconds 1-600, default 30)",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L42-L51 and https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/configuration/config-files.md#L7-L13",
+      "mark": "V"
+    },
+    {
+      "claim": "A fifth key breaks config load: HookDefSchema is z.object(...).strict()",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L51 and https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/configSection.ts#L10-L18",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher is an unanchored, case-sensitive JS RegExp tested against the tool name; empty or omitted matches all; an invalid regex matches nothing",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/internal/matchHooks.ts#L105-L112",
+      "mark": "V"
+    },
+    {
+      "claim": "PreToolUse fires before permission checks",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L112",
+      "mark": "V"
+    },
+    {
+      "claim": "Only deny works: exit 2 (stderr reason) or exit 0 with JSON hookSpecificOutput.permissionDecision 'deny' (+ permissionDecisionReason). Any other permissionDecision, including allow and ask, is treated as allow with no effect on the normal permission flow; JSON is parsed only on exit 0",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/internal/runHook.ts#L153-L205",
+      "mark": "V"
+    },
+    {
+      "claim": "Empty deny reason becomes 'Blocked by PreToolUse hook'",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/internal/matchHooks.ts#L92-L103",
+      "mark": "V"
+    },
+    {
+      "claim": "No ask, no input rewrite, no fail-closed switch",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md (no such fields) and runHook.ts HookJsonOutputSchema (message, hookSpecificOutput.permissionDecision/permissionDecisionReason/message only)",
+      "mark": "NF"
+    },
+    {
+      "claim": "Timeout (process killed), spawn error, crash, other non-zero exit and invalid JSON all allow (fail-open)",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L20 and #L83-L89; runHook.ts#L66-L73, #L104-L118, #L176-L205",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool is Bash; MCP tools are mcp__<server>__<tool>; no separate MCP server field in the payload",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/docs/en/customization/hooks.md#L130-L141 and https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/mcpCore/tool-naming.ts",
+      "mark": "V"
+    },
+    {
+      "claim": "Nothing a PreToolUse hook returns ends the whole run",
+      "source": "https://github.com/MoonshotAI/kimi-code/blob/0c63065fbd7386132b3b8c914de37adfff4c8daf/packages/agent-core-v2/src/features/externalHooks/agent/agentExternalHooksService.ts#L160-L168 (only veto of this call)",
+      "mark": "I"
+    }
+  ]
+}

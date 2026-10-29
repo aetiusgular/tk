@@ -1,5 +1,5 @@
 {
-  "$comment": "Folder-level ownership for plans/parallel_build_tk.md, sections 2, 6 and 7. A path is owned by the lane whose `owns` prefix matches it and whose `except` list does not. `shared` names files with per-lane sections marked `# [lane-X]`. `noLane` paths no lane edits during a wave. Written by tk session 0; only integration edits it. Integration w1 extended it for wave 2: lane I gains tk-kilo-plugin, tk-pi except memory.ts, and tests/cli-contract/checks/I/; tk-daemon's Cargo.toml is shared with lane K.",
+  "$comment": "Folder-level ownership for plans/parallel_build_tk.md, sections 2, 6 and 7. A path is owned by the lane whose `owns` prefix matches it and whose `except` list does not. `shared` names files with per-lane sections marked `# [lane-X]`. `noLane` paths no lane edits during a wave. Written by tk session 0; only integration edits it. Integration w1 extended it for wave 2: lane I gains tk-kilo-plugin, tk-pi except memory.ts, and tests/cli-contract/checks/I/; tk-daemon's Cargo.toml is shared with lane K. Integration w2: lane K also owns tk-pi's memory test and live check (its request 2); its edit to packages/tk-pi/test/load.test.ts was accepted at merge. Integration w2 scaffolded wave 4 (section 7a): lanes L, N, P own their packages (the synced src/core/ excepted) and their agents' preset files by name, which `except` takes out of lane Q's crates/tk-cli/src/connect/; lane R owns acp/, doctor/, run/ and watch/; tk-cli's Cargo.toml has # [lane-Q] and # [lane-R] sections.",
   "lanes": {
     "A": { "wave": 1, "owns": ["packages/tk-pi/"], "except": ["packages/tk-pi/extensions/memory.ts"] },
     "B": { "wave": 1, "owns": ["crates/tk-daemon/", "crates/tk-core/"], "except": ["crates/tk-daemon/src/computer_use/", "crates/tk-daemon/src/collector/"] },
@@ -9,13 +9,18 @@
     "F": { "wave": 1, "owns": ["packages/tk-claude-plugin/", "packages/tk-codex-plugin/", "packages/tk-opencode-plugin/", "tests/cli-contract/"], "except": [] },
     "G": { "wave": 2, "owns": ["library/mirror/", "library/publish/"], "except": [] },
     "H": { "wave": 2, "owns": ["library/trust/"], "except": [] },
-    "I": { "wave": 2, "owns": ["packages/tk-gemini-extension/", "packages/tk-hermes-plugin/", "packages/tk-openclaw-plugin/", "packages/tk-kilo-plugin/", "packages/tk-pi/", "tests/cli-contract/checks/I/"], "except": ["packages/tk-pi/extensions/memory.ts"] },
+    "I": { "wave": 2, "owns": ["packages/tk-gemini-extension/", "packages/tk-hermes-plugin/", "packages/tk-openclaw-plugin/", "packages/tk-kilo-plugin/", "packages/tk-pi/", "tests/cli-contract/checks/I/"], "except": ["packages/tk-pi/extensions/memory.ts", "packages/tk-pi/test/memory.test.ts", "packages/tk-pi/live/memory-live.mjs"] },
     "J": { "wave": 2, "owns": ["crates/tk-cli/src/watch/", "library/site/"], "except": [] },
-    "K": { "wave": 2, "owns": ["crates/tk-daemon/src/collector/", "crates/tk-daemon/src/computer_use/", "packages/tk-pi/extensions/memory.ts", "macos/"], "except": [] },
-    "M": { "wave": 2, "owns": ["tests/measure/"], "except": [] }
+    "K": { "wave": 2, "owns": ["crates/tk-daemon/src/collector/", "crates/tk-daemon/src/computer_use/", "packages/tk-pi/extensions/memory.ts", "packages/tk-pi/test/memory.test.ts", "packages/tk-pi/live/memory-live.mjs", "macos/"], "except": [] },
+    "M": { "wave": 2, "owns": ["tests/measure/"], "except": [] },
+    "L": { "wave": 4, "owns": ["packages/tk-hooks-claude-compat/", "crates/tk-cli/src/connect/presets/openclaude.json", "crates/tk-cli/src/connect/presets/qwen-code.json", "crates/tk-cli/src/connect/presets/droid.json", "crates/tk-cli/src/connect/presets/command-code.json", "crates/tk-cli/src/connect/presets/kimi.json", "crates/tk-cli/src/connect/presets/auggie.json", "crates/tk-cli/src/connect/presets/copilot-cli.json", "crates/tk-cli/src/connect/presets/grok.json", "tests/cli-contract/checks/L/"], "except": ["packages/tk-hooks-claude-compat/src/core/"] },
+    "N": { "wave": 4, "owns": ["packages/tk-hooks-native/", "crates/tk-cli/src/connect/presets/cursor.json", "crates/tk-cli/src/connect/presets/antigravity.json", "crates/tk-cli/src/connect/presets/goose.json", "crates/tk-cli/src/connect/presets/mistral-vibe.json", "crates/tk-cli/src/connect/presets/crush.json", "crates/tk-cli/src/connect/presets/kiro.json", "tests/cli-contract/checks/N/"], "except": ["packages/tk-hooks-native/src/core/"] },
+    "P": { "wave": 4, "owns": ["packages/tk-amp-plugin/", "packages/tk-cline/", "crates/tk-cli/src/connect/presets/amp.json", "crates/tk-cli/src/connect/presets/cline.json", "tests/cli-contract/checks/P/"], "except": ["packages/tk-amp-plugin/src/core/", "packages/tk-cline/src/core/"] },
+    "Q": { "wave": 4, "owns": ["crates/tk-cli/src/connect/"], "except": ["crates/tk-cli/src/connect/presets/openclaude.json", "crates/tk-cli/src/connect/presets/qwen-code.json", "crates/tk-cli/src/connect/presets/droid.json", "crates/tk-cli/src/connect/presets/command-code.json", "crates/tk-cli/src/connect/presets/kimi.json", "crates/tk-cli/src/connect/presets/auggie.json", "crates/tk-cli/src/connect/presets/copilot-cli.json", "crates/tk-cli/src/connect/presets/grok.json", "crates/tk-cli/src/connect/presets/cursor.json", "crates/tk-cli/src/connect/presets/antigravity.json", "crates/tk-cli/src/connect/presets/goose.json", "crates/tk-cli/src/connect/presets/mistral-vibe.json", "crates/tk-cli/src/connect/presets/crush.json", "crates/tk-cli/src/connect/presets/kiro.json", "crates/tk-cli/src/connect/presets/amp.json", "crates/tk-cli/src/connect/presets/cline.json"] },
+    "R": { "wave": 4, "owns": ["crates/tk-cli/src/acp/", "crates/tk-cli/src/doctor/", "crates/tk-cli/src/run/", "crates/tk-cli/src/watch/", "tests/cli-contract/checks/R/"], "except": [] }
   },
   "shared": {
-    "crates/tk-cli/Cargo.toml": ["C", "D", "J"],
+    "crates/tk-cli/Cargo.toml": ["C", "D", "J", "Q", "R"],
     "crates/tk-daemon/Cargo.toml": ["K"]
   },
   "noLane": [

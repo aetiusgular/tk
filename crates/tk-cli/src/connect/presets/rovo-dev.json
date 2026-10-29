@@ -1,0 +1,25 @@
+{
+  "id": "rovo-dev",
+  "name": "Rovo Dev",
+  "cli": "TODO",
+  "mcpFile": "~/.rovodev/mcp.json or mcp_config.json (its pages disagree)",
+  "toolNameForm": "NF",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "A",
+    "orcaId": "rovo",
+    "gate": {
+      "family": "rules",
+      "where": "toolPermissions in ~/.rovodev/config.yml",
+      "status": "planned",
+      "wave": 4,
+      "lane": "Q"
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "NF",
+    "note": "its only gate is server mode's pause-and-resume API; needs an account"
+  }
+}

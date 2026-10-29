@@ -1,0 +1,37 @@
+{
+  "$comment": "The per-agent table, one file per agent in this folder (integration w2 split contracts/harness-presets.json so each wave 4 lane owns its agents' rows by file; scripts/lane-ownership.json lists them). This index says which list each id is in and the order; `crates/tk-cli/src/connect/presets.rs` assembles the table and its tests refuse a file the index does not name, an id the folder lacks, or a row whose `id` is not its file name. History: tk session 0's skeleton, filled and verified by lane C on 27 Oct 2026, made the one table by integration w1. Each row is checked against the harness's own docs or source at the version named in `sources`, and where the CLI could be installed in the cloud, against what its own `mcp add` wrote into a scratch HOME (crates/tk-cli/src/connect/fixtures/recorded/). Marks inside strings: (V) read in a primary source or run; (I) inference; (NF) searched, not found. `tokens` in paths: ~ is the home folder; <project> the project root. Fields added to the skeleton by lane C: format, entryPath, entryStyle, trailingNewline, write, writeNote, envRef, homeEnv, xdgConfig. tk writes only `configFiles.user`; `project` and `managedFiles` are listed so tk can refuse them. Integration w1 added a `coverage` object to every row (tier G, A or O; the gate's family, place, status, wave and lane; what the agent does when the gate fails and the switch that stops it; how an ask is answered; shell tools under other names; the version the coverage was read at; note AQ section 4) and a `planned` list of the agents in Orca's grid that tk connect does not cover yet, with TODO where note AQ found nothing. Wave 4 lane Q moves an id from `planned` to `harnesses` when it verifies the connect fields. Schema of the assembled table: contracts/harness-presets.schema.json.",
+  "version": 1,
+  "harnesses": [
+    "claude-code",
+    "codex",
+    "pi",
+    "opencode",
+    "gemini",
+    "cursor",
+    "hermes",
+    "openclaw",
+    "goose",
+    "qwen-code",
+    "copilot-cli",
+    "amp",
+    "crush",
+    "zed"
+  ],
+  "planned": [
+    "grok",
+    "antigravity",
+    "openclaude",
+    "oh-my-pi",
+    "auggie",
+    "cline",
+    "codebuff",
+    "command-code",
+    "continue",
+    "droid",
+    "kilo",
+    "kimi",
+    "kiro",
+    "mistral-vibe",
+    "rovo-dev"
+  ]
+}

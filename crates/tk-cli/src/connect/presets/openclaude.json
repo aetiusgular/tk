@@ -1,0 +1,24 @@
+{
+  "id": "openclaude",
+  "name": "OpenClaude",
+  "cli": "TODO",
+  "mcpFile": "~/.openclaude.json",
+  "toolNameForm": "mcp__s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "openclaude",
+    "gate": {
+      "family": "command-hook",
+      "where": "~/.openclaude/settings.json, PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "0.33.0, bundle"
+  }
+}

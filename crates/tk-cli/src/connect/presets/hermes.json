@@ -1,0 +1,61 @@
+{
+  "id": "hermes",
+  "name": "Hermes Agent",
+  "cli": "hermes",
+  "configFiles": {
+    "user": {
+      "macos": "~/.hermes/config.yaml",
+      "linux": "~/.hermes/config.yaml"
+    },
+    "project": null
+  },
+  "homeEnv": "HERMES_HOME",
+  "format": "yaml",
+  "entryShape": "yaml:mcp_servers",
+  "entryPath": [
+    "mcp_servers"
+  ],
+  "entryStyle": "hermes",
+  "write": "print",
+  "writeNote": "tk has no comment-keeping YAML writer; paste the fragment, or use `hermes mcp add`, which keeps comments (ruamel round-trip)",
+  "envRef": "${VAR}",
+  "enableKey": "enabled",
+  "addCommand": [
+    "hermes",
+    "mcp",
+    "add",
+    "<name>",
+    "--command",
+    "<cmd>",
+    "--args",
+    "<args>"
+  ],
+  "toolNameForm": "mcp__<server>__<tool>",
+  "nameMangling": "every character outside [A-Za-z0-9_] becomes _ (hyphens too); names over 64 characters are cut and given an _<8-hex sha256> suffix (V, tools/mcp_tool_schema.py#L147-L185)",
+  "managedFiles": null,
+  "inHarnessGate": "pre_tool_call (wave 2 lane I)",
+  "listChanged": "yes, ToolListChangedNotification triggers a refresh (V, tools/mcp_tool_health.py#L100-L112)",
+  "notes": "Entry: command, args, env or url, headers, transport: sse for SSE (streamable HTTP by default); enabled, timeout, tools.include/exclude. No type key. ${VAR} and ${env:VAR} interpolate from the profile .env then the process environment; an unset variable stays literal (V). Folder from HERMES_HOME, default ~/.hermes (V, hermes_constants.py#L53-L59). hermes mcp add rejects entries validate_mcp_server_entry flags (V).",
+  "sources": [
+    "github.com/NousResearch/hermes-agent at v2026.9.24: hermes_constants.py, hermes_cli/mcp_config.py#L232-L243 and #L611-L640, website/docs/reference/mcp-config-reference.md, tools/mcp_tool_schema.py, tools/mcp_tool_health.py (lane C research, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "hermes",
+    "gate": {
+      "family": "plugin",
+      "where": "Python plugin pre_tool_call and transform_tool_result, ~/.hermes/plugins/tk/ (hermes plugins enable tk)",
+      "status": "built",
+      "wave": 2,
+      "lane": "I",
+      "package": "packages/tk-hermes-plugin"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "v0.22.5, source",
+    "note": "blocks on a raise and on its 30 s callback timeout (read); an ask goes to Hermes's prompt except under yolo, unattended or approvals off, where tk blocks; Hermes was never run (lane I: its install was refused), so every claim is read in source (lane I, applied by integration w2)"
+  }
+}

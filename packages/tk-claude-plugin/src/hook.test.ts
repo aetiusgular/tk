@@ -56,6 +56,18 @@ describe("Claude Code PreToolUse", () => {
     expect(JSON.stringify(ev[0])).not.toContain("ls -la");
   });
 
+  it("gives each decision with no tool_use_id its own record id (the daemon writes a decision once, S9)", async () => {
+    const before = daemon.events().length;
+    const bare = (cmd: string) => JSON.stringify({ hook_event_name: "PreToolUse", session_id: "s-1", tool_name: "Bash", tool_input: { command: cmd }, permission_mode: "default" });
+    await runHook("pre", bare("ls"), env());
+    await runHook("pre", bare("pwd"), env());
+    const ids = daemon.events().slice(before).map((e) => String(e.id));
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    // Box test w2, BW2: every decision id ends in 128 random bits.
+    for (const id of ids) expect(id).toMatch(/^claude-code-unknown-decision-[0-9a-f]{32}$/);
+  });
+
   it("denies by rule with the reason, and the reject list wins over allow", async () => {
     expect(decision((await runHook("pre", pre("WebFetch", { url: "https://x" }), env())).stdout).permissionDecision).toBe("deny");
     const r = await runHook("pre", pre("Bash", { command: "git -c core.fsmonitor=./x status" }), env());

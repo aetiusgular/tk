@@ -1,0 +1,85 @@
+{
+  "presetId": "mistral-vibe",
+  "agent": "mistral-vibe",
+  "versionRead": "3.0.3",
+  "currentVersion": "3.0.3 (latest tag and PyPI mistral-vibe)",
+  "files": {
+    "register.toml": {
+      "from": "built-from-fields",
+      "source": "mistral-vibe v3.0.3 README.md:1214-1223 (name/command/strict changed, match omitted to match all, description dropped)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:128-138,223-233; bash author keys command, timeout from :169-176 and vibe/core/tools/builtins/bash.py:454-455",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "mistral-vibe v3.0.3 README.md:1227 names mcp_<server>.<tool>; no MCP payload example",
+      "mark": "I"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "mistral-vibe v3.0.3 README.md:1236-1240,1269-1270; mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:305-311",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "built-from-fields",
+      "source": "mistral-vibe v3.0.3 README.md:1235-1238 (empty stdout is the same passthrough)",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User file ~/.vibe/hooks.toml, array of [[hooks]] with name, type (pre_tool|post_tool|post_agent), command, match? (fnmatch glob or re: regex, case-insensitive), timeout seconds default 60, strict default false, description?",
+      "source": "mistral-vibe v3.0.3 README.md:1212-1223; vibe/core/hooks/models.py:46-58",
+      "mark": "V"
+    },
+    {
+      "claim": "Fail-closed switch: strict = true; pre_tool failures (spawn error, timeout, non-zero exit, invalid JSON, non-object) become a deny",
+      "source": "mistral-vibe v3.0.3 README.md:1221,1241-1242; mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:8-16,258-274",
+      "mark": "V"
+    },
+    {
+      "claim": "Stdin: session_id, transcript_path, cwd, parent_session_id, hook_event_name, tool_name (qualified), tool_call_id, tool_input (author-facing names)",
+      "source": "mistral-vibe v3.0.3 README.md:1231,1269; mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:128-138,223-233",
+      "mark": "V"
+    },
+    {
+      "claim": "Deny is JSON on exit 0: decision deny + reason; reason becomes the tool error the model sees; first deny short-circuits",
+      "source": "mistral-vibe v3.0.3 README.md:1267-1270; mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:305-311",
+      "mark": "V"
+    },
+    {
+      "claim": "Any non-deny decision, including absent or unknown, continues to the normal permission prompt; allow does not pre-approve; no ask value",
+      "source": "mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:314-331; mistral-vibe v3.0.3 README.md:1267",
+      "mark": "V"
+    },
+    {
+      "claim": "Exit 2 has no special meaning; any non-zero exit is a hook failure (allow by default, deny under strict)",
+      "source": "mistral-vibe v3.0.3 harness/runtimes/python/python/mistralai_vibe_local_harness/vibe/_foreign_hooks.py:401-410; mistral-vibe v3.0.3 README.md:1242",
+      "mark": "V"
+    },
+    {
+      "claim": "Input rewrite: hook_specific_output.tool_input, full replacement, re-validated against schema",
+      "source": "mistral-vibe v3.0.3 README.md:1272",
+      "mark": "V"
+    },
+    {
+      "claim": "Names: tool_name qualified, e.g. file_system.bash, process.start, mcp_<server>.<tool>, connector_<alias>.<tool>; match also tests underscore form and bare leaf; background commands go through process_start, not bash",
+      "source": "mistral-vibe v3.0.3 README.md:1227; mistral-vibe v3.0.3 .../vibe/_hook_matcher.py:104-107,127-129",
+      "mark": "V"
+    },
+    {
+      "claim": "Nothing in pre_tool ends the run",
+      "source": "mistral-vibe v3.0.3 README.md:1267-1273",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook protocols vibe, claude_code, kimi_code exist (for plugin hooks); hooks.toml uses the vibe protocol",
+      "source": "vibe/core/hooks/models.py HookProtocol",
+      "mark": "I"
+    }
+  ]
+}

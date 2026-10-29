@@ -123,7 +123,21 @@ fn hash(token: &str) -> [u8; 32] {
 impl Receiver {
     /// Binds 127.0.0.1 on a free port and serves on its own thread.
     pub fn start(settings: Arc<Mutex<Settings>>, sink: Sink) -> Result<Arc<Self>, String> {
-        let listener = TcpListener::bind(("127.0.0.1", 0))
+        Self::start_on(settings, sink, None)
+    }
+
+    /// As `start`, trying `preferred` first: the port the daemon had before
+    /// a restart, so a running harness's `TK_OTLP_ENDPOINT` still reaches it
+    /// (integration w2, box finding BX8). Any port when that one is taken.
+    pub fn start_on(
+        settings: Arc<Mutex<Settings>>,
+        sink: Sink,
+        preferred: Option<u16>,
+    ) -> Result<Arc<Self>, String> {
+        let listener = preferred
+            .filter(|p| *p != 0)
+            .and_then(|p| TcpListener::bind(("127.0.0.1", p)).ok())
+            .map_or_else(|| TcpListener::bind(("127.0.0.1", 0)), Ok)
             .map_err(|e| format!("telemetry receiver could not listen: {e}"))?;
         let port = listener
             .local_addr()
@@ -221,16 +235,49 @@ impl Receiver {
         let (Ok(mut tokens), Ok(mut holders)) = (self.tokens.lock(), self.holders.lock()) else {
             return 0;
         };
-        let before = tokens.len();
-        tokens.retain(|((chat, _), token)| {
-            if chat == chat_id {
-                holders.remove(&hash(token));
-                false
-            } else {
-                true
-            }
-        });
-        before - tokens.len()
+        tokens.retain(|((chat, _), _)| chat != chat_id);
+        // By chat, not by the plaintext list: a token restored after a
+        // restart has only its hash here (BX8).
+        let before = holders.len();
+        holders.retain(|_, h| h.chat_id != chat_id);
+        before - holders.len()
+    }
+
+    /// Every live token's hash with its chat and harness, for the daemon's
+    /// state file (BX8). Hashes only: a token itself is never written.
+    pub fn holders_snapshot(&self) -> Vec<([u8; 32], String, &'static str)> {
+        self.holders
+            .lock()
+            .map(|h| {
+                h.iter()
+                    .map(|(k, v)| (*k, v.chat_id.clone(), v.harness))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Takes back a token by its hash after a restart (BX8). At most
+    /// `MAX_TOKENS` are held; past that the restore is refused.
+    pub fn restore(&self, token_sha256: [u8; 32], chat_id: &str, harness: &'static str) -> bool {
+        let Ok(mut holders) = self.holders.lock() else {
+            return false;
+        };
+        if holders.len() >= MAX_TOKENS {
+            return false;
+        }
+        holders.insert(
+            token_sha256,
+            Holder {
+                chat_id: chat_id.to_string(),
+                harness,
+            },
+        );
+        true
+    }
+
+    /// The SHA-256 the holders are keyed by.
+    pub fn token_hash(token: &str) -> [u8; 32] {
+        hash(token)
     }
 
     /// The chat and harness a token was minted for, by its hash.

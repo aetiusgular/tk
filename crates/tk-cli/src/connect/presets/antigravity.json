@@ -1,0 +1,26 @@
+{
+  "id": "antigravity",
+  "name": "Antigravity CLI",
+  "cli": "TODO",
+  "mcpFile": "~/.gemini/config/mcp_config.json",
+  "toolNameForm": "NF",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "antigravity",
+    "gate": {
+      "family": "command-hook",
+      "where": "a named bundle in ~/.gemini/config/hooks.json (shared with the app and IDE), PreToolUse",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "unknown",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [
+      "run_command"
+    ],
+    "verifiedAt": "changelog 1.4.8, docs"
+  }
+}

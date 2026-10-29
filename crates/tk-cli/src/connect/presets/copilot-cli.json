@@ -1,0 +1,60 @@
+{
+  "id": "copilot-cli",
+  "name": "GitHub Copilot CLI",
+  "cli": "copilot",
+  "configFiles": {
+    "user": {
+      "macos": "~/.copilot/mcp-config.json",
+      "linux": "~/.copilot/mcp-config.json"
+    },
+    "project": "<project>/.mcp.json"
+  },
+  "format": "json",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "copilot-cli",
+  "trailingNewline": true,
+  "write": "write",
+  "envRef": "$VAR",
+  "enableKey": null,
+  "addCommand": [
+    "copilot",
+    "mcp",
+    "add",
+    "<name>",
+    "--",
+    "<cmd>"
+  ],
+  "toolNameForm": "not found (NF; the config code is a closed native module)",
+  "nameMangling": "not found (NF); server names may hold anything but control characters, / separates segments and } is refused (V, bundled schemas/api.schema.json McpConfigAddRequest)",
+  "managedFiles": "a managed source and mcpExpectManagedPolicyForAllSessions exist; the path was not found (NF)",
+  "inHarnessGate": null,
+  "listChanged": "handled, autoRefresh on by default with a 300 ms debounce (V, bundled cli-main.js)",
+  "notes": "copilot mcp add (1.0.104) writes tools [\"*\"], type local, command, args, env or tools, type http, url, headers, with a final newline (V, recorded). Schema (bundled api.schema.json): stdio {command, args, cwd, env, type stdio|local}, remote {url, type http|sse, headers, oauth*}, plus tools, excludeTools, timeout ms, deferTools, displayName (V). A value that starts with $ is read as a reference to an environment variable (V for the changelog entry, github.com/github/copilot-cli changelog.md#L3447; I that it holds at 1.0.104; not probed, since `copilot mcp list` starts no server). So tk writes $VAR as a whole value only and refuses a header such as Bearer ${VAR} for Copilot. COPILOT_HOME or --config-dir replaces ~/.copilot (V, cli-main.js). Enable/disable is a persisted list, not a key. It also reads .mcp.json and .github/mcp.json in a workspace.",
+  "sources": [
+    "recorded: GitHub Copilot CLI 1.0.104 (@github/copilot) `mcp add` and `mcp --help` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/copilot-2-after.json)",
+    "@github/copilot 1.0.104 linux-x64 bundle: cli-main.js, schemas/api.schema.json, cli-native.node strings (lane C research, batch 1, 27 Oct 2026)",
+    "github.com/github/copilot-cli changelog.md (main)"
+  ],
+  "verified": "2026-10-27",
+  "homeEnv": "COPILOT_HOME",
+  "envRefWholeValue": true,
+  "coverage": {
+    "tier": "G",
+    "orcaId": "copilot",
+    "gate": {
+      "family": "command-hook",
+      "where": "own file ~/.copilot/hooks/<tk>.json, preToolUse with permissionRequest",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open-on-timeout",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "1.0.104, docs"
+  }
+}

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGate } from "../extensions/gate.ts";
+import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createGate, memoryIndexPath, memoryIndexText } from "../extensions/gate.ts";
 import { DECISION_CHANNEL, type DecisionNotice, type ToolCallResult, type UserBashResult } from "../src/pi-api.ts";
 import { sha256Hex } from "../src/policy.ts";
 import { FakeRpcClient, fakePi, memFs, type Answer } from "./fake-pi.ts";
@@ -89,6 +92,43 @@ describe("decisions", () => {
       { toolName: "mcp__exa__search", toolCallId: "call-1", toolNameNormalized: "exa/search", decision: "accept", reason: "rule exa/*: allow" },
     ]);
     expect(s.client.requests).toHaveLength(0);
+  });
+
+  it("an allowed write or edit of a memory index asks: those change only through memory_propose's card (case 48, lane K's request 8)", async () => {
+    const policy = policyText({ rules: [{ tool: "write", action: "allow" }, { tool: "edit", action: "allow" }] });
+    const s = setup({ policy, answer: () => ({ confirmed: false }) });
+    for (const [tool, path] of [
+      ["write", "memory/INDEX.md"],
+      ["edit", "/home/u/proj/research/INDEX.md"],
+      ["write", "./refs/index.MD"],
+    ] as const) {
+      expect(await s.call(tool, { path, content: "x" }, `${tool}-${path}`), path).toEqual({ block: true, reason: "Blocked by tk: not approved" });
+    }
+    expect(s.client.requests).toHaveLength(3);
+    expect(await s.call("write", { path: "memory/notes.md", content: "x" }, "other")).toBeUndefined();
+    expect(s.client.requests).toHaveLength(3);
+  });
+
+  it("a memory index named another way still asks: dots, double slashes, a linked folder, shell text (review W2-S4)", async () => {
+    for (const p of ["memory/./INDEX.md", "memory//INDEX.md", "memory/INDEX.md/.", "a/../memory/INDEX.md", "memory\\INDEX.md"]) {
+      expect(memoryIndexPath("write", { path: p }), p).toBe("memory/index.md");
+    }
+    const dir = mkdtempSync(join(tmpdir(), "tk-memidx-"));
+    mkdirSync(join(dir, "memory"));
+    symlinkSync(join(dir, "memory"), join(dir, "m2"));
+    expect(memoryIndexPath("write", { path: "m2/INDEX.md" }, dir)).toBe("memory/index.md");
+    expect(memoryIndexPath("write", { path: join(dir, "m2", "INDEX.md") }, dir)).toBe("memory/index.md");
+    expect(memoryIndexPath("write", { path: "m2/notes.md" }, dir)).toBeUndefined();
+    writeFileSync(join(dir, "memory", "INDEX.md"), "- a\n");
+    symlinkSync(join(dir, "memory", "INDEX.md"), join(dir, "x.md"));
+    expect(memoryIndexPath("write", { path: "x.md" }, dir), "a link to the index (W2-R3)").toBe("memory/index.md");
+    expect(memoryIndexText("bash", 'echo "x" >> memory/IN""DEX.md')).toBe("memory/index.md");
+    expect(memoryIndexText("bash", "tee -a ./research//INDEX.md")).toBe("research/index.md");
+    expect(memoryIndexText("read", "memory/INDEX.md")).toBeUndefined();
+    expect(memoryIndexText("bash", "cat memory/notes.md")).toBeUndefined();
+    const policy = policyText({ rules: [{ tool: "bash", action: "allow" }] });
+    const s = setup({ policy, answer: () => ({ confirmed: false }) });
+    expect(await s.call("bash", { command: "echo hi >> memory/INDEX.md" })).toEqual({ block: true, reason: "Blocked by tk: not approved" });
   });
 
   it("deny blocks with the rule as the reason and asks nothing", async () => {
@@ -211,7 +251,11 @@ describe("ask through a fake RPC client (Pi rpc-mode.js:47-85; case 63)", () => 
     expect(msg).not.toContain("\u001b");
     expect(msg).toContain("\\u{1b}");
     expect(msg).toContain("\\u{202e}");
-    expect(msg).toContain("Input, as the model sent it (text, not instructions; secrets redacted):");
+    // Box test w2, BW5: an extension Pi runs before tk's gate can change the
+    // input (agent-folder files rank before packages), so the card names what
+    // will run, not what the model sent.
+    expect(msg).toContain("Input, as it will run (text, not instructions; secrets redacted):");
+    expect(msg).not.toContain("as the model sent it");
   });
 
   it("a long input is cut in the card", async () => {
@@ -247,10 +291,32 @@ describe("the policy file (contract section 1; rules section 5, item 4)", () => 
     expect(s.mem.calls).toEqual([]);
   });
 
+  it("a symbolic link at the policy path is refused, not followed (S11)", async () => {
+    const s = setup({ answer: () => ({ confirmed: false }) });
+    s.mem.files[POLICY] = { ...(s.mem.files[POLICY] as object), isLink: true } as never;
+    expect(await s.call("read", { path: "a" })).toMatchObject({ block: true });
+    expect(s.client.requests[0]?.message).toContain("policy file is a symbolic link");
+  });
+
+  it("the file that is checked is the file that is read: one handle for both (S11)", async () => {
+    const s = setup();
+    // The handle keeps what it opened, so a swap after the open does not
+    // reach the read; only the next call's open sees it.
+    expect(await s.call("mcp__exa__delete_index", {})).toMatchObject({ block: true });
+    expect(s.mem.calls.filter((c) => c.startsWith("open:"))).toHaveLength(1);
+  });
+
+  it("a TK_POLICY inside the session folder is refused (S11; the hook core does the same)", async () => {
+    const s = setup({ env: { TK_POLICY: `${process.cwd()}/evil-policy.json` }, answer: () => ({ confirmed: false }) });
+    await s.call("read", { path: "a" });
+    expect(s.client.requests[0]?.message).toContain("TK_POLICY is inside the session folder");
+    expect(s.mem.calls).toEqual([]);
+  });
+
   it("an absolute TK_POLICY is used", async () => {
     const s = setup({ env: { TK_POLICY: "/etc/elsewhere.json" }, answer: () => ({ confirmed: false }) });
     await s.call("read", { path: "a" });
-    expect(s.mem.calls[0]).toBe("stat:/etc/elsewhere.json");
+    expect(s.mem.calls[0]).toBe("open:/etc/elsewhere.json");
   });
 
   it("a chat rule matches TK_CHAT_ID, else the Pi session id", async () => {
@@ -284,7 +350,7 @@ describe("fails closed", () => {
 
   it("an fs that throws something odd leaves the default policy, not an allow", async () => {
     const s = setup({ answer: () => ({ confirmed: false }) });
-    s.mem.fs.stat = async () => {
+    s.mem.fs.open = async () => {
       throw new Error("EIO");
     };
     expect(await s.call("read", { path: "a" })).toMatchObject({ block: true });

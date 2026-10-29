@@ -50,9 +50,16 @@ describe("default exports at load (corner case 46)", () => {
     vi.useRealTimers();
   });
 
-  it("the memory stub (lane K's file, listed in package.json since integration w1) touches nothing", () => {
-    const { api, used } = recordingApi();
-    memory(api);
-    expect(used).toEqual([]);
+  it("memory registers through pi.on, pi.registerTool and pi.registerCommand only, and reads no environment (lane K)", () => {
+    const env = vi.spyOn(process, "env", "get");
+    const used: string[] = [];
+    memory({
+      on: () => (used.push("on"), () => undefined),
+      registerTool: () => void used.push("registerTool"),
+      registerCommand: () => void used.push("registerCommand"),
+    });
+    expect(new Set(used)).toEqual(new Set(["on", "registerTool", "registerCommand"]));
+    expect(env).not.toHaveBeenCalled();
+    env.mockRestore();
   });
 });

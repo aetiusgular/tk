@@ -1,0 +1,100 @@
+{
+  "presetId": "cline",
+  "agent": "cline",
+  "versionRead": "3.0.74 (npm cline; git tag cli-v3.0.74)",
+  "currentVersion": "3.0.74",
+  "files": {
+    "register.json": {
+      "from": "built-from-fields",
+      "source": "cline cli-v3.0.74 apps/cli/README.md:333-351,368-369; apps/cli/src/utils/approval.ts:60-62,106-114; apps/cli/src/main.ts:1167,1242 (desktop route only in runAgent, i.e. prompt arg or piped stdin)",
+      "mark": "V"
+    },
+    "approval-request.json": {
+      "from": "built-from-fields",
+      "source": "cline cli-v3.0.74 sdk/packages/core/src/runtime/tools/tool-approval.ts:43-72; written pretty-printed (2-space) to <DIR>/<sessionId>.request.<requestId>.json",
+      "mark": "V"
+    },
+    "approval-answer.allow.json": {
+      "from": "built-from-fields",
+      "source": "cline cli-v3.0.74 tool-approval.ts:79-87; read from <DIR>/<sessionId>.decision.<requestId>.json",
+      "mark": "V"
+    },
+    "approval-answer.deny.json": {
+      "from": "built-from-fields",
+      "source": "cline cli-v3.0.74 tool-approval.ts:79-87",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "cline cli-v3.0.74 sdk/packages/core/src/hooks/hook-file-hooks.ts:233-252,842-868; subprocess.ts:246-259 (mapParams stringifies non-strings); file hook PreToolUse, not the approval route",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Approval route needs CLINE_TOOL_APPROVAL_MODE=desktop AND CLINE_TOOL_APPROVAL_DIR; without the dir or a session id every gated call is denied ('Desktop tool approval IPC is not configured')",
+      "source": "cline cli-v3.0.74 tool-approval.ts:33-40; approval.ts:60-62",
+      "mark": "V"
+    },
+    {
+      "claim": "Desktop approval applies only to non-interactive runAgent (prompt or piped stdin); interactive TUI uses its own approver; ACP mode uses its own",
+      "source": "cline cli-v3.0.74 apps/cli/src/runtime/run-agent.ts:14-18,170-174; apps/cli/src/runtime/interactive/approvals.ts:39-52; main.ts:1167,1184-1242",
+      "mark": "V"
+    },
+    {
+      "claim": "Request file path <DIR>/<sessionId>.request.<requestId>.json, decision file <DIR>/<sessionId>.decision.<requestId>.json; requestId = toolCallId with [^a-zA-Z0-9._-]+ replaced by _; sessionId is the CLI session manifest session_id",
+      "source": "cline cli-v3.0.74 tool-approval.ts:13-15,43-51; approval.ts:60",
+      "mark": "V"
+    },
+    {
+      "claim": "Answer {approved: boolean, reason?: string}; only approved === true allows; both files deleted after reading",
+      "source": "cline cli-v3.0.74 tool-approval.ts:79-92",
+      "mark": "V"
+    },
+    {
+      "claim": "Polls every 200 ms; after 5 min deletes the request and denies 'Tool approval request timed out'; unparseable or half-written decision file is ignored and polling continues, so write it atomically (temp file + rename)",
+      "source": "cline cli-v3.0.74 tool-approval.ts:74-101",
+      "mark": "V"
+    },
+    {
+      "claim": "Denied call is skipped with reason + TOOL_REJECTION_SUFFIX returned to the model; run continues; a throwing approval callback denies",
+      "source": "cline cli-v3.0.74 sdk/packages/agents/src/agent-runtime.ts:2497-2512,2520-2560",
+      "mark": "V"
+    },
+    {
+      "claim": "--auto-approve false sets the * policy to autoApprove false, but read_files, search_codebase, fetch_web_content, skills, ask_question, ask_followup_question, submit_and_exit stay auto-approved and never reach the approval file",
+      "source": "cline cli-v3.0.74 apps/cli/src/runtime/tool-policies.ts:3-11,30-48,79-87",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool run_commands with input {commands: string[]} (lenient union also accepts command/cmd/arrays)",
+      "source": "cline cli-v3.0.74 sdk/packages/core/src/extensions/tools/definitions.ts:530; schemas.ts:149-174",
+      "mark": "V"
+    },
+    {
+      "claim": "MCP names ${serverName}__${toolName}; if invalid chars or over 64 chars, sanitized, truncated and suffixed _<sha1-8>",
+      "source": "cline cli-v3.0.74 sdk/packages/core/src/extensions/mcp/name-transform.ts:20-35",
+      "mark": "V"
+    },
+    {
+      "claim": "SDK plugin fallback: AgentPlugin {name, manifest, setup(api, ctx), hooks: {beforeTool(ctx)}}; beforeTool returns {skip, reason} to block one call, {input} to rewrite, {policy:{autoApprove:false}} to force approval, {stop} to end the run; hook timeout 3 s then plugin degraded and run continues; CLI loads JS/TS plugin modules from ~/.cline/plugins and <ws>/.cline/plugins",
+      "source": "cline cli-v3.0.74 docs/sdk/plugins.mdx:43-66,166-170,197-201; sdk/packages/shared/src/agent.ts:433-446; sdk/packages/shared/src/storage/paths.ts:622-623",
+      "mark": "V"
+    },
+    {
+      "claim": "File hooks: executable named PreToolUse[.sh|.py|.js|.ts...] in ~/Documents/Cline/Hooks, ~/.cline/hooks (CLINE_DIR), or <ws>/.cline/hooks; JSON on stdin; stdout JSON {cancel, errorMessage, contextModification|context, overrideInput}; timeout 120000 ms",
+      "source": "cline cli-v3.0.74 sdk/packages/core/src/hooks/hook-file-config.ts:17-62; sdk/packages/shared/src/storage/paths.ts:158-170,495-509; hook-file-hooks.ts:191-223,842-868",
+      "mark": "V"
+    },
+    {
+      "claim": "File hook cancel: true maps to stop (ends the whole run), not a per-call skip; overrideInput rewrites input",
+      "source": "cline cli-v3.0.74 hook-file-hooks.ts:580-605; agent-runtime.ts:2459-2485",
+      "mark": "V"
+    },
+    {
+      "claim": "File hook timeout, invalid JSON, or crash is logged and skipped (fail-open)",
+      "source": "cline cli-v3.0.74 hook-file-hooks.ts:420-450",
+      "mark": "V"
+    }
+  ]
+}

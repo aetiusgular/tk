@@ -1,0 +1,9 @@
+{
+  "hook_event_name": "PreToolUse",
+  "conversation_id": "00000000-0000-0000-0000-000000000000",
+  "workspace_roots": ["/home/user/project"],
+  "tool_name": "launch-process",
+  "tool_input": { "command": "ls -la", "cwd": "/home/user/project", "wait": true, "max_wait_seconds": 60 },
+  "tool_error": null,
+  "is_mcp_tool": false
+}

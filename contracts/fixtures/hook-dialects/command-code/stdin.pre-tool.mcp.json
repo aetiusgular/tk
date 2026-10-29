@@ -1,0 +1,11 @@
+{
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "transcript_path": "/home/user/.commandcode/projects/example/session.jsonl",
+  "cwd": "/home/user/project",
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "default",
+  "tool_use_id": "toolu_placeholder",
+  "tool_name": "mcp__example-server__example_tool",
+  "tool_display_name": "MCP__EXAMPLE_SERVER__EXAMPLE_TOOL",
+  "tool_input": { "query": "placeholder" }
+}

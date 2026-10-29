@@ -1,0 +1,24 @@
+{
+  "id": "kimi",
+  "name": "Kimi Code",
+  "cli": "kimi",
+  "mcpFile": "~/.kimi-code/mcp.json",
+  "toolNameForm": "mcp__s__t",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "kimi",
+    "gate": {
+      "family": "command-hook",
+      "where": "[[hooks]] in ~/.kimi-code/config.toml, exactly four keys",
+      "status": "planned",
+      "wave": 4,
+      "lane": "L"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "approver-or-deny",
+    "shellAliases": [],
+    "verifiedAt": "2.3.3, npm"
+  }
+}

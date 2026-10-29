@@ -1,0 +1,95 @@
+{
+  "presetId": "crush",
+  "agent": "crush",
+  "versionRead": "0.98.2",
+  "currentVersion": "0.98.2 (latest tag and npm @charmland/crush)",
+  "files": {
+    "register.json": {
+      "from": "built-from-fields",
+      "source": "crush v0.98.2 docs/hooks/README.md Reference > Hook config (~:568-590); crush v0.98.2 internal/config/config.go:817-826,869; matcher omitted = all tools",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "verbatim",
+      "source": "crush v0.98.2 docs/hooks/README.md:240-248 (jsonc comments removed)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "crush v0.98.2 docs/hooks/README.md:171-172 names mcp_github_create_pull_request; crush v0.98.2 internal/agent/tools/mcp-tools.go:59",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "crush v0.98.2 docs/hooks/README.md:652-668 and common envelope reason",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "crush v0.98.2 docs/hooks/README.md:155",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "verbatim",
+      "source": "crush v0.98.2 docs/hooks/README.md:287-292",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User-scope registration: hooks key in ~/.config/crush/crush.json (CRUSH_GLOBAL_CONFIG overrides dir) or `hook add PreToolUse --matcher --command --name --timeout` in ~/.config/crush/crushrc; global commands must be absolute",
+      "source": "crush v0.98.2 internal/config/load.go:1159-1170; crush v0.98.2 docs/hooks/README.md:128-156",
+      "mark": "V"
+    },
+    {
+      "claim": "Entry: {name?, matcher? (regex on tool name), command (required), timeout? seconds default 30}; flat list per event, not Claude's nested hooks[]",
+      "source": "crush v0.98.2 internal/config/config.go:817-826",
+      "mark": "V"
+    },
+    {
+      "claim": "Only event is PreToolUse; fires for top-level agent calls only, sub-agent inner calls are not hooked",
+      "source": "crush v0.98.2 docs/hooks/README.md:22,165-182",
+      "mark": "V"
+    },
+    {
+      "claim": "Stdin: event, session_id, cwd, tool_name, tool_input; env CRUSH_TOOL_NAME, CRUSH_SESSION_ID, CRUSH_CWD, CRUSH_PROJECT_DIR, CRUSH_TOOL_INPUT_COMMAND, CRUSH_TOOL_INPUT_FILE_PATH; no MCP server field",
+      "source": "crush v0.98.2 docs/hooks/README.md:217-248; crush v0.98.2 internal/hooks/input.go:24-28",
+      "mark": "V"
+    },
+    {
+      "claim": "Exit 0: stdout parsed as envelope {version, decision allow|deny|null, halt, reason, context, updated_input}; exit 2 deny (stderr reason, stdout ignored); exit 49 halts the whole turn; other non-zero logged, no opinion",
+      "source": "crush v0.98.2 docs/hooks/README.md:287-317,676-682; crush v0.98.2 internal/hooks/runner.go:221-255",
+      "mark": "V"
+    },
+    {
+      "claim": "decision allow pre-approves and skips the permission prompt; none falls through to the normal prompt",
+      "source": "crush v0.98.2 docs/hooks/README.md:199-203,323-328",
+      "mark": "V"
+    },
+    {
+      "claim": "Claude Code compat: hookSpecificOutput.permissionDecision/permissionDecisionReason/updatedInput/additionalContext accepted; ask (or any value other than allow/deny) parses to no opinion",
+      "source": "crush v0.98.2 internal/hooks/input.go:91-94,158-180,202-210",
+      "mark": "V"
+    },
+    {
+      "claim": "Input rewrite: updated_input, a shallow-merge patch (Claude updatedInput also accepted); ignored on deny/halt",
+      "source": "crush v0.98.2 docs/hooks/README.md:330-335,700-703",
+      "mark": "V"
+    },
+    {
+      "claim": "Invalid JSON on exit 0 is no opinion; timeout is no opinion (cancel, ~1s grace, then abandoned); missing interpreter is no opinion. No fail-closed switch exists",
+      "source": "crush v0.98.2 internal/hooks/input.go:86-89; crush v0.98.2 internal/hooks/runner.go:195-218; crush v0.98.2 docs/hooks/README.md:121-125,384-390",
+      "mark": "V"
+    },
+    {
+      "claim": "MCP name mcp_<server>_<tool>; shell tool bash",
+      "source": "crush v0.98.2 internal/agent/tools/mcp-tools.go:59; crush v0.98.2 docs/hooks/README.md:171-172",
+      "mark": "V"
+    },
+    {
+      "claim": "Run-ending: halt true or exit 49 ends the turn",
+      "source": "crush v0.98.2 docs/hooks/README.md:291-302,337-339",
+      "mark": "V"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "tk-hooks-claude-compat",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Command hooks with Claude-format replies for OpenClaude, Qwen Code, Droid, Command Code, Kimi Code, Auggie, Copilot CLI and Grok Build: lane F's gate core plus one dialect per agent (wave 4, lane L, T2.5)",
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

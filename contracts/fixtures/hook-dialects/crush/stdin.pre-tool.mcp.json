@@ -1,0 +1,9 @@
+{
+  "event": "PreToolUse",
+  "session_id": "313909e",
+  "cwd": "/home/user/project",
+  "tool_name": "mcp_github_create_pull_request",
+  "tool_input": {
+    "title": "x"
+  }
+}

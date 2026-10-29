@@ -1,0 +1,100 @@
+{
+  "presetId": "openclaude",
+  "agent": "OpenClaude (npm @twigpine/openclaude), a Claude Code fork",
+  "versionRead": "0.33.0 (bundled dist/cli.mjs; the tarball ships no hook docs)",
+  "currentVersion": "0.33.0 (npm latest, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9251 (BashCommandHookSchema: type, command, if, shell, timeout seconds, statusMessage, once, async, asyncRewake; HookMatcherSchema: matcher, hooks)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9092 createBaseHookInput (session_id, transcript_path, cwd, permission_mode, agent_id?, agent_type?) + npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9110 (hook_event_name, tool_name, tool_input, tool_use_id); BASH_TOOL_NAME=Bash",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs mcp__${normalizeNameForMCP(serverName)}__ prefix; no separate server field",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:2622 and :9076 PreToolUse hookSpecificOutput schema (permissionDecision allow|deny|ask, permissionDecisionReason, updatedInput, additionalContext)",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:2622",
+      "mark": "V"
+    },
+    "reply.ask.json": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:2622",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9110: status 2 yields blockingError '[<command>]: <stderr>'",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User settings file is ~/.openclaude/settings.json (config home ~/.openclaude, overridable by OPENCLAUDE_CONFIG_DIR; file is cowork_settings.json only under CLAUDE_CODE_USE_COWORK_PLUGINS)",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:1 resolveClaudeConfigHomeDir and npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9251 getUserSettingsFilePath/getSettingsRootPathForSource",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook entry shape is Claude Code's: hooks.PreToolUse[] = {matcher?, hooks:[{type:'command', command, timeout?(seconds), shell?, if?, statusMessage?, once?, async?, asyncRewake?}]}",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9251",
+      "mark": "V"
+    },
+    {
+      "claim": "Default tool hook timeout is 600000 ms (10 min)",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9120 TOOL_HOOK_EXECUTION_TIMEOUT_MS=600000",
+      "mark": "V"
+    },
+    {
+      "claim": "onFailure does not exist as a hook field; the 4 occurrences of onFailure in the bundle are MCP token-refresh locks, worktree creation and a Swift keyword list. The zod object is non-strict so an unknown key is stripped, not rejected",
+      "source": "grep -n onFailure npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs (lines 1930, 2041, 9120, 9285)",
+      "mark": "V"
+    },
+    {
+      "claim": "No fail-closed switch exists",
+      "source": "grep failClosed npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs: no hits",
+      "mark": "NF"
+    },
+    {
+      "claim": "Exit 0: stdout parsed as hook JSON when it is JSON; exit 2: blocking error with stderr as reason; any other status: non_blocking_error, call proceeds",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9110",
+      "mark": "V"
+    },
+    {
+      "claim": "Timeout or abort returns status 1 with aborted=true, reported as 'Hook cancelled' and not blocking, so the call proceeds (fail-open)",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9105",
+      "mark": "V"
+    },
+    {
+      "claim": "JSON that fails hookJSONOutputSchema validation throws 'Hook JSON output validation failed', caught as non_blocking_error (call proceeds)",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9092 validateHookJson and npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:9110 catch path",
+      "mark": "I"
+    },
+    {
+      "claim": "Input rewrite exists: hookSpecificOutput.updatedInput (record)",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs:2622",
+      "mark": "V"
+    },
+    {
+      "claim": "Top-level continue:false ends the whole turn ('Whether Claude should continue after hook'); legacy top-level decision approve|block also accepted",
+      "source": "npm:@twigpine/openclaude@0.33.0 package/dist/cli.mjs continue schema describe string; decision enum approve|block",
+      "mark": "V"
+    },
+    {
+      "claim": "Claude Code's public hooks reference (https://code.claude.com/docs/en/hooks) could not be fetched in this session, so no verbatim doc example was used",
+      "source": "WebFetch permission not answered",
+      "mark": "NF"
+    }
+  ]
+}

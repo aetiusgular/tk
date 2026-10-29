@@ -1,0 +1,78 @@
+{
+  "id": "gemini",
+  "name": "Gemini CLI",
+  "cli": "gemini",
+  "configFiles": {
+    "user": {
+      "macos": "~/.gemini/settings.json",
+      "linux": "~/.gemini/settings.json"
+    },
+    "project": "<project>/.gemini/settings.json"
+  },
+  "format": "jsonc",
+  "entryShape": "json:mcpServers",
+  "entryPath": [
+    "mcpServers"
+  ],
+  "entryStyle": "gemini",
+  "trailingNewline": false,
+  "write": "write",
+  "envRef": "$VAR",
+  "entryExample": {
+    "mcpServers": {
+      "<name>": {
+        "command": "<cmd>",
+        "args": []
+      }
+    }
+  },
+  "enableKey": null,
+  "addCommand": [
+    "gemini",
+    "mcp",
+    "add",
+    "-s",
+    "user",
+    "<name>",
+    "<cmd>"
+  ],
+  "toolNameForm": "mcp_<server>_<tool>",
+  "nameMangling": "mcp_ is prepended, [^a-zA-Z0-9_\\-.:] becomes _, a leading non-letter gets _; over 63 characters the name becomes the first 30 + ... + the last 30 (V, core/src/tools/mcp-tool.ts#L722-L750 at v0.65.0). The policy parser splits at the first _ after mcp_, so no _ in server names (V, docs/tools/mcp-server.md#L692)",
+  "managedFiles": {
+    "macos": [
+      "/Library/Application Support/GeminiCli/settings.json",
+      "/Library/Application Support/GeminiCli/system-defaults.json"
+    ],
+    "linux": [
+      "/etc/gemini-cli/settings.json",
+      "/etc/gemini-cli/system-defaults.json"
+    ]
+  },
+  "inHarnessGate": "BeforeTool hook (wave 2 lane I)",
+  "listChanged": "handled, even when the server does not declare the capability (V, core/src/tools/mcp-client.ts#L410-L424). The skeleton's \"manual /mcp reload only\" came from the docs and is out of date at v0.65.0",
+  "notes": "gemini mcp add (0.65.0) writes command, args (always, [] when none), env and url, type, headers; it keeps comments and ends the file with no newline (V, recorded). Probe run 27 Oct (`gemini mcp list` with folder trust off, starting a stdio server): both $TOKEN and ${TOKEN} expand in env and args (V). User-level servers are suppressed in an untrusted folder (V, `gemini mcp list` warning). Source (v0.65.0): $VAR, ${VAR} and ${VAR:-default} expand across the whole settings object (V, cli/src/utils/envVarResolver.ts); a url with no type means streamable HTTP with an SSE fallback, which disagrees with the docs' \"bare url means SSE\" (V both; tk always writes type); per-server enablement lives in ~/.gemini/mcp-server-enablement.json; `gemini mcp add` defaults to project scope (-s user needed). GEMINI_CLI_HOME replaces the home folder, not ~/.gemini (V, core/src/utils/paths.ts#L13-L28); tk does not follow it. System files move with GEMINI_CLI_SYSTEM_SETTINGS_PATH.",
+  "sources": [
+    "recorded: gemini 0.65.0 (@google/gemini-cli) `mcp add -s user` in a scratch HOME, 27 Oct 2026 (fixtures/recorded/gemini-2-after.json)",
+    "note AP section 4 (geminicli.com/docs/tools/mcp-server/)",
+    "github.com/google-gemini/gemini-cli at v0.65.0: packages/core/src/config/config.ts, tools/mcp-client.ts, tools/mcp-tool.ts, cli/src/config/settings.ts, cli/src/utils/envVarResolver.ts, cli/src/commands/mcp/add.ts, cli/src/utils/commentJson.ts (lane C research, batch 1, 27 Oct 2026)"
+  ],
+  "verified": "2026-10-27",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "gemini",
+    "gate": {
+      "family": "command-hook",
+      "where": "extension tk, hooks/hooks.json BeforeTool (gemini extensions install <path>)",
+      "status": "built",
+      "wave": 2,
+      "lane": "I",
+      "package": "packages/tk-gemini-extension"
+    },
+    "failMode": "open",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "0.66.0, run",
+    "note": "killed, crashed, hung and timed out hooks all let the call through, run on 0.66.0 and 0.65.0; the extension's policies/tk.toml and the printed user-tier TOML are what hold without the hook; a hook cannot approve; headless, Gemini's own prompt does not pass; under security.environmentVariableRedaction or GITHUB_SHA the hook loses TOKEN-named variables, so tk run also sets GEMINI_CLI_TK_CHAT_TOKEN_FILE (lane I, applied by integration w2)"
+  }
+}

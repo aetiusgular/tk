@@ -1,0 +1,26 @@
+{
+  "id": "oh-my-pi",
+  "name": "oh-my-pi",
+  "cli": "omp",
+  "mcpFile": "~/.omp/agent/mcp.json",
+  "toolNameForm": "mcp__<server>_<tool>",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "omp",
+    "gate": {
+      "family": "pi-extension",
+      "where": "omp install <path> (a symlink under ~/.omp/plugins), tool_call",
+      "status": "built",
+      "wave": 2,
+      "lane": "I",
+      "package": "packages/tk-pi"
+    },
+    "failMode": "blocks",
+    "failSwitch": null,
+    "ask": "own-prompt",
+    "shellAliases": [],
+    "verifiedAt": "18.13.3, run",
+    "note": "blocks on a throw and its 30 s timeout (run); confirm is false with no UI; its default approval mode is yolo, so the gate is its only check; the redundant <server>_ prefix is dropped and names over 64 characters get a hash; PI_CONFIG_DIR and PI_CODING_AGENT_DIR move its folders; a later extension that returns {input} still replaces the args tk allowed (lane I, applied by integration w2)"
+  }
+}

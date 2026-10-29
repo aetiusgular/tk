@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/aetiusgular/tk/contracts/harness-presets.schema.json",
   "title": "tk harness presets",
-  "description": "contracts/harness-presets.json. `harnesses` are the rows tk connect writes for (lane C's fields, not all listed here); `planned` are agents tk does not cover yet. Every row carries `coverage` (integration w1, note AQ section 4).",
+  "description": "The preset table, assembled from one file per agent in crates/tk-cli/src/connect/presets/ (index.json names the lists and their order; integration w2). `harnesses` are the rows tk connect writes for (lane C's fields, not all listed here); `planned` are agents tk does not cover yet. Every row carries `coverage` (integration w1, note AQ section 4).",
   "type": "object",
   "required": ["version", "harnesses", "planned"],
   "properties": {

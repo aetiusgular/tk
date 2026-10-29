@@ -1,0 +1,28 @@
+{
+  "id": "mistral-vibe",
+  "name": "Mistral Vibe",
+  "cli": "TODO",
+  "mcpFile": "~/.vibe/config.toml [[mcp_servers]]",
+  "toolNameForm": "mcp_s.t (hooks), s_t (model)",
+  "verified": "TODO",
+  "coverage": {
+    "tier": "G",
+    "orcaId": "mistral-vibe",
+    "gate": {
+      "family": "command-hook",
+      "where": "~/.vibe/hooks.toml, pre_tool",
+      "status": "planned",
+      "wave": 4,
+      "lane": "N"
+    },
+    "failMode": "blocks-with-switch",
+    "failSwitch": "strict = true",
+    "ask": "approver-or-deny",
+    "shellAliases": [
+      "file_system.bash",
+      "process.start"
+    ],
+    "verifiedAt": "3.0.3, source",
+    "note": "exit 2 counts as a failure, not a deny"
+  }
+}

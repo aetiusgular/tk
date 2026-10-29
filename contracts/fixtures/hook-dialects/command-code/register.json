@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/tk-hook",
+            "timeout": 5,
+            "failClosed": true
+          }
+        ]
+      }
+    ]
+  }
+}

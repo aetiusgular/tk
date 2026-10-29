@@ -1,0 +1,12 @@
+{
+  "session_id": "s-1",
+  "transcript_path": "/home/you/.vibe/sessions/s-1",
+  "cwd": "/home/you/project",
+  "parent_session_id": null,
+  "hook_event_name": "pre_tool",
+  "tool_name": "mcp_github.create_issue",
+  "tool_call_id": "call_2",
+  "tool_input": {
+    "title": "x"
+  }
+}

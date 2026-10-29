@@ -1,0 +1,28 @@
+# tk's second layer in Gemini CLI's policy engine (extension tier, base 2).
+#
+# Gemini lets a call through when a hook crashes or times out, with no switch
+# (run on 0.66.0 and 0.65.0, 28 Oct 2026). These rules hold without the hook:
+# a write into tk's folder or Gemini's own, or a shell command naming either, is
+# denied by Gemini itself. When the hook runs, it asks about the same calls
+# (its control-path check), and Gemini turns a hook's ask into its own prompt
+# over this deny (scheduler.ts:681-686 at v0.66.0, read); after an approval in
+# tk the hook prints nothing and this deny still holds.
+#
+# Gemini ignores `allow` in an extension's policies (docs/extensions/reference.md
+# at v0.66.0, "Policy Engine"), so this file only denies. Your own rules from
+# ~/.tk/policy.json go in the user tier: `node bin/tk-gemini-policy.mjs` prints
+# them for ~/.gemini/policies/tk.toml.
+
+[[rule]]
+toolName = ["write_file", "replace"]
+argsPattern = '"file_path":"[^"]*(\.tk/|\.gemini/|gemini-cli/)'
+decision = "deny"
+priority = 900
+denyMessage = "tk: a write to tk's or Gemini's control files is refused by the tk extension's policy"
+
+[[rule]]
+toolName = "run_shell_command"
+argsPattern = '"(command|dir_path)":"[^"]*(\.tk/|\.gemini/|gemini-cli/)'
+decision = "deny"
+priority = 900
+denyMessage = "tk: a shell command that names tk's or Gemini's control files is refused by the tk extension's policy"

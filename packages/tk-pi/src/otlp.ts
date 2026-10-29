@@ -45,13 +45,16 @@ export function record(shortName: string, attrs: Record<string, AttrValue | unde
   return { timeUnixNano: nanos, observedTimeUnixNano: nanos, body: { stringValue: `pi.${shortName}` }, attributes };
 }
 
-export function payload(records: OtlpRecord[], resource: { arch: string; os: string }): unknown {
+/** `service` is the harness the extension runs in: `pi`, or `oh-my-pi` under
+ *  Bun (lane I's request 6, integration w2; the receiver keeps it as
+ *  `detail.service`). */
+export function payload(records: OtlpRecord[], resource: { arch: string; os: string; service?: string }): unknown {
   return {
     resourceLogs: [
       {
         resource: {
           attributes: [
-            { key: "service.name", value: { stringValue: "pi" } },
+            { key: "service.name", value: { stringValue: resource.service ?? "pi" } },
             { key: "host.arch", value: { stringValue: resource.arch } },
             { key: "os.type", value: { stringValue: resource.os } },
           ],
@@ -94,7 +97,7 @@ export interface SenderOptions {
   url: string;
   token: string;
   fetch: FetchLike;
-  resource: { arch: string; os: string };
+  resource: { arch: string; os: string; service?: string };
   /** Milliseconds between batches. */
   intervalMs?: number;
   maxQueue?: number;

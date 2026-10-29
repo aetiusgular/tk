@@ -20,7 +20,7 @@ const ownership = JSON.parse(readFileSync(new URL("./lane-ownership.json", impor
 
 function usage(message) {
   console.error(`lane-scope: ${message}`);
-  console.error("usage: node scripts/lane-scope.mjs <A-K|M> [--base <commit>]");
+  console.error("usage: node scripts/lane-scope.mjs <A-R> [--base <commit>]");
   process.exit(2);
 }
 

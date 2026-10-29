@@ -31,12 +31,12 @@ const cases = (JSON.parse(readFileSync(join(fixtures, "cases.json"), "utf8")) as
 describe("contract fixture (contracts/fixtures/policy)", () => {
   it("the fixture policy parses with no problem", () => {
     expect(loaded.problem).toBeUndefined();
-    expect(loaded.policy.rules).toHaveLength(12);
+    expect(loaded.policy.rules).toHaveLength(13);
     expect(loaded.policy.askTimeoutSeconds).toBe(30);
   });
 
-  it("has all 45 cases (21 from session 0, 24 from integration w1)", () => {
-    expect(cases).toHaveLength(45);
+  it("has all 60 cases (21 from session 0, 24 from integration w1, 15 from integration w2)", () => {
+    expect(cases).toHaveLength(60);
   });
 
   for (const c of cases) {
@@ -65,10 +65,13 @@ describe("normalizer (note AP section 4; corner case 60)", () => {
     "exa__search",
     "MCP__Exa__Search",
     "exa/search",
-    "mcp__plugin_tk_exa__search",
     " mcp__exa__search ",
   ])("%s is exa/search", (raw) => {
     expect(normalizeToolName(raw, servers)).toBe("exa/search");
+  });
+
+  it("a Claude Code plugin server keeps its whole name (S5, integration w2)", () => {
+    expect(normalizeToolName("mcp__plugin_tk_exa__search", servers)).toBe("plugin_tk_exa/search");
   });
 
   it("a {workload}_tool name splits at the longest known server", () => {

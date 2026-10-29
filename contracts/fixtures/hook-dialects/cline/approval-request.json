@@ -1,0 +1,15 @@
+{
+  "requestId": "toolu_01ABC",
+  "sessionId": "1761700000000_abcde",
+  "createdAt": "2026-10-28T12:00:00.000Z",
+  "toolCallId": "toolu_01ABC",
+  "toolName": "run_commands",
+  "input": {
+    "commands": [
+      "ls -la"
+    ]
+  },
+  "iteration": 1,
+  "agentId": "agent_1",
+  "conversationId": "conv_1"
+}

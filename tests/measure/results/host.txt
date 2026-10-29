@@ -1,0 +1,21 @@
+recorded 2026-10-28T15:24:34-07:00 on panda
+Linux panda 7.0.0-38-generic #38-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 09:10:14 UTC 2026 x86_64 GNU/Linux
+Ubuntu 26.04.1 LTS
+NVIDIA GeForce RTX 3090, 24576 MiB, 595.99.02
+Model name:                              AMD Ryzen 5 3600 6-Core Processor
+Mem:              15           7           6           0           1           7
+pi 1.4.0
+claude 2.1.311 (Claude Code)
+node v24.22.1
+llama.cpp f5027fb21 2026-10-23
+llama-swap 1027b9b 2026-10-23
+322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482
+  qwen27b-q4:
+    cmd: >
+      /home/opone/oss/llama.cpp/build/bin/llama-server
+      -m /data/models/qwen3.8-27b-unsloth/Qwen3.8-27B-UD-Q4_K_M.gguf
+      -ngl 999 -fa on -np 1 -ctk q8_0 -ctv q8_0 -c 131072
+      --spec-type draft-mtp --spec-draft-n-max 3
+      --host 127.0.0.1 --port ${PORT}
+    ttl: 600
+tk 96cebd1

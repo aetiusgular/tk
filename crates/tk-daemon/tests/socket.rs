@@ -340,6 +340,188 @@ fn a_tail_backlog_holds_the_last_copy_per_id() {
 }
 
 #[test]
+fn a_chat_token_cannot_replace_a_gate_decision() {
+    // Integration w1's security finding S9. The hook posts its decision
+    // with the chat token; the agent holds the same token (case 66).
+    // Integration w2's review (W2-S3): the agent can also post first, so a
+    // second copy is never dropped. It is kept under its own id and the
+    // daemon records a `gate.conflict` that names both.
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "claude-code");
+    let (mut first, _) = Client::hello(&f, &token);
+    let r = first.ask(event(
+        "claude-code-t1-decision",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "allow"}),
+    ));
+    assert_eq!(r["ok"], true, "{r}");
+    let (mut second, _) = Client::hello(&f, &token);
+    for (source, kind, decision) in [
+        ("adapter", "approval", "deny"),
+        ("otel", "approval", "deny"),
+        ("otel", "tool.call", "allow"),
+    ] {
+        let r = second.ask(event(
+            "claude-code-t1-decision",
+            "c1",
+            source,
+            kind,
+            json!({"decision": decision}),
+        ));
+        assert_eq!(r["ok"], true, "{source} {kind}: {r}");
+        let kept = r["id"].as_str().unwrap().to_string();
+        assert!(
+            kept.starts_with("claude-code-t1-decision-conflict-"),
+            "{kept}"
+        );
+    }
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let mut seen = Vec::new();
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        seen.push(line["event"].clone());
+    }
+    let original: Vec<_> = seen
+        .iter()
+        .filter(|e| e["id"] == "claude-code-t1-decision")
+        .collect();
+    assert_eq!(original.len(), 1, "{seen:?}");
+    assert_eq!(original[0]["detail"]["decision"], "allow");
+    let copies: Vec<_> = seen
+        .iter()
+        .filter(|e| {
+            e["id"]
+                .as_str()
+                .is_some_and(|i| i.starts_with("claude-code-t1-decision-conflict-"))
+        })
+        .collect();
+    assert_eq!(copies.len(), 3, "{seen:?}");
+    for c in &copies {
+        assert_eq!(c["chatId"], "c1");
+        assert_eq!(c["detail"]["conflictsWith"], "claude-code-t1-decision");
+    }
+    let flags: Vec<_> = seen
+        .iter()
+        .filter(|e| e["kind"] == "gate.conflict")
+        .collect();
+    assert_eq!(flags.len(), 3, "{seen:?}");
+    for g in &flags {
+        assert_eq!(g["source"], "approval", "the daemon writes it: {g}");
+        assert_eq!(g["chatId"], "c1");
+        assert_eq!(g["detail"]["id"], "claude-code-t1-decision");
+    }
+}
+
+#[test]
+fn a_second_decision_for_the_same_call_is_a_conflict_whatever_its_id() {
+    // Fix pass 1's review, FP1-S4: with random decision ids (BW2) the agent
+    // posts its forged decision under an id of its own, naming the call the
+    // hook will decide (`detail.toolUseId`). Both are kept; the second is
+    // stored as a conflict copy and the daemon flags it. Another call, or
+    // another chat, is not a conflict.
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "opencode");
+    let other = mint(&mut d, "c2", "opencode");
+    let (mut agent, _) = Client::hello(&f, &token);
+    let r = agent.ask(event(
+        "forged-by-the-agent",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "allow", "toolUseId": "call_18"}),
+    ));
+    assert_eq!(r["id"], "forged-by-the-agent", "{r}");
+    let (mut hook, _) = Client::hello(&f, &token);
+    let real = "opencode-call_18-decision-0123456789abcdef0123456789abcdef";
+    let r = hook.ask(event(
+        real,
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_18"}),
+    ));
+    let kept = r["id"].as_str().unwrap().to_string();
+    assert!(kept.starts_with(&format!("{real}-conflict-")), "{r}");
+    let r = hook.ask(event(
+        "opencode-call_19-decision-0123456789abcdef0123456789abcdef",
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_19"}),
+    ));
+    assert_eq!(
+        r["id"], "opencode-call_19-decision-0123456789abcdef0123456789abcdef",
+        "{r}"
+    );
+    let (mut elsewhere, _) = Client::hello(&f, &other);
+    let r = elsewhere.ask(event(
+        "opencode-call_18-decision-ffffffffffffffffffffffffffffffff",
+        "c2",
+        "adapter",
+        "approval",
+        json!({"decision": "deny", "toolUseId": "call_18"}),
+    ));
+    assert_eq!(
+        r["id"], "opencode-call_18-decision-ffffffffffffffffffffffffffffffff",
+        "{r}"
+    );
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let mut seen = Vec::new();
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        seen.push(line["event"].clone());
+    }
+    let flags: Vec<_> = seen
+        .iter()
+        .filter(|e| e["kind"] == "gate.conflict")
+        .collect();
+    assert_eq!(flags.len(), 1, "{seen:?}");
+    assert_eq!(flags[0]["chatId"], "c1");
+    assert_eq!(flags[0]["detail"]["id"], "forged-by-the-agent");
+    assert_eq!(flags[0]["detail"]["posted"], real);
+    let copy = seen.iter().find(|e| e["id"] == kept.as_str()).unwrap();
+    assert_eq!(copy["detail"]["conflictsWith"], "forged-by-the-agent");
+    assert!(seen.iter().any(|e| e["id"] == "forged-by-the-agent"));
+}
+
+#[test]
+fn a_conflict_copy_of_a_long_id_keeps_its_own_id() {
+    // Re-review W2-R2: a 128-character id's copy was cut back to the id.
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "c1", "claude-code");
+    let (mut c, _) = Client::hello(&f, &token);
+    let long = "a".repeat(128);
+    let r = c.ask(event(
+        &long,
+        "c1",
+        "adapter",
+        "approval",
+        json!({"decision": "deny"}),
+    ));
+    assert_eq!(r["id"], long.as_str(), "{r}");
+    let mut ids = Vec::new();
+    for _ in 0..2 {
+        let r = c.ask(event(
+            &long,
+            "c1",
+            "adapter",
+            "approval",
+            json!({"decision": "allow"}),
+        ));
+        let id = r["id"].as_str().unwrap().to_string();
+        assert_ne!(id, long, "{r}");
+        assert!(id.len() <= 128 && id.contains("-conflict-"), "{id}");
+        ids.push(id);
+    }
+    assert_ne!(ids[0], ids[1]);
+}
+
+#[test]
 fn a_tail_that_falls_behind_is_dropped_and_ingest_never_waits() {
     let f = fixture();
     let mut d = Client::daemon(&f);
@@ -638,9 +820,10 @@ fn one_chat_cannot_hold_every_approval_slot_or_reuse_a_waiting_id() {
     }}));
     assert_eq!(r["answer"], "no");
     assert_eq!(r["by"], "none", "refused at once, never a hang");
-    // The same id while it waits: refused too.
-    let r = d.ask(json!({"op": "approve", "request": {
-        "id": "z-0", "chat": "other", "harness": "pi", "tool": "bash",
+    // The same id while it waits, in the same chat: refused too.
+    let (mut c, _) = Client::hello(&f, &token);
+    let r = c.ask(json!({"op": "approve", "request": {
+        "id": "z-0", "chat": "", "harness": "pi", "tool": "bash",
         "summary": "", "timeoutSeconds": 30
     }}));
     assert_eq!(r["by"], "none");
@@ -660,6 +843,160 @@ fn one_chat_cannot_hold_every_approval_slot_or_reuse_a_waiting_id() {
     for mut c in waiting {
         assert_eq!(c.recv()["answer"], "no");
     }
+}
+
+/// Integration w1's security finding S8: pending approvals were keyed by the
+/// client's id alone, so chat A waiting on an id made chat B's request under
+/// the same id fail at once. They are keyed by (chat, id); an answer names
+/// the chat when two chats wait on one id.
+#[test]
+fn two_chats_may_wait_on_the_same_request_id() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let ta = mint(&mut d, "chat-a", "claude-code");
+    let tb = mint(&mut d, "chat-b", "claude-code");
+    let mut approver = Client::daemon(&f);
+    approver.ask(json!({"op": "approver"}));
+    let ask = |token: String, f: &Fixture| {
+        let (mut c, _) = Client::hello(f, &token);
+        c.send(json!({"op": "approve", "request": {
+            "id": "toolu_1", "chat": "", "harness": "claude-code", "tool": "bash",
+            "summary": "", "timeoutSeconds": 30
+        }}));
+        c
+    };
+    let mut a = ask(ta, &f);
+    let first = approver.recv();
+    assert_eq!(first["approve"]["chat"], "chat-a", "{first}");
+    let mut b = ask(tb, &f);
+    let second = approver.recv();
+    assert_eq!(second["approve"]["chat"], "chat-b", "{second}");
+    assert_eq!(second["approve"]["id"], "toolu_1");
+    // Without the chat the answer is ambiguous and goes nowhere.
+    let r = approver.ask(json!({"op": "answer", "id": "toolu_1", "answer": "yes"}));
+    assert_eq!(r["ok"], false, "{r}");
+    let r =
+        approver.ask(json!({"op": "answer", "id": "toolu_1", "chat": "chat-b", "answer": "yes"}));
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(b.recv()["answer"], "yes");
+    assert!(
+        a.try_recv(Duration::from_millis(200)).is_none(),
+        "chat-a still waits"
+    );
+    // One left: the id alone is enough again.
+    let r = approver.ask(json!({"op": "answer", "id": "toolu_1", "answer": "no"}));
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(a.recv()["answer"], "no");
+}
+
+/// Integration w1's security finding S2, part a (lane J's request 1a): an
+/// approver whose process is a running chat's harness, or runs under one,
+/// is the agent and is refused. Here the test process itself is named as a
+/// chat's harness, so its own approver connection must be refused until the
+/// run stops; both outcomes are recorded with the peer, and an answer
+/// carries the approver's pid.
+#[test]
+fn an_approver_inside_a_running_chat_is_refused() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let me = std::process::id();
+    let run = |kind: &str| {
+        json!({"op": "event", "event": {
+            "id": format!("run-{kind}"), "at": 0, "chatId": "chat-s2", "harness": "pi",
+            "source": "run", "kind": kind, "summary": kind,
+            "detail": {"cwd": "/tmp"}, "pid": me
+        }})
+    };
+    assert_eq!(d.ask(run("run.start"))["ok"], true);
+    let mut a = Client::daemon(&f);
+    let r = a.ask(json!({"op": "approver"}));
+    assert_eq!(r["ok"], false, "{r}");
+    let why = r["error"].as_str().unwrap();
+    assert!(
+        why.starts_with("approver refused: it runs inside chat chat-s2"),
+        "{why}"
+    );
+    // An approve with no approver is no at once: the refused one is not one.
+    let r = d.ask(json!({"op": "approve", "request": {
+        "id": "s2-1", "chat": "chat-s2", "harness": "pi", "tool": "bash",
+        "summary": "", "timeoutSeconds": 5
+    }}));
+    assert_eq!(
+        (r["answer"].as_str(), r["by"].as_str()),
+        (Some("no"), Some("none")),
+        "{r}"
+    );
+    assert_eq!(d.ask(run("run.stop"))["ok"], true);
+    let mut a = Client::daemon(&f);
+    assert_eq!(a.ask(json!({"op": "approver"}))["ok"], true);
+    let asker = std::thread::spawn(move || {
+        d.ask(json!({"op": "approve", "request": {
+            "id": "s2-2", "chat": "chat-s2", "harness": "pi", "tool": "bash",
+            "summary": "", "timeoutSeconds": 30
+        }}))
+    });
+    assert_eq!(a.recv()["approve"]["id"], "s2-2");
+    a.ask(json!({"op": "answer", "id": "s2-2", "answer": "yes"}));
+    assert_eq!(asker.join().unwrap()["answer"], "yes");
+    let mut t = Client::daemon(&f);
+    t.ask(json!({"op": "tail", "since": 0}));
+    let mut approver_events = Vec::new();
+    let mut answered = None;
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        let e = &line["event"];
+        if e["kind"] == "approver" {
+            approver_events.push(e.clone());
+        }
+        if e["kind"] == "approval" && e["detail"]["requestId"] == "s2-2" {
+            answered = Some(e.clone());
+        }
+    }
+    let accepted: Vec<bool> = approver_events
+        .iter()
+        .map(|e| e["detail"]["accepted"].as_bool().unwrap())
+        .collect();
+    assert_eq!(accepted, vec![false, true], "{approver_events:?}");
+    for e in &approver_events {
+        assert_eq!(e["detail"]["peer"]["pid"], me);
+        assert!(e["detail"]["peer"]["program"].as_str().is_some(), "{e}");
+    }
+    let answered = answered.expect("the answered request's record");
+    assert_eq!(answered["detail"]["approver"]["pid"], me, "{answered}");
+}
+
+/// Lane K's request 3 (integration w2): computer use's controls are a
+/// daemon-scope op; a chat token, which is the agent's (case 66), may not
+/// stop, read or revoke them. In this test no computer use runs, which the
+/// daemon says.
+#[test]
+fn cu_is_daemon_scope_and_says_when_computer_use_is_not_running() {
+    let f = fixture();
+    let mut d = Client::daemon(&f);
+    let token = mint(&mut d, "chat-cu", "claude-code");
+    let (mut chat, _) = Client::hello(&f, &token);
+    for line in [
+        json!({"op": "cu", "action": "status"}),
+        json!({"op": "cu", "action": "stop", "chat": "chat-cu"}),
+        json!({"op": "cu", "action": "stop-all"}),
+        json!({"op": "cu", "action": "revoke", "chat": "chat-cu", "app": "com.apple.calculator"}),
+    ] {
+        assert_eq!(
+            chat.ask(line.clone())["error"],
+            "cu needs daemon scope",
+            "{line}"
+        );
+        let r = d.ask(line.clone());
+        assert_eq!(r["ok"], false, "{line}: {r}");
+        assert!(
+            r["error"]
+                .as_str()
+                .unwrap()
+                .starts_with("computer use is not"),
+            "{line}: {r}"
+        );
+    }
+    let r = d.ask(json!({"op": "cu", "action": "launch"}));
+    assert_eq!(r["ok"], false, "{r}");
 }
 
 /// Integration w1, lane D's request 2: a chat token sits in the harness's

@@ -1,0 +1,229 @@
+{
+ "$comment": "Lane E's hand-picked confusable subset from library/validate/rejects.ts at 9aff181 (wave 1), frozen by integration w2 when the validator moved to the gate's fold. library/trust/names.test.ts reads it to show the move loses none of these entries. Not used by any code.",
+ "entries": [
+  {
+   "code": "0430",
+   "to": "a"
+  },
+  {
+   "code": "0435",
+   "to": "e"
+  },
+  {
+   "code": "043E",
+   "to": "o"
+  },
+  {
+   "code": "0440",
+   "to": "p"
+  },
+  {
+   "code": "0441",
+   "to": "c"
+  },
+  {
+   "code": "0443",
+   "to": "y"
+  },
+  {
+   "code": "0445",
+   "to": "x"
+  },
+  {
+   "code": "0456",
+   "to": "i"
+  },
+  {
+   "code": "0458",
+   "to": "j"
+  },
+  {
+   "code": "04BB",
+   "to": "h"
+  },
+  {
+   "code": "0501",
+   "to": "d"
+  },
+  {
+   "code": "051B",
+   "to": "q"
+  },
+  {
+   "code": "051D",
+   "to": "w"
+  },
+  {
+   "code": "0455",
+   "to": "s"
+  },
+  {
+   "code": "04CF",
+   "to": "l"
+  },
+  {
+   "code": "0391",
+   "to": "a"
+  },
+  {
+   "code": "0392",
+   "to": "b"
+  },
+  {
+   "code": "0395",
+   "to": "e"
+  },
+  {
+   "code": "0396",
+   "to": "z"
+  },
+  {
+   "code": "0397",
+   "to": "h"
+  },
+  {
+   "code": "0399",
+   "to": "i"
+  },
+  {
+   "code": "039A",
+   "to": "k"
+  },
+  {
+   "code": "039C",
+   "to": "m"
+  },
+  {
+   "code": "039D",
+   "to": "n"
+  },
+  {
+   "code": "039F",
+   "to": "o"
+  },
+  {
+   "code": "03A1",
+   "to": "p"
+  },
+  {
+   "code": "03A4",
+   "to": "t"
+  },
+  {
+   "code": "03A5",
+   "to": "y"
+  },
+  {
+   "code": "03A7",
+   "to": "x"
+  },
+  {
+   "code": "03B1",
+   "to": "a"
+  },
+  {
+   "code": "03BF",
+   "to": "o"
+  },
+  {
+   "code": "03BD",
+   "to": "v"
+  },
+  {
+   "code": "03C1",
+   "to": "p"
+  },
+  {
+   "code": "03C5",
+   "to": "u"
+  },
+  {
+   "code": "03B9",
+   "to": "i"
+  },
+  {
+   "code": "03BA",
+   "to": "k"
+  },
+  {
+   "code": "03C3",
+   "to": "o"
+  },
+  {
+   "code": "0410",
+   "to": "a"
+  },
+  {
+   "code": "0412",
+   "to": "b"
+  },
+  {
+   "code": "0415",
+   "to": "e"
+  },
+  {
+   "code": "041A",
+   "to": "k"
+  },
+  {
+   "code": "041C",
+   "to": "m"
+  },
+  {
+   "code": "041D",
+   "to": "h"
+  },
+  {
+   "code": "041E",
+   "to": "o"
+  },
+  {
+   "code": "0420",
+   "to": "p"
+  },
+  {
+   "code": "0421",
+   "to": "c"
+  },
+  {
+   "code": "0422",
+   "to": "t"
+  },
+  {
+   "code": "0425",
+   "to": "x"
+  },
+  {
+   "code": "0406",
+   "to": "i"
+  },
+  {
+   "code": "0408",
+   "to": "j"
+  },
+  {
+   "code": "0405",
+   "to": "s"
+  },
+  {
+   "code": "0131",
+   "to": "i"
+  },
+  {
+   "code": "0237",
+   "to": "j"
+  },
+  {
+   "code": "00F0",
+   "to": "d"
+  },
+  {
+   "code": "2113",
+   "to": "l"
+  },
+  {
+   "code": "212A",
+   "to": "k"
+  }
+ ]
+}

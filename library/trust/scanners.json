@@ -1,0 +1,17 @@
+{
+  "$comment": "Scanners lane H runs over library entries (plan T4.1), pinned. The CI job installs exactly these (a request for integration: .github/ is no lane's) and the runner refuses any other version. Sources: research for lane H, 28 Oct 2026 (plans/parallel/tk_lane_H.md, Research): NVIDIA/SkillSpector tag v2.13.2 = abd82935b67f765a9541013c0866c6349251dcdf, not on PyPI (pypi.org/pypi/skillspector/json 404), Apache-2.0; cisco-ai-defense/mcp-scanner tag 4.8.7 = b27af3b0e66ea8d5ab9c294b47aba137f4c30752, PyPI cisco-ai-mcp-scanner 4.8.7, Apache-2.0. Network, as read in their source: SkillSpector's OSV lookup (api.osv.dev) runs with --no-llm and has no off switch; Cisco's static YARA scan makes none.",
+  "scanners": {
+    "skillspector": {
+      "version": "2.13.2",
+      "install": "uv tool install git+https://github.com/NVIDIA/skillspector.git@abd82935b67f765a9541013c0866c6349251dcdf",
+      "targets": ["skill"],
+      "outbound": ["api.osv.dev"]
+    },
+    "cisco-mcp-scanner": {
+      "version": "4.8.7",
+      "install": "uv tool install --python 3.13 cisco-ai-mcp-scanner==4.8.7",
+      "targets": ["server-tools"],
+      "outbound": []
+    }
+  }
+}

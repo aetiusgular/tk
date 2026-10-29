@@ -328,6 +328,7 @@ dependencies = [
  "sha2",
  "tk-audit-linux",
  "tk-core",
+ "tk-daemon",
  "toml_edit",
  "uuid",
 ]
@@ -336,6 +337,7 @@ dependencies = [
 name = "tk-core"
 version = "0.0.0"
 dependencies = [
+ "libc",
  "serde",
  "serde_json",
  "sha2",

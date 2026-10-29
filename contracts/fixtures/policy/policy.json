@@ -19,6 +19,7 @@
       "action": "allow",
       "descriptionSha256": "475c1f1fe876e645415d98a2650d6114d89a659a00af81e2741fd6158953a0a0"
     },
-    { "tool": "*", "chat": "chat-locked", "action": "deny" }
+    { "tool": "*", "chat": "chat-locked", "action": "deny" },
+    { "tool": "plugin_tk_exa/*", "action": "allow" }
   ]
 }

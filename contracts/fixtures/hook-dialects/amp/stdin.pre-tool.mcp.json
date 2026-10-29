@@ -1,0 +1,10 @@
+{
+  "toolUseID": "toolu_01ABD",
+  "tool": "mcp__github__create_issue",
+  "input": {
+    "title": "x"
+  },
+  "thread": {
+    "id": "T-0000"
+  }
+}

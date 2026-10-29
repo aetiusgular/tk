@@ -12,7 +12,7 @@ The plugin loads nothing when OpenCode starts it: the policy file is read on the
 
 ## Install
 
-Add it to `~/.config/opencode/opencode.json` (`opencode.fragment.json` has the block, with OpenCode's own `permission` prompts kept as a second layer). tk never writes a project-level `opencode.json`, which an agent can also write.
+Add it to `~/.config/opencode/opencode.json` by path, `"plugin": ["file:///abs/path/tk/packages/tk-opencode-plugin"]` (`opencode.fragment.json` has the block, with OpenCode's own `permission` prompts kept as a second layer). A bare `tk-opencode-plugin` would make OpenCode fetch `tk-opencode-plugin@latest` from npm, where it is not published. tk never writes a project-level `opencode.json`, which an agent can also write.
 
 ## Environment
 

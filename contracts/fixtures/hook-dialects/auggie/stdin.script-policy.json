@@ -1,0 +1,6 @@
+{
+  "tool-name": "launch-process",
+  "event-type": "tool-call",
+  "details": { "cwd": "/home/user/project", "command": "ls -la" },
+  "timestamp": "2026-10-28T00:00:00.000Z"
+}

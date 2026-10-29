@@ -200,3 +200,147 @@ fn a_restart_keeps_the_log_chained_and_rotates_the_token() {
     );
     stop(child);
 }
+
+fn hello_with(d: &Dirs, token: &str) -> Value {
+    let s = UnixStream::connect(d.socket()).unwrap();
+    s.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    let mut w = s.try_clone().unwrap();
+    let mut r = BufReader::new(s);
+    ask(
+        &mut w,
+        &mut r,
+        json!({"op": "hello", "token": token, "client": "test"}),
+    )
+}
+
+/// Box finding BX8 (integration w2): a daemon restart used to kill every
+/// chat token and move the OTLP port, so a running chat's feed ended. Chats
+/// whose harness still runs keep their tokens and, when it is free, the
+/// port; a chat whose harness has gone does not come back.
+#[test]
+fn a_restart_keeps_a_running_chat_and_its_otlp_port() {
+    let d = Dirs::new();
+    let daemon = start(&d);
+    let endpoint = std::fs::read_to_string(d.run().join("otlp.endpoint")).unwrap();
+    let (mut w, mut r) = session(&d);
+    let mut harness = Command::new("sleep").arg("60").spawn().unwrap();
+    let mut gone = Command::new("sleep").arg("60").spawn().unwrap();
+    let mut chat = |id: &str, pid: u32| -> String {
+        let t = ask(
+            &mut w,
+            &mut r,
+            json!({"op": "token.mint", "chat": id, "harness": "pi"}),
+        );
+        let token = t["token"].as_str().unwrap().to_string();
+        let started = ask(
+            &mut w,
+            &mut r,
+            json!({"op": "event", "event": {
+                "id": format!("start-{id}"), "at": 0, "chatId": id, "harness": "pi",
+                "source": "run", "kind": "run.start", "summary": "", "detail": {"cwd": "/tmp"},
+                "pid": pid
+            }}),
+        );
+        assert_eq!(started["ok"], true, "{started}");
+        token
+    };
+    let running = chat("chat-running", harness.id());
+    let ended = chat("chat-gone", gone.id());
+    drop((w, r));
+    gone.kill().unwrap();
+    gone.wait().unwrap();
+    stop(daemon);
+    let daemon = start(&d);
+    let again = std::fs::read_to_string(d.run().join("otlp.endpoint")).unwrap();
+    assert_eq!(again, endpoint, "the OTLP port came back");
+    let back = hello_with(&d, &running);
+    assert_eq!(back["scope"], "chat", "{back}");
+    assert_eq!(back["chat"], "chat-running");
+    assert_eq!(hello_with(&d, &ended)["error"], "bad token");
+    // Its run.stop still revokes it.
+    let (mut w, mut r) = session(&d);
+    let stopped = ask(
+        &mut w,
+        &mut r,
+        json!({"op": "event", "event": {
+            "id": "stop-running", "at": 0, "chatId": "chat-running", "harness": "pi",
+            "source": "run", "kind": "run.stop", "summary": "", "detail": {}, "pid": harness.id()
+        }}),
+    );
+    assert_eq!(stopped["ok"], true, "{stopped}");
+    assert_eq!(hello_with(&d, &running)["error"], "bad token");
+    let state = d.run().join("chats.json");
+    assert_eq!(mode(&state), 0o600);
+    let text = std::fs::read_to_string(&state).unwrap();
+    assert!(
+        !text.contains(&running) && !text.contains(&ended),
+        "no token in the file"
+    );
+    let _ = harness.kill();
+    let _ = harness.wait();
+    stop(daemon);
+}
+
+/// Box test w2, BW3: `tk status` lost a running chat behind newer events
+/// because it read run starts from the tail's backlog. `report` now carries
+/// the daemon's own list of running chats, and it survives a restart with
+/// what the chat's `run.start` said.
+#[test]
+fn report_lists_running_chats_across_a_restart_and_drops_a_stopped_one() {
+    let d = Dirs::new();
+    let daemon = start(&d);
+    let (mut w, mut r) = session(&d);
+    let mut harness = Command::new("sleep").arg("60").spawn().unwrap();
+    let started = ask(
+        &mut w,
+        &mut r,
+        json!({"op": "event", "event": {
+            "id": "start-r", "at": 0, "chatId": "chat-r", "harness": "opencode",
+            "source": "run", "kind": "run.start", "summary": "",
+            "detail": {"cwd": "/tmp", "boundary": "none", "dangerousFlags": ["--yolo"]},
+            "pid": harness.id()
+        }}),
+    );
+    assert_eq!(started["ok"], true, "{started}");
+    let running = |w: &mut _, r: &mut _| -> Vec<Value> {
+        let rep = ask(
+            w,
+            r,
+            json!({"op": "report", "since": 0, "until": i64::MAX / 2}),
+        );
+        rep["report"]["running"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+    };
+    let rows = running(&mut w, &mut r);
+    assert_eq!(rows.len(), 1, "{rows:?}");
+    assert_eq!(rows[0]["chat"], "chat-r");
+    assert_eq!(rows[0]["harness"], "opencode");
+    assert_eq!(rows[0]["boundary"], "none");
+    assert_eq!(rows[0]["alive"], true);
+    assert_eq!(rows[0]["fullAccessFlags"], json!(["--yolo"]));
+    drop((w, r));
+    stop(daemon);
+    let daemon = start(&d);
+    let (mut w, mut r) = session(&d);
+    let rows = running(&mut w, &mut r);
+    assert_eq!(rows.len(), 1, "{rows:?}");
+    assert_eq!(
+        (rows[0]["chat"].as_str(), rows[0]["boundary"].as_str()),
+        (Some("chat-r"), Some("none"))
+    );
+    let stopped = ask(
+        &mut w,
+        &mut r,
+        json!({"op": "event", "event": {
+            "id": "stop-r", "at": 0, "chatId": "chat-r", "harness": "opencode",
+            "source": "run", "kind": "run.stop", "summary": "", "detail": {}, "pid": harness.id()
+        }}),
+    );
+    assert_eq!(stopped["ok"], true, "{stopped}");
+    assert!(running(&mut w, &mut r).is_empty());
+    let _ = harness.kill();
+    let _ = harness.wait();
+    stop(daemon);
+}
