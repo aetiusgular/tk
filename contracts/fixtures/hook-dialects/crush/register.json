@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "tk-gate",
+        "command": "/ABSOLUTE/PATH/TO/tk-hook",
+        "timeout": 30
+      }
+    ]
+  }
+}

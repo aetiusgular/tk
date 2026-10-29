@@ -47,9 +47,16 @@ function readKey(args: Map<string, string | true>): string | undefined {
 function parse(argv: string[], flags: string[], values: string[]): { args: Map<string, string | true>; rest: string[] } {
   const args = new Map<string, string | true>();
   const rest: string[] = [];
+  // After "--" every word is an operand. A flag given twice is refused, never
+  // "the last one wins": verify's ids come from a pull request's folder names
+  // (security finding W2-S1, integration w2).
+  let operands = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
-    if (flags.includes(a)) args.set(a, true);
+    if (operands) rest.push(a);
+    else if (a === "--") operands = true;
+    else if (args.has(a)) usage();
+    else if (flags.includes(a)) args.set(a, true);
     else if (values.includes(a)) {
       const v = argv[++i];
       if (v === undefined) usage();
@@ -102,7 +109,7 @@ if (cmd === "record") {
   const pr = args.get("--pr");
   const base = args.get("--base");
   const author = args.get("--author");
-  if (typeof pr !== "string" || typeof base !== "string" || typeof author !== "string" || !/^[A-Za-z0-9-]{1,39}(\[bot\])?$/.test(author) || rest.length === 0) usage();
+  if (typeof pr !== "string" || typeof base !== "string" || typeof author !== "string" || !/^[A-Za-z0-9-]{1,39}(\[bot\])?$/.test(author) || rest.length === 0 || rest.some((id) => id.startsWith("-"))) usage();
   let errors = 0;
   for (const id of rest) {
     const findings = await verifyEntry({ prLibrary: pr, baseLibrary: base, id, prAuthor: author });

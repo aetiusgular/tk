@@ -1,0 +1,11 @@
+{
+  "env": {
+    "CLINE_TOOL_APPROVAL_MODE": "desktop",
+    "CLINE_TOOL_APPROVAL_DIR": "/ABSOLUTE/PATH/TO/approvals"
+  },
+  "args": [
+    "--auto-approve",
+    "false",
+    "<prompt>"
+  ]
+}

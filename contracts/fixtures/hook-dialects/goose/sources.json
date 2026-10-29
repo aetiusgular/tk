@@ -1,0 +1,100 @@
+{
+  "presetId": "goose",
+  "agent": "goose",
+  "versionRead": "1.56.0",
+  "currentVersion": "1.57.0 (latest stable tag; v2.0 rc tags also exist)",
+  "files": {
+    "register.json": {
+      "from": "verbatim",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:288-304 (command replaced); file lives at ~/.agents/plugins/<name>/hooks/hooks.json next to plugin.json, goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:17-36",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:160-192 (PostToolUse example with event and tool_call_id changed per table at :164-179); goose v1.56.0 crates/goose/src/hooks/mod.rs:224-260 HookContext",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:230 names extension tools {extension}__{tool}; no MCP payload example in docs",
+      "mark": "I"
+    },
+    "reply.deny.json": {
+      "from": "verbatim",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:367",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:268",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "verbatim",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:248,265 (reason from stderr)",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Registration: plugin dir ~/.agents/plugins/<plugin-name>/ with plugin.json and hooks/hooks.json; enabled unless listed in disabledPlugins",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:17-36; goose v1.56.0 crates/goose/src/config/paths.rs:33; goose v1.56.0 crates/goose/src/plugins/discovery.rs:52-120,170-178",
+      "mark": "V"
+    },
+    {
+      "claim": "Entry shape: hooks.<Event>[] = {matcher (regex, unanchored, optional), hooks: [{type: command, command (run with sh -c), timeout (seconds, default 30), on_failure: allow|block}]}",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:99-127; goose v1.56.0 crates/goose/src/hooks/mod.rs:43",
+      "mark": "V"
+    },
+    {
+      "claim": "Fail-closed switch: on_failure: \"block\" per PreToolUse action; default allow; any other value skips the plugin's whole hooks.json",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:127,280-317",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher \"*\" is an invalid regex and silently skips the rule; use .* or omit",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:150-152",
+      "mark": "V"
+    },
+    {
+      "claim": "Stdin: event, session_id, matcher_context, tool_name, tool_input, tool_call_id, working_dir; no MCP server field",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:164-179",
+      "mark": "V"
+    },
+    {
+      "claim": "Decision order: exit 2 denies (stderr reason); stdout {\"decision\":\"block\"} denies at any exit; exit 0 + empty stdout allows; exit 0 + {\"decision\":\"allow\"} allows; anything else is no decision (hook failure)",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:261-271; goose v1.56.0 crates/goose/src/hooks/mod.rs:915-945",
+      "mark": "V"
+    },
+    {
+      "claim": "No ask value and no input rewrite on PreToolUse",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:242-271 (only block/allow documented); mod.rs Resp parses decision and reason only",
+      "mark": "V"
+    },
+    {
+      "claim": "Timeout, spawn error, invalid UTF-8, malformed JSON, signal: hook failure, which allows by default and denies under on_failure: block",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:271-286; goose v1.56.0 crates/goose/src/hooks/mod.rs:1035-1044",
+      "mark": "V"
+    },
+    {
+      "claim": "Names: extension tools {extension}__{tool}; developer/analyze/summon/code_execution tools bare: shell, write, edit, tree, read_image; shell input keys command, timeout_secs",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:228-238",
+      "mark": "V"
+    },
+    {
+      "claim": "Denial message to model: Tool call denied by policy hook `<plugin>`: <reason>. Do not retry; ...",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:253-257",
+      "mark": "V"
+    },
+    {
+      "claim": "Nothing in PreToolUse ends the run; only a Stop hook can block a turn from ending (capped by GOOSE_STOP_HOOK_BLOCK_CAP)",
+      "source": "goose v1.56.0 documentation/docs/guides/context-engineering/hooks.md:244,259",
+      "mark": "V"
+    },
+    {
+      "claim": "Default GOOSE_MODE is Auto when unset",
+      "source": "goose v1.56.0 crates/goose/src/config/base.rs:1277-1282",
+      "mark": "V"
+    }
+  ]
+}

@@ -125,6 +125,20 @@ pub fn render(r: &Value) -> String {
             out.push_str(&format!("{title}: {line}\n"));
         }
     }
+    // Integration w2 (review W2-S3): the daemon keeps a second record under a
+    // gate decision's id and writes `gate.conflict`. The first copy may be
+    // the agent's, since it holds the hook's chat token.
+    let conflicts = r
+        .get("byKind")
+        .and_then(|k| k.get("gate.conflict"))
+        .and_then(Value::as_u64)
+        .unwrap_or(0);
+    if conflicts > 0 {
+        out.push_str(&format!(
+            "GATE CONFLICT: {} records under a gate decision's id; the first copy may be the agent's (tk watch tail --json shows both)\n",
+            count(conflicts)
+        ));
+    }
     let check = r.get("check").cloned().unwrap_or(Value::Null);
     if let Some(reach) = check.get("collectorReachable").and_then(Value::as_str) {
         let why = check
@@ -234,6 +248,18 @@ mod tests {
                 "expected": [], "suppressed": {"harnessStartup": 5}
             }
         })
+    }
+
+    #[test]
+    fn a_gate_conflict_is_named() {
+        let r = json!({"events": 3, "byKind": {"approval": 1, "gate.conflict": 2}});
+        assert!(
+            render(&r).contains("GATE CONFLICT: 2 records"),
+            "{}",
+            render(&r)
+        );
+        let quiet = json!({"events": 1, "byKind": {"approval": 1}});
+        assert!(!render(&quiet).contains("GATE CONFLICT"));
     }
 
     #[test]

@@ -1,0 +1,13 @@
+{
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "transcript_path": "/home/user/.qwen/projects/example/chats/session.jsonl",
+  "cwd": "/home/user/project",
+  "hook_event_name": "PreToolUse",
+  "timestamp": "2026-10-28T00:00:00.000Z",
+  "permission_mode": "default",
+  "prompt_id": "prompt-placeholder",
+  "tool_name": "run_shell_command",
+  "tool_input": { "command": "ls -la", "description": "List files" },
+  "tool_use_id": "toolu_placeholder",
+  "tool_call_id": "call_placeholder"
+}

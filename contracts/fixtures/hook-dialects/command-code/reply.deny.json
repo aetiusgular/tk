@@ -1,0 +1,9 @@
+{
+  "continue": true,
+  "systemMessage": "Blocked destructive command",
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Policy forbids: rm -rf /"
+  }
+}

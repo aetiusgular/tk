@@ -1,0 +1,14 @@
+{
+  "presetId": "cursor",
+  "agent": "cursor",
+  "versionRead": "Cursor CLI 2026.10.22 (27 Oct notes)",
+  "currentVersion": "NF",
+  "files": {},
+  "facts": [
+    {
+      "claim": "All 27 Oct claims (~/.cursor/hooks.json version 1; preToolUse/beforeShellExecution/beforeMCPExecution; MCP:<tool>; mcp_server_name; failClosed: true; ask only on shell/MCP) unverified in this pass",
+      "source": "https://cursor.com/docs/agent/hooks: WebFetch blocked in this session (permission not granted); no public source repo with hook code; github.com/cursor/cursor holds only README/SECURITY",
+      "mark": "NF"
+    }
+  ]
+}

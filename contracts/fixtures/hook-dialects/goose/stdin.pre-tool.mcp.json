@@ -1,0 +1,11 @@
+{
+  "event": "PreToolUse",
+  "session_id": "abc-123",
+  "matcher_context": "github__create_issue",
+  "tool_call_id": "call_2",
+  "tool_name": "github__create_issue",
+  "tool_input": {
+    "title": "x"
+  },
+  "working_dir": "/Users/you/project"
+}

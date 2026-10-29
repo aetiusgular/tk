@@ -1,0 +1,10 @@
+{
+  "toolUseID": "toolu_01ABC",
+  "tool": "Bash",
+  "input": {
+    "cmd": "ls -la"
+  },
+  "thread": {
+    "id": "T-0000"
+  }
+}

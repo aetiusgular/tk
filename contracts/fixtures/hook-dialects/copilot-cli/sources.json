@@ -1,0 +1,110 @@
+{
+  "presetId": "copilot-cli",
+  "agent": "GitHub Copilot CLI (npm @github/copilot)",
+  "versionRead": "docs github/docs@57f571f (2026-10-28) content/copilot/reference/hooks-reference.md; npm @github/copilot-linux-x64@1.0.105 binary unpacked but its JS is not readable as plain strings (0 hits for preToolUse), so no binary check. Earlier notes read 1.0.104",
+  "currentVersion": "1.0.105 (npm, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "verbatim",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L120-L136 trimmed to type/bash/timeoutSec, command replaced, plus per-entry matcher as shown in https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L787-L795 and matcher table #L867-L878",
+      "mark": "V"
+    },
+    "register.permission-request.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L797-L821 and #L162-L173",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L447-L457 (camelCase input for event key preToolUse); toolArgs is typed 'unknown' and may arrive as a JSON string (the PascalCase variant says tool_input is 'parsed from JSON string when possible'), so a gate must accept both",
+      "mark": "I"
+    },
+    "stdin.pre-tool.pascal.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L459-L496 (PascalCase PreToolUse: snake_case fields, ISO timestamp, Claude tool names such as Bash)",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L732-L740 (top-level permissionDecision, no hookSpecificOutput wrapper; reason required for deny)",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L182",
+      "mark": "V"
+    },
+    "reply.ask.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L738",
+      "mark": "V"
+    },
+    "reply.permission-request.deny.json": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L813-L819",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L899-L903: exit 2 denies preToolUse even if stdout says allow; stdout JSON merged with the deny",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User hook files are any *.json in ~/.copilot/hooks/ (or $COPILOT_HOME/hooks/); an inline hooks block at the top level of ~/.copilot/settings.json also loads; all sources are combined, none replaces another",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L33-L40",
+      "mark": "V"
+    },
+    {
+      "claim": "File shape {version:1, disableAllHooks?, hooks:{preToolUse:[{type:'command', matcher?, bash|powershell|command|exec+args, cwd?, env?, timeoutSec?|timeout?}]}}; timeouts in seconds, default 30",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L120-L173 and #L919-L927",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher is a regex anchored ^(?:PATTERN)$ on toolName for camelCase preToolUse; PascalCase PreToolUse uses Claude matcher semantics and Claude tool names (Bash for bash/powershell)",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L474-L496 and #L867-L878",
+      "mark": "V"
+    },
+    {
+      "claim": "A malformed item in a hooks-directory file is dropped alone; invalid JSON or a bad version rejects the file; inline settings.json hooks are strict (one bad item rejects the whole hooks field)",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L110-L111",
+      "mark": "V"
+    },
+    {
+      "claim": "preToolUse command hooks fail closed on crash and any non-zero exit (other non-zero: 'Denied by preToolUse hook (hook errored)'); timeouts always fail open, even for policy hooks",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L498-L499, #L895 and #L899-L906",
+      "mark": "V"
+    },
+    {
+      "claim": "Empty stdout or stdout that does not parse as one JSON object (after stripping progress lines) means no output and default behaviour; two JSON objects concatenated are ignored",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L196-L201",
+      "mark": "V"
+    },
+    {
+      "claim": "Reply fields are top-level: permissionDecision allow|deny|ask, permissionDecisionReason, modifiedArgs (input rewrite). ask is denied in autopilot mode and under cloud agent",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L736-L740 and #L290",
+      "mark": "V"
+    },
+    {
+      "claim": "permissionRequest fires before the permission service; behavior allow|deny short-circuits it; message is the reason; interrupt:true with deny stops the agent entirely (ends the run); exit 2 is a deny; a sandbox-bypass request cannot be pre-approved by allow",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L797-L821",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool names bash (Unix) and powershell (Windows)",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L880-L893",
+      "mark": "V"
+    },
+    {
+      "claim": "MCP tool name form in hook payloads (earlier notes: <server>-<tool>) is not documented in the hooks reference or CLI reference, and could not be checked in the binary",
+      "source": "grep of content/copilot for mcp in hooks-reference.md and how-tos/copilot-cli: no hits; binary JS not plain text",
+      "mark": "NF"
+    },
+    {
+      "claim": "HTTP preToolUse hooks are fail-open and must use https://",
+      "source": "https://github.com/github/docs/blob/57f571f065a75c31071127b8027a44b064181add/content/copilot/reference/hooks-reference.md#L246 and #L499",
+      "mark": "V"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "continue": true,
+  "suppressOutput": false,
+  "stopReason": "",
+  "systemMessage": "",
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow",
+    "permissionDecisionReason": "",
+    "additionalContext": ""
+  }
+}

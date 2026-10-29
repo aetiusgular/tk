@@ -1,0 +1,11 @@
+{
+  "event": "PreToolUse",
+  "session_id": "abc-123",
+  "matcher_context": "shell",
+  "tool_call_id": "call_1",
+  "tool_name": "shell",
+  "tool_input": {
+    "command": "rg TODO"
+  },
+  "working_dir": "/Users/you/project"
+}

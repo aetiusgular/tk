@@ -343,40 +343,76 @@ fn a_tail_backlog_holds_the_last_copy_per_id() {
 fn a_chat_token_cannot_replace_a_gate_decision() {
     // Integration w1's security finding S9. The hook posts its decision
     // with the chat token; the agent holds the same token (case 66).
+    // Integration w2's review (W2-S3): the agent can also post first, so a
+    // second copy is never dropped. It is kept under its own id and the
+    // daemon records a `gate.conflict` that names both.
     let f = fixture();
     let mut d = Client::daemon(&f);
     let token = mint(&mut d, "c1", "claude-code");
-    let (mut hook, _) = Client::hello(&f, &token);
-    let r = hook.ask(event(
+    let (mut first, _) = Client::hello(&f, &token);
+    let r = first.ask(event(
         "claude-code-t1-decision",
         "c1",
         "adapter",
         "approval",
-        json!({"decision": "deny"}),
+        json!({"decision": "allow"}),
     ));
     assert_eq!(r["ok"], true, "{r}");
-    let (mut agent, _) = Client::hello(&f, &token);
-    for (source, kind) in [
-        ("otel", "approval"),
-        ("adapter", "approval"),
-        ("otel", "tool.call"),
+    let (mut second, _) = Client::hello(&f, &token);
+    for (source, kind, decision) in [
+        ("adapter", "approval", "deny"),
+        ("otel", "approval", "deny"),
+        ("otel", "tool.call", "allow"),
     ] {
-        let r = agent.ask(event(
+        let r = second.ask(event(
             "claude-code-t1-decision",
             "c1",
             source,
             kind,
-            json!({"decision": "allow"}),
+            json!({"decision": decision}),
         ));
-        assert_eq!(r["ok"], false, "{source} {kind}: {r}");
-        assert_eq!(r["error"], "a gate decision is written once", "{r}");
+        assert_eq!(r["ok"], true, "{source} {kind}: {r}");
+        let kept = r["id"].as_str().unwrap().to_string();
+        assert!(
+            kept.starts_with("claude-code-t1-decision-conflict-"),
+            "{kept}"
+        );
     }
     let mut t = Client::daemon(&f);
     t.ask(json!({"op": "tail", "since": 0}));
-    let only = t.recv();
-    assert_eq!(only["event"]["kind"], "approval", "{only}");
-    assert_eq!(only["event"]["detail"]["decision"], "deny", "{only}");
-    assert!(t.try_recv(Duration::from_millis(200)).is_none());
+    let mut seen = Vec::new();
+    while let Some(line) = t.try_recv(Duration::from_millis(300)) {
+        seen.push(line["event"].clone());
+    }
+    let original: Vec<_> = seen
+        .iter()
+        .filter(|e| e["id"] == "claude-code-t1-decision")
+        .collect();
+    assert_eq!(original.len(), 1, "{seen:?}");
+    assert_eq!(original[0]["detail"]["decision"], "allow");
+    let copies: Vec<_> = seen
+        .iter()
+        .filter(|e| {
+            e["id"]
+                .as_str()
+                .is_some_and(|i| i.starts_with("claude-code-t1-decision-conflict-"))
+        })
+        .collect();
+    assert_eq!(copies.len(), 3, "{seen:?}");
+    for c in &copies {
+        assert_eq!(c["chatId"], "c1");
+        assert_eq!(c["detail"]["conflictsWith"], "claude-code-t1-decision");
+    }
+    let flags: Vec<_> = seen
+        .iter()
+        .filter(|e| e["kind"] == "gate.conflict")
+        .collect();
+    assert_eq!(flags.len(), 3, "{seen:?}");
+    for g in &flags {
+        assert_eq!(g["source"], "approval", "the daemon writes it: {g}");
+        assert_eq!(g["chatId"], "c1");
+        assert_eq!(g["detail"]["id"], "claude-code-t1-decision");
+    }
 }
 
 #[test]

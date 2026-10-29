@@ -141,6 +141,21 @@
       "note": "wave 2's agents' control folders are in every matcher's list (lane I's request 2, integration w2)" },
     { "id": 53, "call": { "tool": "Bash", "harness": "claude-code", "inputText": "HERMES_YOLO_MODE=1 hermes chat" },
       "expect": { "action": "ask", "normalizedTool": "bash", "reasonPrefix": "input names a control file" },
-      "note": "a variable that switches an agent's approvals off asks (lane I's request 2)" }
+      "note": "a variable that switches an agent's approvals off asks (lane I's request 2)" },
+    { "id": 54, "call": { "tool": "mcp__exa-__search", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/search", "reasonPrefix": "ambiguous server name" },
+      "note": "a server named exa- folds into exa's split; its allow asks (integration w2 review, W2-S2)" },
+    { "id": 55, "call": { "tool": "mcp__EXA__search", "harness": "claude-code", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/search", "reasonPrefix": "ambiguous server name" },
+      "note": "a server spelled in capitals is not exa's; its allow asks (W2-S2)" },
+    { "id": 56, "call": { "tool": "mcp__exa___search", "harness": "pi", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/search", "reasonPrefix": "ambiguous server name" },
+      "note": "three underscores between server and tool could be a server exa_; an allow asks (W2-S2)" },
+    { "id": 57, "call": { "tool": "exa-evil_search", "harness": "opencode", "inputText": "" },
+      "expect": { "action": "ask", "normalizedTool": "exa/evil_search", "reasonPrefix": "ambiguous server name" },
+      "note": "exa-evil's tool search folds into exa's prefix; the raw separator is not _, so an allow asks (W2-S2)" },
+    { "id": 58, "call": { "tool": "exa_search", "harness": "opencode", "inputText": "" },
+      "expect": { "action": "allow", "normalizedTool": "exa/search", "reasonPrefix": "rule exa/*" },
+      "note": "the same form spelled plainly still allows (W2-S2)" }
   ]
 }

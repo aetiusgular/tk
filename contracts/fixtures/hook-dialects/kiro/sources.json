@@ -1,0 +1,14 @@
+{
+  "presetId": "kiro",
+  "agent": "kiro",
+  "versionRead": "Kiro CLI 2.34.0 (27 Oct notes)",
+  "currentVersion": "NF",
+  "files": {},
+  "facts": [
+    {
+      "claim": "All 27 Oct claims (version 1 file in ~/.kiro/hooks/, PreToolUse, exit codes only, any non-zero blocks, exit-0 stdout into context, mcp_s_t names) unverified in this pass",
+      "source": "https://kiro.dev/docs/hooks, /docs/hooks/actions, /docs/hooks/types: WebFetch blocked in this session (permission not granted); no public source repo with hook code; github.com/kirodotdev/Kiro holds only issue tooling; npm kiro-cli 0.0.1 is not the official CLI",
+      "mark": "NF"
+    }
+  ]
+}

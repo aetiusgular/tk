@@ -1,0 +1,10 @@
+{
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "transcript_path": "/home/user/.openclaude/projects/-home-user-project/00000000-0000-0000-0000-000000000000.jsonl",
+  "cwd": "/home/user/project",
+  "permission_mode": "default",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "mcp__example-server__example_tool",
+  "tool_input": { "query": "placeholder" },
+  "tool_use_id": "toolu_placeholder"
+}

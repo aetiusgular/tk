@@ -227,6 +227,43 @@ function pluginBareServers(server: string): string[] {
   return out;
 }
 
+/**
+ * Separators an agent writes between server and tool other than the plain
+ * `__` (after `mcp__`) or `_` (after `mcp_`, or with no prefix): its declared
+ * name form (note AQ section 6). Wave 4's lanes confirm these against each
+ * agent (contracts/hook-dialects.md).
+ */
+export const RAW_SEPARATORS: Readonly<Record<string, readonly string[]>> = {
+  "oh-my-pi": ["_"],
+  droid: ["___"],
+  "copilot-cli": ["-"],
+  "mistral-vibe": ["."],
+};
+
+/**
+ * Integration w2 review, W2-S2: whether the raw name spells the chosen split
+ * plainly. A server part with capitals or non-ASCII letters, or a separator
+ * the fold made (`exa-__t`, `exa.__t`, `exa-evil_t`) or one longer than the
+ * form's (`mcp__exa___t`), could be another server's name folded into a
+ * listed one, so an allow there asks.
+ */
+export function splitInDoubt(raw: string, lowered: string, prefix: number, server: string, tool: string, harness?: string): boolean {
+  const cps = Array.from(raw.trim());
+  if (cps.length !== lowered.length) return true;
+  const start = prefix > 0 ? prefix : 0;
+  const sepStart = start + server.length;
+  const sepEnd = lowered.length - tool.length;
+  if (sepEnd <= sepStart) return true;
+  const rawServer = cps.slice(start, sepStart).join("");
+  if (/[A-Z]|[^\x00-\x7f]/.test(rawServer)) return true;
+  const rawSep = cps.slice(sepStart, sepEnd).join("");
+  if ((RAW_SEPARATORS[harness ?? ""] ?? []).includes(rawSep)) return false;
+  if (rawSep !== lowered.slice(sepStart, sepEnd)) return true;
+  if (prefix === 5) return rawSep !== "__";
+  if (prefix === 4) return rawSep !== "_";
+  return rawSep.length > 2;
+}
+
 /** The call's other names (section 4 step 3a; the hook core's `narrowingNames`). */
 export function narrowingNames(raw: string, servers: readonly string[], harness?: string): { names: string[]; ambiguous: boolean } {
   const primary = normalizeToolName(raw, servers, harness);
@@ -251,6 +288,7 @@ export function narrowingNames(raw: string, servers: readonly string[], harness?
       d = rest.indexOf("__", e);
     }
   }
+  if (splitInDoubt(raw, lowered, prefix, primaryServer, primary.slice(slash + 1), harness)) ambiguous = true;
   for (const [server, tool] of splits) {
     const whole = join([server, tool]);
     if (whole !== primary) names.add(whole);

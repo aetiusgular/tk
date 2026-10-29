@@ -17,6 +17,8 @@
 // harness id, omp's MCP names), and an allowed call's input is frozen so a
 // later extension cannot change it after the gate (src/freeze.ts, BX9).
 
+import { realpathSync } from "node:fs";
+import path from "node:path";
 import { askUser, cardText } from "../src/ask.ts";
 import { deepFreeze, freezeEnabled } from "../src/freeze.ts";
 import { harnessId, OMP, ompToolName } from "../src/harness.ts";
@@ -34,7 +36,7 @@ import {
   type UserBashEvent,
   type UserBashResult,
 } from "../src/pi-api.ts";
-import { evaluate, normalizeToolName, rejectKey, type PolicyFile } from "../src/policy.ts";
+import { evaluate, normalizeToolName, rejectKey, unquote, type PolicyFile } from "../src/policy.ts";
 import { PolicyStore, policyPath, type FsLike, realFs } from "../src/policy-store.ts";
 import { redactDeep, redactText } from "../src/redact.ts";
 
@@ -62,17 +64,51 @@ function chatFor(env: Record<string, string | undefined>, ctx: PiContext): strin
   }
 }
 
+function cwdOf(ctx: { cwd?: unknown }): string | undefined {
+  return typeof ctx.cwd === "string" && ctx.cwd !== "" ? ctx.cwd : undefined;
+}
+
 function block(reason: string): ToolCallResult {
   return { block: true, reason: `Blocked by tk: ${reason}` };
 }
 
-/** The memory index an allowed write or edit names, if any (case 48). */
-export function memoryIndexPath(normalized: string, input: unknown): string | undefined {
+/**
+ * The memory index an allowed write or edit names, if any (case 48). The
+ * path is read as the file system would: `.`, `..` and doubled slashes
+ * collapsed, and with `cwd` the folder's real path, so a linked folder
+ * (`m2 -> memory`) names the index too (integration w2 review, W2-S4).
+ */
+export function memoryIndexPath(normalized: string, input: unknown, cwd?: string): string | undefined {
   if (normalized !== "write" && normalized !== "edit") return undefined;
   const p = input && typeof input === "object" ? (input as Record<string, unknown>).path ?? (input as Record<string, unknown>).file_path : undefined;
   if (typeof p !== "string") return undefined;
-  const lowered = p.replace(/\\/g, "/").toLowerCase();
-  return MEMORY_INDEXES.find((i) => lowered === i || lowered.endsWith(`/${i}`));
+  const plain = path.posix.normalize(p.replace(/\\/g, "/")).replace(/\/+$/, "").replace(/\/\.$/, "");
+  const named = (s: string) => {
+    const lowered = s.toLowerCase();
+    return MEMORY_INDEXES.find((i) => lowered === i || lowered.endsWith(`/${i}`));
+  };
+  const direct = named(plain);
+  if (direct !== undefined || cwd === undefined) return direct;
+  try {
+    const parent = realpathSync(path.resolve(cwd, path.dirname(plain)));
+    return named(`${parent.replace(/\\/g, "/")}/${path.basename(plain)}`);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Tools that only read: naming an index there is not a write. */
+const READ_ONLY = new Set(["read", "grep", "find", "ls", "memory_search"]);
+
+/**
+ * The memory index any other allowed call's input names (a shell `>>`,
+ * `tee`, `sed -i`), read with quotes removed and doubled slashes and `./`
+ * collapsed (review W2-S4). Narrowing only.
+ */
+export function memoryIndexText(normalized: string, inputText: string): string | undefined {
+  if (normalized === "write" || normalized === "edit" || READ_ONLY.has(normalized)) return undefined;
+  const text = unquote(inputText.replace(/\\/g, "/")).toLowerCase().replace(/\/+/g, "/").replace(/\/(\.\/)+/g, "/");
+  return MEMORY_INDEXES.find((i) => text.includes(i));
 }
 
 const MEMORY_INDEXES = ["memory/index.md", "research/index.md", "refs/index.md"] as const;
@@ -135,7 +171,8 @@ export function createGate(options: GateOptions = {}) {
         // card (case 48); an allowed write or edit of one asks too (lane K's
         // request 8, integration w2). Narrowing only, and only in Pi, where
         // the memory extension runs.
-        const index = d.action === "allow" ? memoryIndexPath(normalized, event.input) : undefined;
+        const index =
+          d.action === "allow" ? (memoryIndexPath(normalized, event.input, cwdOf(ctx)) ?? memoryIndexText(normalized, inputText)) : undefined;
         if (index !== undefined) d = { ...d, action: "ask", reason: `${index} is the memory index: memory_propose writes it` };
         if (d.action === "allow") {
           announce({ ...base, toolNameNormalized: normalized, decision: "accept", reason: d.reason });

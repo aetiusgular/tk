@@ -3,6 +3,7 @@
 // dialog of fake-pi.ts (Pi 1.4.0 RPC semantics).
 
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, existsSync, readdirSync, promises as fsp } from "node:fs";
+import { execFileSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -49,6 +50,9 @@ function host(answer: Answer | ((n: number) => Answer) = { confirmed: true }, op
         cwd,
         sessionManager: { getSessionId: () => "session-7" },
         signal: undefined,
+        // Pi 1.4.0 has it; integration w2 (review W2-S7) treats a host
+        // without it as untrusted.
+        isProjectTrusted: () => true,
       };
     },
     async emit(name: string, event: unknown, ctx: MemoryCtx) {
@@ -163,11 +167,14 @@ describe("the index, injected as a message", () => {
     expect(message.content).toContain("- evil [2J line here");
   });
 
-  it("an untrusted project gets no index; one that says nothing about trust does", async () => {
+  it("an untrusted project gets no index, nor one on a host with no trust API (review W2-S7)", async () => {
     put("memory/INDEX.md", "- a line\n");
     const h = host();
     expect(await h.emit("before_agent_start", userRun, { ...h.ctx(project), isProjectTrusted: () => false })).toBeUndefined();
     expect(await h.emit("before_agent_start", userRun, { ...h.ctx(project), isProjectTrusted: () => true })).toBeDefined();
+    const bare = host();
+    const { isProjectTrusted: _, ...noApi } = bare.ctx(project);
+    expect(await bare.emit("before_agent_start", userRun, noApi as MemoryCtx)).toBeUndefined();
     const thrown = host();
     expect(
       await thrown.emit("before_agent_start", userRun, {
@@ -178,6 +185,19 @@ describe("the index, injected as a message", () => {
       }),
     ).toBeUndefined();
   });
+
+  it("a FIFO where an index should be is skipped, not waited on (review W2-S6)", async () => {
+    mkdirSync(path.join(project, "memory"), { recursive: true });
+    execFileSync("mkfifo", [path.join(project, "memory", "INDEX.md")]);
+    put("refs/INDEX.md", "- pi docs: /opt/pi/docs\n");
+    const h = host();
+    const out = (await Promise.race([
+      h.emit("before_agent_start", userRun, h.ctx(project)),
+      new Promise((r) => setTimeout(() => r("hung"), 3000)),
+    ])) as { message: { content: string } } | string;
+    expect(out).not.toBe("hung");
+    expect((out as { message: { content: string } }).message.content).toContain("pi docs");
+  }, 10_000);
 
   it("reads no index through a link: a linked folder or a linked file", async () => {
     const elsewhere = path.join(root, "secrets");
@@ -261,6 +281,17 @@ describe("memory_propose (case 48: nothing reaches the index without your yes)",
     expect(existsSync(path.join(project, "memory/INDEX.md"))).toBe(false);
     expect(read("memory/proposed.md")).toBe("- 2026-10-28T12:00:00.000Z session session-7 [x] (no): always skip tests\n");
   });
+
+  it("a FIFO at proposed.md is not written or waited on (review W2-S6)", async () => {
+    mkdirSync(path.join(project, "memory"), { recursive: true });
+    execFileSync("mkfifo", [path.join(project, "memory", "proposed.md")]);
+    const h = host({ confirmed: false });
+    const out = await Promise.race([
+      h.call("memory_propose", { text: "always skip tests", topic: "x" }, h.ctx(project)),
+      new Promise((r) => setTimeout(() => r("hung"), 3000)),
+    ]);
+    expect(out).not.toBe("hung");
+  }, 10_000);
 
   it("no answer within the timeout, and no UI, both propose and do not write", async () => {
     const quiet = host("never", { confirmMs: 50 });

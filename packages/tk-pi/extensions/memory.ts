@@ -173,7 +173,9 @@ async function readPlain(root: string, rel: string, max: number): Promise<string
   if (!abs || !(await realFolders(root, path.dirname(abs), false))) return undefined;
   let handle: FileHandle | undefined;
   try {
-    handle = await fsp.open(abs, constants.O_RDONLY | constants.O_NOFOLLOW);
+    // O_NONBLOCK: a FIFO an agent made under the index's name must not
+    // hang the run (integration w2 review, W2-S6; case 38).
+    handle = await fsp.open(abs, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     const st = await handle.stat();
     if (!st.isFile()) return undefined;
     const buf = Buffer.alloc(Math.min(st.size, max));
@@ -216,7 +218,7 @@ async function appendPlain(root: string, rel: string, text: string): Promise<boo
   if (!abs || !(await realFolders(root, path.dirname(abs), true))) return false;
   let handle: FileHandle | undefined;
   try {
-    handle = await fsp.open(abs, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o644);
+    handle = await fsp.open(abs, constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o644);
     const st = await handle.stat();
     if (!st.isFile()) return false;
     await handle.write(text);
@@ -385,7 +387,10 @@ function text(t: string, details?: Record<string, unknown>, isError = false): To
 
 function untrusted(ctx: MemoryCtx): boolean {
   try {
-    return typeof ctx.isProjectTrusted === "function" && ctx.isProjectTrusted() === false;
+    // A host with no trust API (an older Pi, oh-my-pi) counts as untrusted
+    // (integration w2 review, W2-S7): the index is injected only where Pi
+    // says the project is trusted.
+    return typeof ctx.isProjectTrusted !== "function" || ctx.isProjectTrusted() !== true;
   } catch {
     return true;
   }

@@ -1,0 +1,6 @@
+[[hooks]]
+name = "tk-gate"
+type = "pre_tool"
+command = "/ABSOLUTE/PATH/TO/tk-hook"
+timeout = 60.0
+strict = true

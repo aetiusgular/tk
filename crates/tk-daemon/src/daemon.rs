@@ -429,7 +429,14 @@ impl Daemon {
                 start_time: r.get("startTime").and_then(Value::as_u64),
             };
             started.insert(chat.to_string());
-            if crate::activity::registry::valid_chat_id(chat) && run.alive() {
+            // A run comes back only with the start time it was recorded with
+            // and never as pid 1 or 0 (review W2-S9: a planted run with no
+            // start time would match any live process for good).
+            if crate::activity::registry::valid_chat_id(chat)
+                && pid > 1
+                && run.start_time.is_some()
+                && run.alive()
+            {
                 runs.insert(chat.to_string(), run);
             }
         }
@@ -693,12 +700,56 @@ impl Daemon {
             return error("event id is empty");
         }
         if matches!(who, Who::Chat { .. }) && self.holds_gate_decision(&event) {
-            self.counters.refused_events.fetch_add(1, Ordering::Relaxed);
-            return error("a gate decision is written once");
+            // The hook and the agent share the chat token (case 66), and the
+            // agent can post first (integration w2 review, W2-S3), so a second
+            // copy is never dropped: it is kept under its own id, and the
+            // daemon records the conflict, which only it can write.
+            return self.keep_conflict(event);
         }
         let id = self.ingest(event);
         Reply {
             id: Some(id),
+            ..ok()
+        }
+    }
+
+    /// A chat-scope post under the id of a gate decision already held:
+    /// stored as `<id>-conflict-<uuid>` with `detail.conflictsWith`, and a
+    /// daemon-written `gate.conflict` (source `approval`) naming both.
+    fn keep_conflict(&self, mut event: Event) -> Reply {
+        let original = store::bound_event(event.clone()).id;
+        let copy = format!("{original}-conflict-{}", uuid::Uuid::new_v4().simple());
+        event.id = copy.clone();
+        match &mut event.detail {
+            Value::Object(map) => {
+                map.insert("conflictsWith".into(), Value::String(original.clone()));
+            }
+            other => *other = json!({"value": other.clone(), "conflictsWith": original}),
+        }
+        let (chat, harness, kind, source) = (
+            event.chat_id.clone(),
+            event.harness.clone(),
+            event.kind.clone(),
+            event.source,
+        );
+        let kept = self.ingest(event);
+        self.ingest(Event {
+            id: format!("gate-conflict-{}", uuid::Uuid::new_v4().simple()),
+            at: 0,
+            chat_id: chat,
+            harness,
+            source: Source::Approval,
+            kind: "gate.conflict".into(),
+            summary: clip(
+                &format!("two records under the gate decision {original}"),
+                200,
+            ),
+            detail: json!({"id": original, "copy": kept, "kind": kind, "source": source}),
+            pid: None,
+            approval_id: None,
+        });
+        Reply {
+            id: Some(kept),
             ..ok()
         }
     }
@@ -1046,6 +1097,12 @@ impl Daemon {
         let Some(pid) = cred.pid else {
             return Some("the OS gave no pid for the peer".into());
         };
+        // The pid must still be the process read at accept (review W2-S5): a
+        // child that connects and exits leaves a pid with no ancestors, and
+        // without a pidfd (macOS, Linux before 6.5) nothing else catches it.
+        if let Some(why) = Self::peer_moved(pid, peer.start_time) {
+            return Some(why);
+        }
         let mut line = vec![pid];
         line.extend(tk_core::peer::ancestors(pid));
         let runs = self.runs.lock().map(|r| r.clone()).unwrap_or_default();
@@ -1069,7 +1126,22 @@ impl Daemon {
                 return Some("the process that connected has exited".into());
             }
         }
-        None
+        Self::peer_moved(pid, peer.start_time)
+    }
+
+    /// Why `pid` is no longer the process whose start time was read when the
+    /// connection was accepted, if it is not.
+    fn peer_moved(pid: u32, at_accept: Option<u64>) -> Option<String> {
+        let Some(at_accept) = at_accept else {
+            return Some("the daemon could not read the process at connect".into());
+        };
+        match tk_core::peer::start_time(pid) {
+            None => Some("the process that connected is gone".into()),
+            Some(now) if now != at_accept => {
+                Some(format!("pid {pid} is not the process that connected"))
+            }
+            Some(_) => None,
+        }
     }
 
     /// Records an approver's registration, or its refusal, with who it was.
@@ -1220,8 +1292,16 @@ fn parse_sha256(text: &str) -> Option<[u8; 32]> {
 /// by this user, no group or other bits, at most 1 MiB, JSON with
 /// `version: 1`. Anything else is ignored, and the daemon starts empty.
 fn read_state(path: &Path) -> Option<Value> {
-    use std::os::unix::fs::MetadataExt;
-    let meta = std::fs::symlink_metadata(path).ok()?;
+    use std::io::Read;
+    use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+    // Opened without following a link and checked on the handle (review
+    // W2-S9: no gap between the check and the read).
+    let mut file = std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)
+        .open(path)
+        .ok()?;
+    let meta = file.metadata().ok()?;
     // SAFETY: geteuid has no preconditions and cannot fail.
     let me = unsafe { libc::geteuid() };
     if !meta.file_type().is_file()
@@ -1231,7 +1311,12 @@ fn read_state(path: &Path) -> Option<Value> {
     {
         return None;
     }
-    let value: Value = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
+    let mut text = String::new();
+    file.by_ref()
+        .take(STATE_FILE_MAX + 1)
+        .read_to_string(&mut text)
+        .ok()?;
+    let value: Value = serde_json::from_str(&text).ok()?;
     (value.get("version").and_then(Value::as_u64) == Some(1)).then_some(value)
 }
 
@@ -1398,7 +1483,26 @@ mod tests {
             chat: "chat-x".into(),
             harness: "pi".into(),
         });
-        assert_eq!(start(state).hello(&token), chat, "0600, its own");
+        assert_eq!(start(state.clone()).hello(&token), chat, "0600, its own");
+        // Review W2-S9: a planted run that names no start time, or pid 1,
+        // keeps a started chat's token alive for good; neither counts.
+        for run in [
+            json!({"chat": "chat-x", "pid": std::process::id(), "startTime": null}),
+            json!({"chat": "chat-x", "pid": 1, "startTime": tk_core::peer::start_time(1)}),
+        ] {
+            let planted = json!({
+                "version": 1,
+                "tokens": [{
+                    "sha256": hex(&Receiver::token_hash(&token)),
+                    "chat": "chat-x", "harness": "pi", "mintedAt": 0
+                }],
+                "runs": [run]
+            })
+            .to_string();
+            std::fs::write(&state, &planted).unwrap();
+            std::fs::set_permissions(&state, std::fs::Permissions::from_mode(0o600)).unwrap();
+            assert_eq!(start(state.clone()).hello(&token), None, "{run}");
+        }
         let _ = std::fs::remove_dir_all(root);
     }
 
@@ -1424,6 +1528,64 @@ mod tests {
             Err(e) => panic!("{e}"),
         };
         assert!(pushed.contains("right-after-ok"), "{pushed}");
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    /// Integration w2 review W2-S5: a process inside a chat forks a child
+    /// that connects and exits; without a pidfd the dead pid has no
+    /// ancestors to walk, so the daemon must refuse a peer whose pid no
+    /// longer resolves to the process read at accept.
+    #[test]
+    fn an_approver_whose_process_is_gone_or_reused_is_refused() {
+        let (d, root) = daemon();
+        let me = tk_core::peer::Peer {
+            pid: None,
+            uid: unsafe { libc::geteuid() },
+        };
+        let mut child = std::process::Command::new("sleep")
+            .arg("30")
+            .spawn()
+            .unwrap();
+        let pid = child.id();
+        let started = tk_core::peer::start_time(pid);
+        assert!(started.is_some());
+        child.kill().unwrap();
+        child.wait().unwrap();
+        let gone = ConnPeer {
+            cred: Some(tk_core::peer::Peer {
+                pid: Some(pid),
+                ..me.clone()
+            }),
+            pidfd: None,
+            program: None,
+            start_time: started,
+        };
+        let why = d.approver_refusal(&gone).expect("a reaped peer is refused");
+        assert!(why.contains("gone"), "{why}");
+        let own = std::process::id();
+        let reused = ConnPeer {
+            cred: Some(tk_core::peer::Peer {
+                pid: Some(own),
+                ..me.clone()
+            }),
+            pidfd: None,
+            program: None,
+            start_time: tk_core::peer::start_time(own).map(|t| t + 1),
+        };
+        let why = d
+            .approver_refusal(&reused)
+            .expect("another process under the pid is refused");
+        assert!(why.contains("not the process"), "{why}");
+        let unread = ConnPeer {
+            cred: Some(tk_core::peer::Peer {
+                pid: Some(own),
+                ..me
+            }),
+            pidfd: None,
+            program: None,
+            start_time: None,
+        };
+        assert!(d.approver_refusal(&unread).is_some());
         let _ = std::fs::remove_dir_all(root);
     }
 }

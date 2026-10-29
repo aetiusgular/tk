@@ -1,0 +1,115 @@
+{
+  "presetId": "auggie",
+  "agent": "Auggie (npm @augmentcode/auggie)",
+  "versionRead": "0.36.0 (bundled augment.mjs; public repo augmentcode/auggie@703519c CHANGELOG and plugin examples). docs.augmentcode.com/cli/hooks.md and /cli/permissions.md not reachable (WebFetch blocked)",
+  "currentVersion": "0.36.0 (npm, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "built-from-fields",
+      "source": "Shape from https://github.com/augmentcode/auggie/blob/703519ca481d2cb88bf3fcd9e05144e2c80e07e0/plugin_marketplace/warp/hooks/hooks.json (plugin hooks.json, same {hooks:{Event:[{matcher, hooks:[{type,command}]}]}} as settings.json) and npm:@augmentcode/auggie@0.36.0 package/augment.mjs Hnt schema {type:'command', command, args?, timeout?(positive number)}; timeout written in ms because the executor passes it straight to setTimeout with default 6e4",
+      "mark": "I"
+    },
+    "register.script-policy.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs settings schema toolPermissions: array of {toolName, permission:{type:'script-policy', script}, eventType?:'tool-call'|'tool-response', shellInputRegex?}",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs B7n builder {hook_event_name, conversation_id, workspace_roots:[cwd], tool_name, tool_input, tool_output(undefined, dropped), tool_error, is_mcp_tool}; launch-process input fields are I",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs createNamespacedToolName: `${sanitizeName(tool)}_${serverName}` truncated to 64; is_mcp_tool true when the definition has mcp_server_name. mcp_metadata is added only with matcher metadata includeMCPMetadata",
+      "mark": "V"
+    },
+    "stdin.script-policy.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs c0i: {'tool-name', 'event-type', details: pce(toolName, input) (launch-process -> {cwd, command}), timestamp}, written pretty-printed",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs output schema bao/Eao (hookSpecificOutput discriminated on hookEventName; PreToolUse: permissionDecision allow|deny|ask, permissionDecisionReason, updatedInput) and zIt (deny -> shouldContinue false)",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs Eao/zIt; allow parses but has no control effect",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs wao: exit 2 on PreToolUse blocks (stdout JSON still parsed if present)",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Hook config files, in load order: <systemConfigDir>/settings.json, ~/.augment/settings.json, <workspace>/.augment/settings.local.json, <workspace>/.augment/settings.json, plugin hooks.json; hooks under top-level key hooks",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs cle() with b2e='settings.json', y2e='.augment', iAn='settings.local.json'; ygi requires e.hooks",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook entry: {matcher?, metadata?:{includeConversationData?, includeMCPMetadata?, includeUserContext?}, hooks:[{type:'command', command, args?, timeout?}]}; unknown properties warned and ignored",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs Hnt, Knt and Sgi",
+      "mark": "V"
+    },
+    {
+      "claim": "Default hook timeout 60000 ms; per-hook timeout is passed unchanged to setTimeout, so it is milliseconds",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs Sao=6e4 and xao(r, t.timeout||Sao)",
+      "mark": "I"
+    },
+    {
+      "claim": "Matcher: '' or '.*' matches all tools (MCP included); 'mcp:*' matches all MCP tools; 'mcp:<regex>' matches MCP tool names; any other regex (unanchored RegExp) matches only non-MCP tools",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs f7n/aao",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool is launch-process (a 'shell' tool also exists in the input-details switch); MCP tool names are <tool>_<server>",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs pce() and createNamespacedToolName",
+      "mark": "V"
+    },
+    {
+      "claim": "Command hooks have no fail-closed switch: timeout (SIGTERM then SIGKILL after 5 s), spawn error, non-zero exit other than 2, and invalid JSON all continue (fail-open)",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs xao, Bao catch {shouldContinue:!0}, wao non-blocking path, OIt returns null on parse failure",
+      "mark": "V"
+    },
+    {
+      "claim": "Deny: exit 2, or hookSpecificOutput.permissionDecision 'deny', or top-level continue:false; each sets shouldContinue false and the tool call is blocked with a formatted message. Reason routing: permissionDecisionReason goes to the model on deny",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs zIt and the runPreToolUseHook caller ('Tool execution blocked by hook')",
+      "mark": "V"
+    },
+    {
+      "claim": "permissionDecision allow and ask parse but are never read for control; the normal permission flow runs either way",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs: permissionDecision only read in zIt, the aggregator and routeJsonFields",
+      "mark": "I"
+    },
+    {
+      "claim": "Input rewrite exists: hookSpecificOutput.updatedInput replaces the tool input (u=f.updatedInput)",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs tool runner after runPreToolUseHook; https://github.com/augmentcode/auggie/blob/703519ca481d2cb88bf3fcd9e05144e2c80e07e0/CHANGELOG.md#L178 (0.27.0: 'support for updating input from PreToolUse hooks')",
+      "mark": "V"
+    },
+    {
+      "claim": "toolPermissions script-policy is fail-closed: the script gets the JSON on stdin; exit 0 allows, any non-zero exit, a 30 s timeout (SIGKILL), a spawn error or a missing script file denies. stdout or stderr text becomes the denial detail",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs u0i with Nat=3e4",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook env adds AUGMENT_PROJECT_DIR, AUGMENT_CONVERSATION_ID, AUGMENT_HOOK_EVENT, AUGMENT_TOOL_NAME (no secret filtering seen)",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs vao",
+      "mark": "V"
+    },
+    {
+      "claim": "Nothing in a PreToolUse reply ends the whole run; continue:false only blocks this call",
+      "source": "npm:@augmentcode/auggie@0.36.0 package/augment.mjs zIt/runPreToolUseHook",
+      "mark": "I"
+    },
+    {
+      "claim": "Since 0.30.0, PreToolUse and PostToolUse also run in sub-agent sessions",
+      "source": "https://github.com/augmentcode/auggie/blob/703519ca481d2cb88bf3fcd9e05144e2c80e07e0/CHANGELOG.md#L104",
+      "mark": "V"
+    }
+  ]
+}

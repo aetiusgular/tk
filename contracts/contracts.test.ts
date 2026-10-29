@@ -1,6 +1,6 @@
 // Checks that every contract fixture validates against its schema, so a lane
 // that builds against a fixture builds against a valid one. Session 0.
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -167,5 +167,43 @@ describe("harness coverage", () => {
   it("marks built the four wave 1 adapters and wave 2's five (integration w2)", () => {
     const built = [...data.harnesses, ...data.planned].filter((r) => r.coverage.gate.status === "built").map((r) => r.id).sort();
     expect(built).toEqual(["claude-code", "codex", "gemini", "hermes", "kilo", "oh-my-pi", "openclaw", "opencode", "pi"]);
+  });
+});
+
+// Integration w2: the hook dialects of wave 4's agents (contracts/hook-dialects.md).
+describe("hook dialect fixtures", () => {
+  const dir = join(here, "fixtures", "hook-dialects");
+  const table = loadPresetTable();
+  const ids = new Set([...table.harnesses, ...table.planned].map((r) => r.id as string));
+  const agents = readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).sort();
+  it("covers the sixteen agents of lanes L, N and P, each a preset id", () => {
+    expect(agents).toEqual(
+      ["amp", "antigravity", "auggie", "cline", "command-code", "copilot-cli", "crush", "cursor", "droid", "goose", "grok", "kimi", "kiro", "mistral-vibe", "openclaude", "qwen-code"],
+    );
+    for (const a of agents) expect(ids.has(a)).toBe(true);
+  });
+  it("every fixture parses and every file names its source and mark", () => {
+    for (const a of agents) {
+      const files = readdirSync(join(dir, a)).sort();
+      expect(files).toContain("sources.json");
+      const sources = JSON.parse(readFileSync(join(dir, a, "sources.json"), "utf8")) as {
+        agent: string;
+        versionRead: string;
+        files: Record<string, { from: string; source: string; mark: string }>;
+      };
+      expect((sources as { presetId?: string }).presetId).toBe(a);
+      expect(sources.versionRead.length).toBeGreaterThan(0);
+      for (const f of files) {
+        if (f === "sources.json") continue;
+        const text = readFileSync(join(dir, a, f), "utf8");
+        if (f.endsWith(".json")) expect(() => JSON.parse(text), `${a}/${f}`).not.toThrow();
+        const meta = sources.files[f];
+        expect(meta, `${a}/${f} is listed in sources.json`).toBeDefined();
+        expect(["verbatim", "built-from-fields"]).toContain(meta?.from);
+        expect(["V", "I", "NF"]).toContain(meta?.mark);
+        expect(meta?.source.length ?? 0).toBeGreaterThan(0);
+        expect(text, `${a}/${f} holds no key-like string`).not.toMatch(/\b(sk|ghp|hf|xox[bp])[-_][A-Za-z0-9]{16,}/);
+      }
+    }
   });
 });

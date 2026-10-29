@@ -1,0 +1,75 @@
+{
+  "presetId": "amp",
+  "agent": "amp",
+  "versionRead": "@ampcode/plugin 0.0.0-20261029001459-g185813a (index.d.ts sitemap-lastmod 2026-10-27); @ampcode/cli 0.0.1793232065-gec0ec2",
+  "currentVersion": "same (latest on npm 28 Oct)",
+  "files": {
+    "register.ts": {
+      "from": "built-from-fields",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:10-24,61-71,2221-2233; README.md Minimal Plugin",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1901-1919 (ToolCallEvent), :1214 ThreadID T-*, :2252 tool names Bash/shell_command; the Bash input key cmd is not documented, use amp.helpers shellCommandFromToolCall",
+      "mark": "I"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:407-415,2181-2186 (mcp__<server>__<tool>); whether tool.call fires per MCP call inside code_exec not found",
+      "mark": "I"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1927",
+      "mark": "V"
+    },
+    "reply.deny.json": {
+      "from": "built-from-fields",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1929-1930",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "Plugin file ~/.config/amp/plugins/<name>.ts (system) or .amp/plugins/*.ts (project), run by Bun, default export function (amp: PluginAPI); reload with 'plugins: reload'",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:10-24; README.md Locations",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook: amp.on('tool.call', (event: ToolCallEvent, ctx) => ToolCallResult | Promise<ToolCallResult>); request events must return a result; order across plugins undefined",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:61-71,2158,2170,2230-2233",
+      "mark": "V"
+    },
+    {
+      "claim": "Payload: toolUseID, tool, input, thread.id; no cwd or session field beyond thread id, no MCP server field",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1901-1919",
+      "mark": "V"
+    },
+    {
+      "claim": "Results: allow; reject-and-continue {message}; modify {input} (rewrite); synthesize {result:{output, exitCode?}}; error {message} stops the thread worker",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1925-1939",
+      "mark": "V"
+    },
+    {
+      "claim": "No ask result; asking is done inside the handler with await ctx.ui.confirm({title, message}) -> boolean; dismissed resolves false; throws (isPluginUINotAvailableError) when no UI, e.g. amp -x or code_exec in a subagent; endTurnOnDecline ignored in hooks",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:1655-1696,1841-1846,2270-2281",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool names Bash and shell_command",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:2252",
+      "mark": "V"
+    },
+    {
+      "claim": "MCP tools named mcp__<server>__<tool> but not sent to the model directly: reached through tool_search and code_exec unless both are excluded",
+      "source": "@ampcode/plugin 0.0.0-20261029001459-g185813a index.d.ts:407-415,2544-2547",
+      "mark": "V"
+    },
+    {
+      "claim": "Handler throw, timeout, or slow handler behaviour",
+      "source": "https://ampcode.com/docs/customize/plugins (WebFetch blocked this session)",
+      "mark": "NF"
+    }
+  ]
+}

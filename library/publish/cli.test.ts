@@ -45,6 +45,16 @@ describe("publish command line", () => {
     expect((await run(["verify", "--pr", "a", "--base", "b", "--author", "$(id)", "x"])).code).toBe(2);
   });
 
+  // Integration w2, security finding W2-S1: folder names from a pull request
+  // are word-split into verify's arguments, so a folder named "--author" must
+  // not set the author. A flag given twice, or one after "--", is refused or
+  // read as an id; an id that starts with "-" is refused.
+  it("never takes a flag from an entry id: a repeated flag is refused, ids after -- are ids", async () => {
+    expect((await run(["verify", "--pr", "a", "--base", "b", "--author", "alice", "x", "--author", "aetiusgular"])).code).toBe(2);
+    expect((await run(["verify", "--pr", "a", "--base", "b", "--author", "alice", "--", "--author"])).code).toBe(2);
+    expect((await run(["verify", "--pr", "a", "--base", "b", "--author", "alice", "--", "-x"])).code).toBe(2);
+  });
+
   it("stops with exit 1 and prints the steps of no pull request when gh is not there", async () => {
     const root = mkdtempSync(join(tmpdir(), "tk-pubcli-"));
     mkdirSync(join(root, "lib", "library"), { recursive: true });

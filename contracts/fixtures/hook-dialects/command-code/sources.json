@@ -1,0 +1,100 @@
+{
+  "presetId": "command-code",
+  "agent": "Command Code (npm command-code)",
+  "versionRead": "1.88.1 (bundled docs and dist/cli.mjs). Earlier notes read 1.88.0",
+  "currentVersion": "1.88.1 (npm, 2026-10-28)",
+  "files": {
+    "register.json": {
+      "from": "verbatim",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):628-643 (command replaced, failClosed added: undocumented, read from npm:command-code@1.88.1 package/dist/cli.mjs:2 translate step 'failClosed:!0===s.failClosed')",
+      "mark": "V"
+    },
+    "stdin.pre-tool.json": {
+      "from": "built-from-fields",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):215-247 and npm:command-code@1.88.1 package/dist/cli.mjs:2 buildHookPayload (session_id, transcript_path, cwd, hook_event_name, permission_mode, tool_use_id, tool_name, tool_display_name, tool_input)",
+      "mark": "V"
+    },
+    "stdin.pre-tool.mcp.json": {
+      "from": "built-from-fields",
+      "source": "npm:command-code@1.88.1 package/dist/cli.mjs:2: isMcpTool(e) = e.startsWith('mcp__'); tool_display_name = toRegexSafeAlias(tool_name) (non [A-Za-z0-9_] to '_', uppercased)",
+      "mark": "I"
+    },
+    "reply.deny.json": {
+      "from": "verbatim",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):577-585 (jq template rendered with cmd='rm -rf /')",
+      "mark": "V"
+    },
+    "reply.allow.json": {
+      "from": "verbatim",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):318-331",
+      "mark": "V"
+    },
+    "reply.deny.exit": {
+      "from": "built-from-fields",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):458-471: exit 2 blocks PreToolUse; reason = permissionDecisionReason from stdout, else first non-empty stderr line",
+      "mark": "V"
+    }
+  },
+  "facts": [
+    {
+      "claim": "User file ~/.commandcode/settings.json, project .commandcode/settings.json; project wins on identical command strings",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):101-109",
+      "mark": "V"
+    },
+    {
+      "claim": "Entry: hooks.PreToolUse[] = {matcher?, hooks:[{type:'command', command, timeout?}]}; timeout seconds, default 30, max 600 (out-of-range timeout drops the hook as invalid_definition)",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):157-174 and #L519-L522; npm:command-code@1.88.1 package/dist/cli.mjs:2 'timeout must be a number in (0, 600]'",
+      "mark": "V"
+    },
+    {
+      "claim": "Fail-closed switch is per HookEntry: \"failClosed\": true. With it a non-zero exit other than 2, a timeout, a spawn failure, or non-empty non-JSON stdout on exit 0 all block the call ('Security hook ... failed (exit N, failClosed)'). Undocumented in the bundled docs and CHANGELOG",
+      "source": "npm:command-code@1.88.1 package/dist/cli.mjs:2 resolveHookExit and the runner catch block",
+      "mark": "V"
+    },
+    {
+      "claim": "Matcher is a case-insensitive unanchored RegExp tested against tool_display_name (SHELL, READ, WRITE, EDIT, ...), so 'shell' also matches SHELL_TASKS, KILL_SHELL and SHELL_OUTPUT; use '^shell$' for the shell tool only",
+      "source": "npm:command-code@1.88.1 package/dist/cli.mjs:2 getOrCompileRegex (new RegExp(o,'i')), selectMatchingHooks, Dk map",
+      "mark": "V"
+    },
+    {
+      "claim": "Shell tool id shell_command, display name SHELL; MCP tools named mcp__<server>__<tool>; no separate MCP server field",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):234-235 and npm:command-code@1.88.1 package/dist/cli.mjs:2 Dk/isMcpTool",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook env strips any variable whose NAME matches one of /API_KEY/i,/SECRET/i,/TOKEN/i,/PASSWORD/i,/ANTHROPIC_/i,/COMMANDCODE_API/i,/OAUTH/i,/CREDENTIAL/i,/PRIVATE_KEY/i,/(^|_)AUTH(_|$)/i,/(^|_)AUTHORIZATION(_|$)/i,/(^|_)BEARER(_|$)/i,/AWS_ACCESS_KEY/i,/AWS_SECRET/i,/AWS_SESSION_TOKEN/i. TK_CHAT_TOKEN_FILE matches /TOKEN/i and is stripped",
+      "source": "npm:command-code@1.88.1 package/dist/cli.mjs:2 sanitizeHookEnv and mC array",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook env adds COMMANDCODE_PROJECT_DIR, COMMANDCODE_CWD, COMMANDCODE_SESSION_ID, COMMANDCODE_PERMISSION_MODE, COMMANDCODE_HOOK_EVENT (docs list four, binary sets five)",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):279-288 and npm:command-code@1.88.1 package/dist/cli.mjs:2 sanitizeHookEnv",
+      "mark": "V"
+    },
+    {
+      "claim": "Reply: exit 0 with empty stdout = allow; permissionDecision 'deny' (or undocumented top-level block:true) denies with permissionDecisionReason shown to the model; 'allow' or omitted permits; no ask; no input rewrite (no updatedInput in the bundle)",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):294-314 and npm:command-code@1.88.1 package/dist/cli.mjs:2 deriveBlockFromOutput; grep updatedInput: 0 hits",
+      "mark": "V"
+    },
+    {
+      "claim": "Without failClosed: timeout (SIGTERM, 5 s grace, SIGKILL), crash, other non-zero exit, and invalid JSON all let the tool proceed",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):462, #L473-L476, #L519-L522",
+      "mark": "V"
+    },
+    {
+      "claim": "continue:false halts the whole session after the current tool batch (the tool still runs)",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):300 and #L494-L500",
+      "mark": "V"
+    },
+    {
+      "claim": "Hooks are skipped entirely in plan mode",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):538 and #L545",
+      "mark": "V"
+    },
+    {
+      "claim": "PreToolUse hooks run sequentially and stop at the first deny",
+      "source": "npm:command-code@1.88.1 package/dist/bundled/command-code-knowledge/reference/hooks.md (generated from https://commandcode.ai/docs):514",
+      "mark": "V"
+    }
+  ]
+}

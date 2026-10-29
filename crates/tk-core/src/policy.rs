@@ -98,7 +98,7 @@ pub struct Decision {
 /// entry (integration w1; lane F's request), so a server named `my-server`
 /// matches `my-server_fetch` and Copilot's `my-server-fetch`.
 pub fn lower_name(raw: &str) -> String {
-    raw.trim()
+    js_trim(raw)
         .chars()
         .map(|c| {
             let c = c.to_ascii_lowercase();
@@ -218,6 +218,71 @@ fn plugin_bare_servers(server: &str) -> Vec<&str> {
         .collect()
 }
 
+/// JavaScript's `String.prototype.trim`, so the three matchers drop the same
+/// characters (integration w2 review, W2-S11): Rust's `trim` keeps U+FEFF
+/// and drops U+0085, JavaScript's the other way round.
+fn js_trim(raw: &str) -> &str {
+    raw.trim_matches(|c: char| (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}')
+}
+
+/// Separators an agent writes between server and tool other than the plain
+/// `__` (after `mcp__`) or `_` (after `mcp_`, or with no prefix): its
+/// declared name form (note AQ section 6; the hook core's `RAW_SEPARATORS`).
+pub const RAW_SEPARATORS: &[(&str, &[&str])] = &[
+    ("oh-my-pi", &["_"]),
+    ("droid", &["___"]),
+    ("copilot-cli", &["-"]),
+    ("mistral-vibe", &["."]),
+];
+
+/// Integration w2 review, W2-S2 (the hook core's `splitInDoubt`): whether the
+/// raw name spells the chosen split plainly. Capitals or non-ASCII letters in
+/// the server part, a separator the fold made, or one longer than the
+/// form's, could be another server's name folded into a listed one.
+fn split_in_doubt(
+    raw: &str,
+    lowered: &str,
+    prefix: usize,
+    server: &str,
+    tool: &str,
+    harness: &str,
+) -> bool {
+    let cps: Vec<char> = js_trim(raw).chars().collect();
+    if cps.len() != lowered.len() {
+        return true;
+    }
+    let sep_start = prefix + server.len();
+    let Some(sep_end) = lowered.len().checked_sub(tool.len()) else {
+        return true;
+    };
+    if sep_end <= sep_start {
+        return true;
+    }
+    let raw_server: String = cps[prefix..sep_start].iter().collect();
+    if raw_server
+        .chars()
+        .any(|c| c.is_ascii_uppercase() || !c.is_ascii())
+    {
+        return true;
+    }
+    let raw_sep: String = cps[sep_start..sep_end].iter().collect();
+    let harness = harness.trim().to_ascii_lowercase();
+    if RAW_SEPARATORS
+        .iter()
+        .any(|(h, seps)| *h == harness && seps.contains(&raw_sep.as_str()))
+    {
+        return false;
+    }
+    if raw_sep != lowered[sep_start..sep_end] {
+        return true;
+    }
+    match prefix {
+        5 => raw_sep != "__",
+        4 => raw_sep != "_",
+        _ => raw_sep.len() > 2,
+    }
+}
+
 /// The call's other names (contract section 4, step 3a; the hook core's
 /// `narrowingNames`): a plugin server's bare forms, and for an `mcp__` name
 /// every other split at a run of `__`. `ambiguous` is true when a split past
@@ -248,6 +313,16 @@ pub fn narrowing_names(raw: &str, servers: &[String], harness: &str) -> (Vec<Str
             }
             from = end;
         }
+    }
+    let prefix = if lowered.starts_with("mcp__") {
+        5
+    } else if lowered.starts_with("mcp_") {
+        4
+    } else {
+        0
+    };
+    if split_in_doubt(raw, &lowered, prefix, primary_server, primary_tool, harness) {
+        ambiguous = true;
     }
     let mut names: Vec<String> = Vec::new();
     for (server, tool) in &splits {

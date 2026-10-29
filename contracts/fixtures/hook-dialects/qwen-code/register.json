@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^run_shell_command$",
+        "sequential": false,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/tk-hook",
+            "name": "security-check",
+            "description": "Run security checks before tool execution",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

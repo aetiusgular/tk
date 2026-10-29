@@ -48,10 +48,24 @@ jobs:
         run: |
           set -euo pipefail
           git -C pr fetch -q --depth 1 origin "$BASE_SHA"
-          ids=$(git -C pr diff --name-only "$BASE_SHA" HEAD -- library/catalog | awk -F/ 'NF>=4 {print $3}' | sort -u)
-          if [ -z "$ids" ]; then echo "no entry changed"; exit 0; fi
-          # Folder names are a stranger's text: no globbing, and each id is checked
-          # against the library's id pattern before it names a path (verify.ts).
-          set -f
-          # shellcheck disable=SC2086
-          node --no-warnings base/library/publish/cli.ts verify --pr pr --base base --author "$PR_AUTHOR" $ids
+          # Folder names are a stranger's text (security finding W2-S1,
+          # integration w2): read one per line, never word-split; every changed
+          # path must sit inside an entry folder named by the library's id
+          # pattern; anything else in the catalog (brands.json, sets.json, the
+          # README) needs a human review, so the check fails on it; the ids go
+          # after "--", where the command line takes no flag.
+          mapfile -t paths < <(git -C pr diff --name-only "$BASE_SHA" HEAD -- library/catalog)
+          if [ "${#paths[@]}" -eq 0 ]; then echo "no entry changed"; exit 0; fi
+          ids=()
+          for p in "${paths[@]}"; do
+            rest=${p#library/catalog/}
+            id=${rest%%/*}
+            if [ "$rest" = "$id" ] || ! [[ "$id" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]]; then
+              echo "a changed catalog path is not inside an entry folder; a change there needs a human review:" >&2
+              printf '  %q\n' "$p" >&2
+              exit 1
+            fi
+            ids+=("$id")
+          done
+          mapfile -t ids < <(printf '%s\n' "${ids[@]}" | sort -u)
+          node --no-warnings base/library/publish/cli.ts verify --pr pr --base base --author "$PR_AUTHOR" -- "${ids[@]}"

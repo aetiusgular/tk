@@ -1,0 +1,11 @@
+{
+  "toolPermissions": [
+    {
+      "toolName": "launch-process",
+      "permission": {
+        "type": "script-policy",
+        "script": "/ABSOLUTE/PATH/TO/tk-hook"
+      }
+    }
+  ]
+}

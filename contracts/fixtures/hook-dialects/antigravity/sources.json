@@ -1,0 +1,39 @@
+{
+  "presetId": "antigravity",
+  "agent": "antigravity",
+  "versionRead": "1.4.9 CHANGELOG only",
+  "currentVersion": "1.4.9 (latest tag)",
+  "files": {},
+  "facts": [
+    {
+      "claim": "Hook payload, decision values (ask, force_ask, auto_approve ...), registration path ~/.gemini/config/hooks.json, shell tool run_command: not verified",
+      "source": "https://antigravity.google/docs/hooks/: WebFetch blocked in this session (permission not granted); no public source repo with hook code; repo has CHANGELOG, README, examples only",
+      "mark": "NF"
+    },
+    {
+      "claim": "hooks.json is a map of named hooks: a Claude Code-style top-level \"hooks\" key loads as a single hook named hooks",
+      "source": "google-antigravity/antigravity-cli 1.4.9 CHANGELOG.md:110",
+      "mark": "V"
+    },
+    {
+      "claim": "Plugins do not read hooks/hooks.json (agy plugin validate warns about it)",
+      "source": "google-antigravity/antigravity-cli 1.4.9 CHANGELOG.md:110",
+      "mark": "V"
+    },
+    {
+      "claim": "Hook stdin JSON gained lastUserInput in 1.4.7",
+      "source": "google-antigravity/antigravity-cli 1.4.9 CHANGELOG.md:42",
+      "mark": "V"
+    },
+    {
+      "claim": "A failing PostToolUse hook (missing command, error exit, timeout, invalid JSON) is logged and no longer fails the tool (1.4.x)",
+      "source": "google-antigravity/antigravity-cli 1.4.9 CHANGELOG.md:116",
+      "mark": "V"
+    },
+    {
+      "claim": "Hooks can flag an action so the approval prompt shows a Reason: line",
+      "source": "google-antigravity/antigravity-cli 1.4.9 CHANGELOG.md:485",
+      "mark": "V"
+    }
+  ]
+}

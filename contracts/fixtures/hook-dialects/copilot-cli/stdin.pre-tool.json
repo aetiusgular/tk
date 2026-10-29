@@ -1,0 +1,7 @@
+{
+  "sessionId": "00000000-0000-0000-0000-000000000000",
+  "timestamp": 1792000000000,
+  "cwd": "/home/user/project",
+  "toolName": "bash",
+  "toolArgs": { "command": "ls -la", "description": "List files" }
+}

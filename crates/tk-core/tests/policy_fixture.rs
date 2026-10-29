@@ -44,8 +44,8 @@ fn fixture_has_thirteen_rules_and_fifty_three_cases() {
     );
     assert_eq!(
         cases.len(),
-        53,
-        "45 to integration w1, 8 from integration w2"
+        58,
+        "45 to integration w1, 13 from integration w2"
     );
 }
 

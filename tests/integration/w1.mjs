@@ -185,6 +185,11 @@ function runCmd(cmd, argv, env, input) {
       clearTimeout(timer);
       resolveRun({ code, signal, out, err });
     });
+    // A child that exits before it reads its input (a refusal) closes the
+    // pipe; the write then fails with EPIPE. Its exit code is the result, so
+    // the error is not the test's (integration w2: the EPIPE crash wave 1
+    // saw once, reproduced here in 2 of 4 runs).
+    child.stdin.on("error", () => {});
     child.stdin.end(input ?? "");
   });
 }

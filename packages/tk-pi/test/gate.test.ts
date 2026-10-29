@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGate } from "../extensions/gate.ts";
+import { mkdirSync, mkdtempSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createGate, memoryIndexPath, memoryIndexText } from "../extensions/gate.ts";
 import { DECISION_CHANNEL, type DecisionNotice, type ToolCallResult, type UserBashResult } from "../src/pi-api.ts";
 import { sha256Hex } from "../src/policy.ts";
 import { FakeRpcClient, fakePi, memFs, type Answer } from "./fake-pi.ts";
@@ -104,6 +107,25 @@ describe("decisions", () => {
     expect(s.client.requests).toHaveLength(3);
     expect(await s.call("write", { path: "memory/notes.md", content: "x" }, "other")).toBeUndefined();
     expect(s.client.requests).toHaveLength(3);
+  });
+
+  it("a memory index named another way still asks: dots, double slashes, a linked folder, shell text (review W2-S4)", async () => {
+    for (const p of ["memory/./INDEX.md", "memory//INDEX.md", "memory/INDEX.md/.", "a/../memory/INDEX.md", "memory\\INDEX.md"]) {
+      expect(memoryIndexPath("write", { path: p }), p).toBe("memory/index.md");
+    }
+    const dir = mkdtempSync(join(tmpdir(), "tk-memidx-"));
+    mkdirSync(join(dir, "memory"));
+    symlinkSync(join(dir, "memory"), join(dir, "m2"));
+    expect(memoryIndexPath("write", { path: "m2/INDEX.md" }, dir)).toBe("memory/index.md");
+    expect(memoryIndexPath("write", { path: join(dir, "m2", "INDEX.md") }, dir)).toBe("memory/index.md");
+    expect(memoryIndexPath("write", { path: "m2/notes.md" }, dir)).toBeUndefined();
+    expect(memoryIndexText("bash", 'echo "x" >> memory/IN""DEX.md')).toBe("memory/index.md");
+    expect(memoryIndexText("bash", "tee -a ./research//INDEX.md")).toBe("research/index.md");
+    expect(memoryIndexText("read", "memory/INDEX.md")).toBeUndefined();
+    expect(memoryIndexText("bash", "cat memory/notes.md")).toBeUndefined();
+    const policy = policyText({ rules: [{ tool: "bash", action: "allow" }] });
+    const s = setup({ policy, answer: () => ({ confirmed: false }) });
+    expect(await s.call("bash", { command: "echo hi >> memory/INDEX.md" })).toEqual({ block: true, reason: "Blocked by tk: not approved" });
   });
 
   it("deny blocks with the rule as the reason and asks nothing", async () => {

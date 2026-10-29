@@ -1,0 +1,8 @@
+{
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "updatedInput": {
+            "command": "npm test"
+        }
+    }
+}

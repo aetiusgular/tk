@@ -1,0 +1,6 @@
+{
+  "hookSpecificOutput": {
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Please use rg instead of grep"
+  }
+}
